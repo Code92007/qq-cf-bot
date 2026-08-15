@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 from typing import Any, Iterable, List, Optional
 
 from .luogu import LuoguClient
-from .models import CFProblem, SolutionReference
+from .models import CFProblem, ProblemStatement, SolutionReference
+from .solution_generator import LLMSolutionGenerator
 from .storage import SentProblemStore
 from .submitter import CodeforcesRemoteJudge
 
@@ -25,6 +26,7 @@ class SolutionBank:
         store: SentProblemStore,
         luogu: LuoguClient,
         remote_judge: CodeforcesRemoteJudge,
+        solution_generator: Optional[LLMSolutionGenerator] = None,
         enabled: bool = True,
         min_refs: int = 1,
         max_refs: int = 4,
@@ -36,6 +38,7 @@ class SolutionBank:
         self.store = store
         self.luogu = luogu
         self.remote_judge = remote_judge
+        self.solution_generator = solution_generator
         self.enabled = enabled
         self.min_refs = max(0, min_refs)
         self.max_refs = max(0, max_refs)
@@ -44,12 +47,19 @@ class SolutionBank:
         self.fetch_cf_editorial = fetch_cf_editorial
         self.fetch_cf_ac_code = fetch_cf_ac_code
 
-    def ensure(self, problem: CFProblem) -> List[SolutionReference]:
+    def ensure(self, problem: CFProblem, statement: Optional[ProblemStatement] = None) -> List[SolutionReference]:
         cached = self.store.list_solution_references(problem.cf_id)
         if not self.enabled or len(cached) >= self.min_refs:
             return cached[: self.max_refs]
-        if self.store.get_solution_fetch_attempt(problem.cf_id):
-            return cached[: self.max_refs]
+
+        attempted = bool(self.store.get_solution_fetch_attempt(problem.cf_id))
+        if attempted:
+            references = []
+            if self._should_generate_llm_reference(cached, statement):
+                references.extend(self._generate_llm_solution(problem, statement))
+            if references:
+                self.store.add_solution_references(_dedupe_references(references)[: self.max_refs])
+            return self.store.list_solution_references(problem.cf_id)[: self.max_refs]
 
         references: List[SolutionReference] = []
         if self.fetch_luogu:
@@ -67,6 +77,10 @@ class SolutionBank:
                 )
             except Exception as exc:
                 LOGGER.warning("failed to fetch Codeforces AC code for %s: %s", problem.cf_id, exc)
+
+        combined = cached + references
+        if self._should_generate_llm_reference(combined, statement):
+            references.extend(self._generate_llm_solution(problem, statement))
 
         self.store.add_solution_references(_dedupe_references(references)[: self.max_refs])
         self.store.mark_solution_fetch_attempt(problem.cf_id)
@@ -155,6 +169,39 @@ class SolutionBank:
                 author="Codeforces",
                 url=editorial_url,
                 content=content,
+            )
+        ]
+
+    def _should_generate_llm_reference(
+        self,
+        references: Iterable[SolutionReference],
+        statement: Optional[ProblemStatement],
+    ) -> bool:
+        if statement is None:
+            return False
+        if self.solution_generator is None or not self.solution_generator.configured:
+            return False
+        refs = list(references)
+        if len(refs) >= self.min_refs:
+            return False
+        return not any(reference.source == "llm_generated" for reference in refs)
+
+    def _generate_llm_solution(self, problem: CFProblem, statement: Optional[ProblemStatement]) -> List[SolutionReference]:
+        if statement is None or self.solution_generator is None:
+            return []
+        try:
+            generated = self.solution_generator.generate(problem, statement)
+        except Exception as exc:
+            LOGGER.warning("failed to generate LLM solution for %s: %s", problem.cf_id, exc)
+            return []
+        return [
+            _reference(
+                problem=problem,
+                source="llm_generated",
+                title=generated.title or "模型生成参考解法",
+                author="llm",
+                url="",
+                content=generated.content,
             )
         ]
 

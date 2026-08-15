@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Sequence
 
 from .models import UserStat
+from .rating import leaderboard_rating
 
 
 class RanklistRenderer:
@@ -165,11 +166,14 @@ def _rank_row(rank: int, stat: UserStat) -> str:
         f"<span class=\"name\">{html.escape(stat.display_name)}</span>"
         "</div></td>"
         f"<td class=\"solved\">{stat.solved_count}</td>"
-        f"<td class=\"rating\">{stat.rating:.2f}</td>"
+        f"<td class=\"rating\">{leaderboard_rating(stat.solved_ratings, stat.rating):.2f}</td>"
         "</tr>"
     )
 
 
 def _stats_hash(stats: Sequence[UserStat]) -> str:
-    text = "|".join(f"{stat.user_id}:{stat.solved_count}:{stat.rating:.2f}" for stat in stats)
+    text = "|".join(
+        f"{stat.user_id}:{stat.solved_count}:{stat.rating:.2f}:{','.join(map(str, stat.solved_ratings))}"
+        for stat in stats
+    )
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:10]

@@ -19,11 +19,12 @@ from .message import extract_plain_text, looks_like_code_submission, parse_code_
 from .models import CFProblem, CodeSubmission, GroupMessage, ProblemStatement, RatingRange, RemoteJudgeResult
 from .onebot import OneBotClient
 from .rank_renderer import RanklistRenderer
-from .rating import accepted_rating_update
+from .rating import accepted_rating_update, leaderboard_rating
 from .renderer import StatementRenderer
 from .selector import ProblemSelector
 from .security import redact_sensitive_text
 from .solution_bank import SolutionBank
+from .solution_generator import LLMSolutionGenerator
 from .storage import SentProblemStore
 from .submitter import CodeforcesRemoteJudge
 from .translator import OpenAIStatementTranslator
@@ -100,10 +101,20 @@ class CodeforcesPushBot:
             poll_interval_seconds=config.cf_submit_poll_interval_seconds,
             poll_timeout_seconds=config.cf_submit_poll_timeout_seconds,
         )
+        self.solution_generator = LLMSolutionGenerator(
+            api_url=config.judge_api_url,
+            api_key=config.judge_api_key,
+            model=config.judge_model,
+            wire_api=config.judge_wire_api,
+            timeout_seconds=config.judge_timeout_seconds,
+            enabled=config.solution_bank_generate_llm and config.judge_enabled,
+            max_statement_chars=config.judge_statement_max_chars,
+        )
         self.solution_bank = SolutionBank(
             store=self.store,
             luogu=self.luogu,
             remote_judge=self.remote_judge,
+            solution_generator=self.solution_generator,
             enabled=config.solution_bank_enabled,
             min_refs=config.solution_bank_min_refs,
             max_refs=config.solution_bank_max_refs,
@@ -252,7 +263,7 @@ class CodeforcesPushBot:
             self.onebot.send_group_text(event.group_id, _JUDGE_SETUP_HINT)
             return
 
-        solution_references = self.solution_bank.ensure(active.problem)
+        solution_references = self.solution_bank.ensure(active.problem, active.statement)
         solution_context = self.solution_bank.context_for_prompt(
             solution_references,
             self.config.judge_solution_context_max_chars,
@@ -302,7 +313,8 @@ class CodeforcesPushBot:
             (
                 f"恭喜@{event.sender_name} 拿下本题 first blood! "
                 f"本题信息：\n{self._problem_summary(active.problem, active.statement)}\n"
-                f"通过数：{new_stat.solved_count}，Rating：{old_stat.rating:.2f} -> {new_stat.rating:.2f}"
+                f"通过数：{new_stat.solved_count}，榜单 Rating："
+                f"{leaderboard_rating(new_stat.solved_ratings, new_stat.rating):.2f}"
             ),
         )
 
@@ -582,7 +594,8 @@ class CodeforcesPushBot:
                 + "\n"
                 + f"恭喜@{job.sender_name} 拿下本题 first blood! "
                 + f"本题信息：\n{self._problem_summary(job.problem, active.statement)}\n"
-                + f"通过数：{new_stat.solved_count}，Rating：{old_stat.rating:.2f} -> {new_stat.rating:.2f}"
+                + f"通过数：{new_stat.solved_count}，榜单 Rating："
+                + f"{leaderboard_rating(new_stat.solved_ratings, new_stat.rating):.2f}"
             ),
         )
 

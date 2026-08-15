@@ -78,6 +78,7 @@ class UserStat:
     display_name: str
     solved_count: int
     rating: float
+    solved_ratings: Tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)

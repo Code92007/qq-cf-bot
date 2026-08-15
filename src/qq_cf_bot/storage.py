@@ -4,7 +4,7 @@ import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from .models import (
     ActiveProblem,
@@ -15,6 +15,7 @@ from .models import (
     SolutionReference,
     UserStat,
 )
+from .rating import leaderboard_rating
 
 
 class SentProblemStore:
@@ -368,7 +369,15 @@ class SentProblemStore:
             ).fetchone()
         if row is None:
             return UserStat(user_id=user_id, display_name=display_name, solved_count=0, rating=initial_rating)
-        return UserStat(user_id=user_id, display_name=str(row[0]), solved_count=int(row[1]), rating=float(row[2]))
+        with self._connect() as conn:
+            solved_ratings = _solved_ratings_for_user(conn, group_id, user_id)
+        return UserStat(
+            user_id=user_id,
+            display_name=str(row[0]),
+            solved_count=int(row[1]),
+            rating=float(row[2]),
+            solved_ratings=solved_ratings,
+        )
 
     def mark_solved(
         self,
@@ -379,6 +388,7 @@ class SentProblemStore:
         initial_rating: float,
     ) -> UserStat:
         now = datetime.now(timezone.utc).isoformat()
+        solved_ratings: Tuple[int, ...]
         with self._connect() as conn:
             row = conn.execute(
                 """
@@ -409,7 +419,14 @@ class SentProblemStore:
                     now,
                 ),
             )
-        return UserStat(user_id=user_id, display_name=display_name, solved_count=solved_count, rating=new_rating)
+            solved_ratings = _solved_ratings_for_user(conn, group_id, user_id)
+        return UserStat(
+            user_id=user_id,
+            display_name=display_name,
+            solved_count=solved_count,
+            rating=new_rating,
+            solved_ratings=solved_ratings,
+        )
 
     def list_group_stats(self, group_id: int) -> List[UserStat]:
         with self._connect() as conn:
@@ -422,15 +439,26 @@ class SentProblemStore:
                 """,
                 (str(group_id),),
             ).fetchall()
-        return [
+            solved_ratings = _solved_ratings_by_user(conn, group_id)
+        stats = [
             UserStat(
                 user_id=int(row[0]),
                 display_name=str(row[1]),
                 solved_count=int(row[2]),
                 rating=float(row[3]),
+                solved_ratings=solved_ratings.get(str(row[0]), ()),
             )
             for row in rows
         ]
+        stats.sort(
+            key=lambda stat: (
+                -leaderboard_rating(stat.solved_ratings, stat.rating),
+                -(stat.solved_ratings[0] if stat.solved_ratings else 0),
+                -stat.solved_count,
+                stat.display_name,
+            )
+        )
+        return stats
 
     def _init(self) -> None:
         with self._connect() as conn:
@@ -575,6 +603,38 @@ class SentProblemStore:
 
     def _connect(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path)
+
+
+def _solved_ratings_for_user(conn: sqlite3.Connection, group_id: int, user_id: int) -> Tuple[int, ...]:
+    return _solved_ratings_by_user(conn, group_id).get(str(user_id), ())
+
+
+def _solved_ratings_by_user(conn: sqlite3.Connection, group_id: int) -> Dict[str, Tuple[int, ...]]:
+    solved: Dict[str, Dict[str, int]] = {}
+    rows = conn.execute(
+        """
+        select user_id, cf_id, rating
+        from (
+            select s.user_id as user_id, s.cf_id as cf_id, sp.rating as rating
+            from submissions s
+            join sent_problems sp on sp.group_id = s.group_id and sp.cf_id = s.cf_id
+            where s.group_id = ? and s.accepted = 1
+            union all
+            select c.user_id as user_id, c.cf_id as cf_id, sp.rating as rating
+            from code_submissions c
+            join sent_problems sp on sp.group_id = c.group_id and sp.cf_id = c.cf_id
+            where c.group_id = ? and c.accepted = 1
+        )
+        """,
+        (str(group_id), str(group_id)),
+    ).fetchall()
+    for user_id, cf_id, rating in rows:
+        by_problem = solved.setdefault(str(user_id), {})
+        by_problem[str(cf_id)] = max(int(rating), by_problem.get(str(cf_id), 0))
+    return {
+        user_id: tuple(sorted(problem_ratings.values(), reverse=True))
+        for user_id, problem_ratings in solved.items()
+    }
 
 
 def _problem_to_json(problem: CFProblem) -> dict:

@@ -89,6 +89,7 @@ class Config:
     solution_bank_fetch_luogu: bool
     solution_bank_fetch_cf_editorial: bool
     solution_bank_fetch_cf_ac_code: bool
+    solution_bank_generate_llm: bool
     fallback_statement_source: str
     translate_enabled: bool
     translate_api_url: str
@@ -167,6 +168,7 @@ class Config:
             solution_bank_fetch_luogu=_bool_env("SOLUTION_BANK_FETCH_LUOGU", True),
             solution_bank_fetch_cf_editorial=_bool_env("SOLUTION_BANK_FETCH_CF_EDITORIAL", True),
             solution_bank_fetch_cf_ac_code=_bool_env("SOLUTION_BANK_FETCH_CF_AC_CODE", False),
+            solution_bank_generate_llm=_bool_env("SOLUTION_BANK_GENERATE_LLM", True),
             fallback_statement_source=fallback_statement_source,
             translate_enabled=_bool_env("TRANSLATE_ENABLED", True),
             translate_api_url=(os.getenv("TRANSLATE_API_URL") or judge_api_url).rstrip("/"),

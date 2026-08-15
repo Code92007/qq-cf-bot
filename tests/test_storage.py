@@ -94,6 +94,28 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(stats[0].display_name, "Alice")
             self.assertEqual(stats[0].solved_count, 1)
 
+    def test_group_stats_rank_by_solved_rating_vector(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            hard = CFProblem(1, "A", "Hard", 2600)
+            lower_a = CFProblem(2, "A", "Lower A", 2500)
+            lower_b = CFProblem(3, "A", "Lower B", 2500)
+            for problem in (hard, lower_a, lower_b):
+                store.mark_sent(1, problem)
+
+            store.record_submission(1, 10, "hard", hard, "ok", True, "通过")
+            store.mark_solved(1, 10, "hard", 1600, 1500)
+            store.record_submission(1, 20, "farmer", lower_a, "ok", True, "通过")
+            store.mark_solved(1, 20, "farmer", 1800, 1500)
+            store.record_submission(1, 20, "farmer", lower_b, "ok", True, "通过")
+            store.mark_solved(1, 20, "farmer", 1900, 1500)
+
+            stats = store.list_group_stats(1)
+
+            self.assertEqual([stat.display_name for stat in stats], ["hard", "farmer"])
+            self.assertEqual(stats[0].solved_ratings, (2600,))
+            self.assertEqual(stats[1].solved_ratings, (2500, 2500))
+
     def test_group_rating_range_and_meta(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = SentProblemStore(Path(tmp) / "bot.sqlite3")

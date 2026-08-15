@@ -104,6 +104,7 @@ python -m qq_cf_bot
 | `SOLUTION_BANK_FETCH_LUOGU` | `true` | 是否抓取洛谷公开题解 |
 | `SOLUTION_BANK_FETCH_CF_EDITORIAL` | `true` | 是否抓取 Codeforces 题解/教程链接和内容 |
 | `SOLUTION_BANK_FETCH_CF_AC_CODE` | `false` | 是否抓取少量 CF AC 代码；需要 CF 登录态，默认关闭 |
+| `SOLUTION_BANK_GENERATE_LLM` | `true` | 公开题解不足时，是否用判题模型生成内部参考解法并缓存 |
 
 ## `/submitcode` 用法
 
@@ -138,6 +139,10 @@ int main() { return 0; }
 - Codeforces 可能触发验证码、二次验证或账号安全确认，此时远端提交会失败，需要先手动登录账号处理。
 - 不要在正在进行的正式比赛中使用该机器人提交代码。
 
+## `/ranklist` 榜单
+
+榜单不是按单纯通过数量排序，也不再按传统 Elo 累加排序。每道通过题会按 rating 换算成指数分，默认约为“每差 200 rating，题目权重差 4 倍”：例如 1 道 2600 约等于 2 道 2500 或 4 道 2400。这样能奖励做高难题，也允许大量中高难题合理追分，不会被纯刷水题轻易顶掉。
+
 ## `/submit` 和题解库
 
 `/submit` 适合群友提交口头做法、复杂度和关键边界处理。机器人会：
@@ -145,9 +150,10 @@ int main() { return 0; }
 1. 读取当前题的缓存题解库。
 2. 如果题解库不足且之前没抓过，尝试抓取洛谷公开题解和 Codeforces 题解/教程。
 3. 如果 `SOLUTION_BANK_FETCH_CF_AC_CODE=true` 且 CF 账号可登录，再限量抓取 AC 代码片段。
-4. 把题面和受限长度的参考材料交给大模型审核。
+4. 如果公开材料仍不足且 `SOLUTION_BANK_GENERATE_LLM=true`，先让判题模型独立生成一份内部参考解法并缓存。
+5. 把题面和受限长度的参考材料交给大模型审核。
 
-题解库保存在 `data/bot.sqlite3`，一题可以对应多条题解，后续同一题不会重复抓取。模型只用于做法审核，不用于 `/submitcode` 的最终 verdict。为避免提前暴露题目来源，`/solutions` 不会在当前题结束前输出题号或题解链接。
+题解库保存在 `data/bot.sqlite3`，一题可以对应多条题解，后续同一题不会重复抓取；模型生成的内部参考解法也会作为 `llm_generated` 缓存。模型只用于做法审核和内部参考解法生成，不用于 `/submitcode` 的最终 verdict。为避免提前暴露题目来源，`/solutions` 不会在当前题结束前输出题号或题解链接。
 
 ### 接入大模型判题
 
