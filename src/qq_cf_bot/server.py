@@ -29,8 +29,7 @@ class OneBotEventServer:
                     return
 
                 try:
-                    length = int(self.headers.get("Content-Length") or "0")
-                    body = self.rfile.read(length)
+                    body = _read_request_body(self)
                     event = json.loads(body.decode("utf-8"))
                     _handle_event(event, callback)
                 except Exception:
@@ -58,6 +57,43 @@ class OneBotEventServer:
         server = ThreadingHTTPServer((self.host, self.port), Handler)
         LOGGER.info("listening on http://%s:%s/onebot", self.host, self.port)
         server.serve_forever()
+
+
+def _read_request_body(handler: BaseHTTPRequestHandler) -> bytes:
+    transfer_encoding = handler.headers.get("Transfer-Encoding", "").lower()
+    if "chunked" in transfer_encoding:
+        return _read_chunked_body(handler)
+
+    length = int(handler.headers.get("Content-Length") or "0")
+    return handler.rfile.read(length)
+
+
+def _read_chunked_body(handler: BaseHTTPRequestHandler) -> bytes:
+    chunks = []
+    while True:
+        size_line = handler.rfile.readline()
+        if not size_line:
+            break
+
+        size_text = size_line.split(b";", 1)[0].strip()
+        if not size_text:
+            continue
+
+        size = int(size_text, 16)
+        if size == 0:
+            _consume_trailing_headers(handler)
+            break
+
+        chunks.append(handler.rfile.read(size))
+        handler.rfile.read(2)
+    return b"".join(chunks)
+
+
+def _consume_trailing_headers(handler: BaseHTTPRequestHandler) -> None:
+    while True:
+        line = handler.rfile.readline()
+        if line in {b"", b"\r\n", b"\n"}:
+            return
 
 
 def _handle_event(event: dict, callback: Callable[[GroupMessage], None]) -> None:
