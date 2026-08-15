@@ -622,7 +622,8 @@ JUDGE_ENABLED=true
 JUDGE_API_URL=<模型服务地址>
 JUDGE_API_KEY=<密钥>
 JUDGE_MODEL=<模型名>
-如果复用 Codex 的 responses 配置，再加 JUDGE_WIRE_API=responses。"""
+如果复用 Codex 的 responses 配置，再加 JUDGE_WIRE_API=responses；
+如果服务端要求 WebSocket upgrade，改成 JUDGE_WIRE_API=responses_websocket。"""
 
 
 def _needs_title_translation(title: str) -> bool:

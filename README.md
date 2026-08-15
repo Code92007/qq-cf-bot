@@ -82,7 +82,7 @@ python -m qq_cf_bot
 | `JUDGE_API_URL` | `https://api.openai.com/v1/chat/completions` | OpenAI-compatible 模型服务地址；可填完整 endpoint 或 provider base URL |
 | `JUDGE_API_KEY` | 空 | 口头做法审核模型 key |
 | `JUDGE_MODEL` | 空 | 口头做法审核模型名 |
-| `JUDGE_WIRE_API` | 自动 | 模型接口协议；支持 `chat_completions` 和 `responses` |
+| `JUDGE_WIRE_API` | 自动 | 模型接口协议；支持 `chat_completions`、`responses` 和 `responses_websocket` |
 | `JUDGE_STATEMENT_MAX_CHARS` | `12000` | 单次判题传给模型的题面最大字符数 |
 | `JUDGE_SOLUTION_CONTEXT_MAX_CHARS` | `10000` | 单次判题传给模型的题解库上下文最大字符数 |
 | `TAILSCALE_REQUIRED` | `false` | `true` 时 `scripts/deploy.sh` 会强制检查 Tailscale 已启动并已登录 |
@@ -94,7 +94,7 @@ python -m qq_cf_bot
 | `TRANSLATE_API_URL` | `JUDGE_API_URL` | 翻译模型 API；为空时复用 `JUDGE_API_URL` |
 | `TRANSLATE_API_KEY` | `JUDGE_API_KEY` | 翻译模型 key；为空时复用 `JUDGE_API_KEY` |
 | `TRANSLATE_MODEL` | `JUDGE_MODEL` | 翻译模型名；为空时复用 `JUDGE_MODEL` |
-| `TRANSLATE_WIRE_API` | `JUDGE_WIRE_API` | 翻译模型接口协议 |
+| `TRANSLATE_WIRE_API` | `JUDGE_WIRE_API` | 翻译模型接口协议；为空时复用判题模型协议 |
 | `TRANSLATE_TIMEOUT_SECONDS` | `60` | 单次翻译请求超时 |
 | `TRANSLATE_MAX_CHARS` | `24000` | 单次翻译传给模型的题面最大字符数 |
 | `SOLUTION_BANK_ENABLED` | `true` | 是否开启题解库缓存 |
@@ -151,7 +151,13 @@ int main() { return 0; }
 
 ### 接入大模型判题
 
-`/submit` 调用的是 OpenAI-compatible JSON 对话接口。普通 OpenAI-compatible Chat Completions 服务可以这样配：
+`/submit` 调用的是统一的大模型 JSON 输出能力，当前支持三种 OpenAI-compatible 协议：
+
+- `chat_completions`：传统 `/chat/completions` HTTP POST。
+- `responses`：`/responses` HTTP POST；如果服务端返回 `426 WebSocket upgrade required`，机器人会自动改走 WebSocket。
+- `responses_websocket`：Codex 风格的 `/responses` WebSocket，首帧发送顶层 `response.create`。
+
+普通 OpenAI-compatible Chat Completions 服务可以这样配：
 
 ```env
 JUDGE_ENABLED=true
@@ -169,6 +175,13 @@ JUDGE_WIRE_API=responses
 JUDGE_API_URL=http://<codex-provider-base-url>
 JUDGE_API_KEY=<同一模型服务可接受的 token>
 JUDGE_MODEL=<codex-model>
+```
+
+如果这个 provider 的 `/responses` 返回 `WebSocket upgrade required`，可以直接显式改成：
+
+```env
+JUDGE_WIRE_API=responses_websocket
+JUDGE_API_URL=http://<codex-provider-base-url>
 ```
 
 `TRANSLATE_API_*` 默认复用 `JUDGE_API_*`，所以只要判题模型配好了，CF 英文兜底题面和洛谷英文标题也会自动走同一个模型翻译。若模型服务只暴露在 Tailscale 内网地址上，需要先让机器人服务器加入同一个 tailnet，再在服务器上验证 `curl http://<codex-provider-base-url>/health` 或模型服务自己的健康检查地址能通。
