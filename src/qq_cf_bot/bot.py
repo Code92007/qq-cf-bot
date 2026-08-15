@@ -22,6 +22,7 @@ from .rank_renderer import RanklistRenderer
 from .rating import accepted_rating_update
 from .renderer import StatementRenderer
 from .selector import ProblemSelector
+from .security import redact_sensitive_text
 from .solution_bank import SolutionBank
 from .storage import SentProblemStore
 from .submitter import CodeforcesRemoteJudge
@@ -496,7 +497,10 @@ class CodeforcesPushBot:
                 self._process_code_submission(job)
             except Exception as exc:
                 LOGGER.exception("failed to process remote code submission")
-                self.onebot.send_group_text(job.group_id, f"@{job.sender_name} CF 远端提交失败：{exc}")
+                safe_error = redact_sensitive_text(str(exc))
+                if len(safe_error) > 160:
+                    safe_error = safe_error[:160].rstrip() + "..."
+                self.onebot.send_group_text(job.group_id, f"@{job.sender_name} CF 远端提交失败：{safe_error or '服务暂时不可用。'}")
             finally:
                 self._code_queue.task_done()
 
