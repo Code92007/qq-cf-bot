@@ -68,7 +68,7 @@ python -m qq_cf_bot
 | `CF_MAX_RATING` | `2600` | 默认最高题目 rating |
 | `BOT_DEDUP_SCOPE` | `group` | `group` 每群去重，`global` 全局去重 |
 | `FALLBACK_STATEMENT_SOURCE` | `codeforces` | 洛谷中文题面失败时，回退到 Codeforces 官方英文题面 |
-| `CF_SUBMIT_ENABLED` | `false` | 是否开启 `/submitcode` 远端提交 |
+| `CF_SUBMIT_ENABLED` | `auto` | 是否开启 `/submitcode` 远端提交；`auto` 表示账号密码齐全时自动开启，`false` 强制关闭 |
 | `CF_USERNAME` | 空 | Codeforces 登录账号或邮箱 |
 | `CF_PASSWORD` | 空 | Codeforces 密码，只放在服务器 `.env`，不要提交到 GitHub |
 | `CF_HANDLE` | `CF_USERNAME` | Codeforces handle，用于轮询提交记录 |

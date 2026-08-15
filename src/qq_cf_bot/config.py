@@ -47,6 +47,20 @@ def _bool_env(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _auto_bool_env(name: str) -> Optional[bool]:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return None
+    value = raw.strip().lower()
+    if value == "auto":
+        return None
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{name} must be true, false, or auto")
+
+
 def _wire_api_env(name: str, default: str) -> str:
     raw = os.getenv(name, "").strip()
     return normalize_wire_api(raw or default)
@@ -131,6 +145,12 @@ class Config:
         fallback_statement_source = os.getenv("FALLBACK_STATEMENT_SOURCE", "codeforces").strip().lower()
         if fallback_statement_source not in {"codeforces", "none"}:
             raise ValueError("FALLBACK_STATEMENT_SOURCE must be either 'codeforces' or 'none'")
+        cf_username = os.getenv("CF_USERNAME", "").strip()
+        cf_password = os.getenv("CF_PASSWORD", "")
+        cf_handle = (os.getenv("CF_HANDLE") or cf_username).strip()
+        cf_submit_enabled = _auto_bool_env("CF_SUBMIT_ENABLED")
+        if cf_submit_enabled is None:
+            cf_submit_enabled = bool(cf_username and cf_password and cf_handle)
 
         return cls(
             host=os.getenv("BOT_HOST", "127.0.0.1"),
@@ -177,10 +197,10 @@ class Config:
             translate_wire_api=_wire_api_env("TRANSLATE_WIRE_API", judge_wire_api),
             translate_timeout_seconds=_int_env("TRANSLATE_TIMEOUT_SECONDS", 60),
             translate_max_chars=_int_env("TRANSLATE_MAX_CHARS", 24_000),
-            cf_submit_enabled=_bool_env("CF_SUBMIT_ENABLED", False),
-            cf_username=os.getenv("CF_USERNAME", ""),
-            cf_password=os.getenv("CF_PASSWORD", ""),
-            cf_handle=os.getenv("CF_HANDLE") or os.getenv("CF_USERNAME", ""),
+            cf_submit_enabled=cf_submit_enabled,
+            cf_username=cf_username,
+            cf_password=cf_password,
+            cf_handle=cf_handle,
             cf_submit_default_language=os.getenv("CF_SUBMIT_DEFAULT_LANGUAGE", "cpp").strip().lower(),
             cf_submit_language_id=os.getenv("CF_SUBMIT_LANGUAGE_ID", "").strip(),
             cf_submit_min_interval_seconds=_int_env("CF_SUBMIT_MIN_INTERVAL_SECONDS", 180),

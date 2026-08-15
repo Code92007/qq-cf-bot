@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import queue
 import hashlib
+import html
 import re
 import threading
 import time
@@ -330,11 +331,14 @@ class CodeforcesPushBot:
         if active is None:
             self.onebot.send_group_text(event.group_id, "当前没有题目，用 /new 刷一道。")
             return
-        if not self.config.cf_submit_enabled:
-            self.onebot.send_group_text(event.group_id, "CF 远端提交未开启，设置 CF_SUBMIT_ENABLED=true 后可用。")
-            return
         if not self.remote_judge.configured:
-            self.onebot.send_group_text(event.group_id, "CF 提交账号未配置完整，缺少 CF_USERNAME/CF_PASSWORD/CF_HANDLE。")
+            self.onebot.send_group_text(event.group_id, "CF 提交账号未配置完整，至少需要 CF_USERNAME 和 CF_PASSWORD。")
+            return
+        if not self.config.cf_submit_enabled:
+            self.onebot.send_group_text(
+                event.group_id,
+                "CF 远端提交被 CF_SUBMIT_ENABLED=false 关闭，改成 true 或 auto 后可用。",
+            )
             return
 
         parsed = parse_code_submission(raw_submission, default_language=self.config.cf_submit_default_language)
@@ -415,49 +419,46 @@ class CodeforcesPushBot:
     def _fetch_renderable_statement(self, problem: CFProblem) -> ProblemStatement:
         cached = self.store.get_cached_statement(problem.cf_id, require_translated=self.translator.configured)
         if cached is not None:
-            if self.translator.configured and _needs_title_translation(cached.title):
+            if self.translator.configured and _needs_statement_translation(cached):
                 try:
-                    return self._translate_title_and_cache(problem, cached, source="cached_llm_title_translate")
+                    return self._translate_and_cache_if_needed(problem, cached, source="cached")
                 except Exception as exc:
-                    LOGGER.warning("cached statement title translation failed for %s: %s", problem.cf_id, exc)
+                    LOGGER.warning("cached statement translation failed for %s: %s", problem.cf_id, exc)
             return cached
         cached_untranslated = self.store.get_cached_statement(problem.cf_id) if self.translator.configured else None
 
         try:
             statement = self.luogu.fetch_statement(problem)
-            if self.translator.configured and _needs_title_translation(statement.title):
-                return self._translate_title_and_cache(problem, statement, source="luogu_llm_title_translate")
-            self.store.cache_statement(
-                problem,
-                statement,
-                source="luogu",
-                translated=not _needs_title_translation(statement.title),
-            )
-            return statement
+            return self._translate_and_cache_if_needed(problem, statement, source="luogu")
         except Exception as luogu_error:
             if self.config.fallback_statement_source != "codeforces":
                 raise
             LOGGER.warning("Luogu statement failed for %s, falling back to Codeforces: %s", problem.cf_id, luogu_error)
 
         statement = cached_untranslated or self.cf_statement.fetch_statement(problem)
-        if not self.translator.configured:
-            self.store.cache_statement(problem, statement, source="codeforces", translated=False)
-            return statement
-        try:
-            translated = self.translator.translate_statement(statement)
-            self.store.cache_statement(problem, translated, source="codeforces_llm_translate", translated=True)
-            return translated
-        except Exception as exc:
-            LOGGER.warning("statement translation failed for %s, using English Codeforces statement: %s", problem.cf_id, exc)
-            self.store.cache_statement(problem, statement, source="codeforces", translated=False)
-            return statement
+        return self._translate_and_cache_if_needed(problem, statement, source="codeforces")
 
-    def _translate_title_and_cache(self, problem: CFProblem, statement: ProblemStatement, source: str) -> ProblemStatement:
+    def _translate_and_cache_if_needed(self, problem: CFProblem, statement: ProblemStatement, source: str) -> ProblemStatement:
         from dataclasses import replace
 
-        translated = replace(statement, title=self.translator.translate_title(statement.title or problem.name))
-        self.store.cache_statement(problem, translated, source=source, translated=True)
-        return translated
+        if not self.translator.configured:
+            self.store.cache_statement(problem, statement, source=source, translated=not _needs_statement_translation(statement))
+            return statement
+
+        try:
+            if _needs_body_translation(statement):
+                translated = self.translator.translate_statement(statement)
+                self.store.cache_statement(problem, translated, source=f"{source}_llm_translate", translated=True)
+                return translated
+            if _needs_title_translation(statement.title):
+                translated = replace(statement, title=self.translator.translate_title(statement.title or problem.name))
+                self.store.cache_statement(problem, translated, source=f"{source}_llm_title_translate", translated=True)
+                return translated
+        except Exception as exc:
+            LOGGER.warning("statement translation failed for %s from %s: %s", problem.cf_id, source, exc)
+
+        self.store.cache_statement(problem, statement, source=source, translated=not _needs_statement_translation(statement))
+        return statement
 
     def _group_lock(self, group_id: int) -> threading.Lock:
         with self._locks_lock:
@@ -650,3 +651,39 @@ def _needs_title_translation(title: str) -> bool:
     if re.search(r"[\u4e00-\u9fff]", text):
         return False
     return bool(re.search(r"[A-Za-z]", text))
+
+
+def _needs_statement_translation(statement: ProblemStatement) -> bool:
+    return _needs_title_translation(statement.title) or _needs_body_translation(statement)
+
+
+def _needs_body_translation(statement: ProblemStatement) -> bool:
+    text = _visible_statement_text(
+        " ".join(
+            [
+                statement.description,
+                statement.input_format,
+                statement.output_format,
+                statement.hint,
+            ]
+        )
+    )
+    if not text:
+        return False
+
+    cjk_chars = len(re.findall(r"[\u4e00-\u9fff]", text))
+    english_words = re.findall(r"[A-Za-z][A-Za-z']{2,}", text)
+    if len(english_words) < 8:
+        return False
+    if cjk_chars == 0:
+        return True
+    return len(english_words) >= 20 and len(english_words) > cjk_chars / 2
+
+
+def _visible_statement_text(value: str) -> str:
+    text = re.sub(r"\${1,3}.*?\${1,3}", " ", value, flags=re.DOTALL)
+    text = re.sub(r"\\\(.+?\\\)|\\\[.+?\\\]", " ", text, flags=re.DOTALL)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    text = re.sub(r"\\[A-Za-z]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
