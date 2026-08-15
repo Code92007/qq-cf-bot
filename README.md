@@ -38,7 +38,7 @@ curl http://127.0.0.1:8088/health
 
 `scripts/deploy.sh` 会先执行 Tailscale preflight，再执行 `docker compose up -d --build`。如果你不需要 Tailscale，把 `.env` 里的 `TAILSCALE_REQUIRED=false` 留着即可。
 
-OneBot 和机器人在同一台机器时，`ONEBOT_HTTP_URL` 通常填 `http://127.0.0.1:3000`。如果 OneBot 在另一台机器，填 OneBot HTTP API 的可访问地址。
+OneBot 和机器人在同一台机器、但机器人跑在 Docker 容器里时，`ONEBOT_HTTP_URL` 通常填 `http://host.docker.internal:3000`；`docker-compose.yml` 已经映射了这个宿主机地址。如果 OneBot 在另一台机器，填 OneBot HTTP API 的可访问地址。
 
 ## 本地运行
 

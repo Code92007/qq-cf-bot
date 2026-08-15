@@ -45,7 +45,7 @@ looks_like_tailnet_host() {
 }
 
 tailscale_backend_running() {
-    tailscale status --json 2>/dev/null | grep -q '"BackendState":"Running"'
+    tailscale status --json 2>/dev/null | tr -d '[:space:]' | grep -q '"BackendState":"Running"'
 }
 
 required=${TAILSCALE_REQUIRED:-false}
