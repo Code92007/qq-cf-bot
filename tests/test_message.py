@@ -1,6 +1,12 @@
 import unittest
 
-from qq_cf_bot.message import extract_plain_text, is_new_command, looks_like_code_text, parse_code_submission
+from qq_cf_bot.message import (
+    extract_plain_text,
+    is_at_only_mention,
+    is_new_command,
+    looks_like_code_text,
+    parse_code_submission,
+)
 
 
 class MessageTest(unittest.TestCase):
@@ -23,6 +29,24 @@ class MessageTest(unittest.TestCase):
     def test_non_command(self):
         self.assertFalse(is_new_command("/newer"))
         self.assertFalse(is_new_command("hello"))
+
+    def test_array_at_only_mention(self):
+        message = [
+            {"type": "at", "data": {"qq": "3849894908"}},
+            {"type": "text", "data": {"text": " "}},
+        ]
+        self.assertTrue(is_at_only_mention(message, 3849894908))
+
+    def test_array_at_with_text_is_not_at_only_mention(self):
+        message = [
+            {"type": "at", "data": {"qq": "3849894908"}},
+            {"type": "text", "data": {"text": " /new"}},
+        ]
+        self.assertFalse(is_at_only_mention(message, 3849894908))
+
+    def test_cq_at_only_mention(self):
+        self.assertTrue(is_at_only_mention("[CQ:at,qq=3849894908]", 3849894908))
+        self.assertFalse(is_at_only_mention("[CQ:at,qq=3849894908] /help", 3849894908))
 
     def test_parse_fenced_code_submission(self):
         parsed = parse_code_submission("```cpp\n#include <bits/stdc++.h>\nint main() {}\n```")

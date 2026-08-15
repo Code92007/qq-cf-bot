@@ -6,7 +6,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
 
-from .message import looks_like_code_submission, parse_command
+from .message import is_at_only_mention, looks_like_code_submission, parse_command
 from .models import GroupMessage
 
 
@@ -101,8 +101,13 @@ def _handle_event(event: dict, callback: Callable[[GroupMessage], None]) -> None
         return
     if event.get("message_type") != "group":
         return
-    if parse_command(event.get("message")) is None and not looks_like_code_submission(event.get("message")):
+
+    message = event.get("message")
+    at_only = is_at_only_mention(message, event.get("self_id"))
+    if parse_command(message) is None and not at_only and not looks_like_code_submission(message):
         return
+    if at_only:
+        message = "/help"
 
     sender = event.get("sender") or {}
     display_name = str(sender.get("card") or sender.get("nickname") or event.get("user_id") or "群友")
@@ -111,7 +116,7 @@ def _handle_event(event: dict, callback: Callable[[GroupMessage], None]) -> None
         user_id=int(event.get("user_id") or 0),
         sender_name=display_name,
         message_id=int(event["message_id"]) if event.get("message_id") is not None else None,
-        message=event.get("message"),
+        message=message,
     )
     thread = threading.Thread(target=callback, args=(group_message,), daemon=True)
     thread.start()
