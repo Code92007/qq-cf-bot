@@ -5,6 +5,7 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+from http.cookiejar import CookieJar
 from html import unescape
 from typing import Any, Iterable, Optional, Tuple
 
@@ -18,6 +19,9 @@ _FE_JSON_RE = re.compile(
 
 
 class LuoguClient:
+    def __init__(self) -> None:
+        self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(CookieJar()))
+
     def fetch_statement(self, problem: CFProblem) -> ProblemStatement:
         url = f"https://www.luogu.com.cn/problem/{problem.luogu_pid}"
         payload = self._fetch_json(url)
@@ -36,8 +40,13 @@ class LuoguClient:
 
     def _fetch_json(self, url: str) -> dict:
         headers = {
-            "User-Agent": "qq-cf-bot/0.1",
+            "User-Agent": (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            ),
             "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Cache-Control": "no-cache",
             "Referer": "https://www.luogu.com.cn/problem/list",
             "X-Requested-With": "XMLHttpRequest",
             "x-lentille-request": "content-only",
@@ -45,7 +54,7 @@ class LuoguClient:
         }
         request = urllib.request.Request(url, headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=20) as response:
+            with self._opener.open(request, timeout=20) as response:
                 text = response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             raise RuntimeError(f"Luogu returned HTTP {exc.code} for {url}") from exc

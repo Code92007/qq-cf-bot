@@ -5,6 +5,7 @@ import html
 import re
 from pathlib import Path
 from typing import Iterable, List
+from urllib.parse import urlsplit
 
 from .models import CFProblem, ProblemStatement
 
@@ -107,9 +108,9 @@ class StatementRenderer:
             f"<h1>{html.escape(statement.title or problem.name)}</h1>",
             f"<div class=\"meta\">{' / '.join(meta)}</div>",
         ]
-        overview_parts.extend(self._markdown_section("题目描述", statement.description))
-        overview_parts.extend(self._markdown_section("输入", statement.input_format))
-        overview_parts.extend(self._markdown_section("输出", statement.output_format))
+        overview_parts.extend(self._markdown_section("题目描述", statement.description, statement.source_url))
+        overview_parts.extend(self._markdown_section("输入", statement.input_format, statement.source_url))
+        overview_parts.extend(self._markdown_section("输出", statement.output_format, statement.source_url))
 
         sample_parts = []
         for idx, (sample_input, sample_output) in enumerate(statement.samples, start=1):
@@ -118,7 +119,7 @@ class StatementRenderer:
             sample_parts.append(f"<pre>{html.escape(sample_input.rstrip())}</pre>")
             sample_parts.append("<h3>输出</h3>")
             sample_parts.append(f"<pre>{html.escape(sample_output.rstrip())}</pre>")
-        sample_parts.extend(self._markdown_section("注释", statement.hint))
+        sample_parts.extend(self._markdown_section("注释", statement.hint, statement.source_url))
 
         footer = (
             "<div class=\"footer\">"
@@ -134,12 +135,12 @@ class StatementRenderer:
             cards.append("<article id=\"card\" class=\"card\">" + "".join(sample_parts) + footer + "</article>")
         return cards
 
-    def _markdown_section(self, title: str, markdown_text: str) -> List[str]:
+    def _markdown_section(self, title: str, markdown_text: str, source_url: str = "") -> List[str]:
         if not markdown_text.strip():
             return []
         return [
             f"<h2>{html.escape(title)}</h2>",
-            f"<div class=\"markdown\">{_markdown_to_html(markdown_text)}</div>",
+            f"<div class=\"markdown\">{_markdown_to_html(markdown_text, source_url)}</div>",
         ]
 
     def _wrap_page(self, card_html: str) -> str:
@@ -255,7 +256,7 @@ img {{
 </html>"""
 
 
-def _markdown_to_html(markdown_text: str) -> str:
+def _markdown_to_html(markdown_text: str, source_url: str = "") -> str:
     try:
         import markdown
     except ImportError as exc:
@@ -266,10 +267,19 @@ def _markdown_to_html(markdown_text: str) -> str:
         extensions=["extra", "sane_lists", "nl2br"],
         output_format="html5",
     )
-    return _RELATIVE_SRC_RE.sub(
-        lambda match: f"{match.group('prefix')}https://www.luogu.com.cn{match.group('url')}{match.group('suffix')}",
-        rendered,
-    )
+    base_url = _origin(source_url) or "https://www.luogu.com.cn"
+    return _RELATIVE_SRC_RE.sub(lambda match: _absolute_attr(match, base_url), rendered)
+
+
+def _origin(url: str) -> str:
+    parsed = urlsplit(url)
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _absolute_attr(match: re.Match, base_url: str) -> str:
+    return f"{match.group('prefix')}{base_url}{match.group('url')}{match.group('suffix')}"
 
 
 def _short_hash(text: str) -> str:

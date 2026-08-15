@@ -32,6 +32,56 @@ class StorageTest(unittest.TestCase):
             store.clear_active_problem(123)
             self.assertIsNone(store.get_active_problem(123))
 
+    def test_statement_cache_roundtrip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            problem = CFProblem(1, "A", "Theatre Square", 1000)
+            statement = ProblemStatement(
+                pid="1A",
+                title="剧院广场",
+                description="题目描述",
+                input_format="输入",
+                output_format="输出",
+                samples=[("1", "2")],
+                source_url="https://codeforces.com/problemset/problem/1/A",
+            )
+
+            self.assertIsNone(store.get_cached_statement("1A"))
+            store.cache_statement(problem, statement, source="codeforces_llm_translate", translated=True)
+
+            cached = store.get_cached_statement("1A")
+            self.assertIsNotNone(cached)
+            self.assertEqual(cached.title, "剧院广场")
+            self.assertEqual(cached.samples, [("1", "2")])
+
+    def test_statement_cache_can_require_translated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            problem = CFProblem(1, "A", "Theatre Square", 1000)
+            english = ProblemStatement(
+                pid="1A",
+                title="Theatre Square",
+                description="English",
+                input_format="Input",
+                output_format="Output",
+                samples=[],
+            )
+            chinese = ProblemStatement(
+                pid="1A",
+                title="剧院广场",
+                description="中文",
+                input_format="输入",
+                output_format="输出",
+                samples=[],
+            )
+
+            store.cache_statement(problem, english, source="codeforces", translated=False)
+            self.assertIsNotNone(store.get_cached_statement("1A"))
+            self.assertIsNone(store.get_cached_statement("1A", require_translated=True))
+
+            store.cache_statement(problem, chinese, source="codeforces_llm_translate", translated=True)
+            self.assertEqual(store.get_cached_statement("1A", require_translated=True).title, "剧院广场")
+
     def test_user_stats(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = SentProblemStore(Path(tmp) / "bot.sqlite3")

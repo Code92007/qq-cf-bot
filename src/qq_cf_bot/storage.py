@@ -106,6 +106,51 @@ class SentProblemStore:
                 ),
             )
 
+    def get_cached_statement(self, cf_id: str, require_translated: bool = False) -> Optional[ProblemStatement]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                select statement_json
+                from statement_cache
+                where cf_id = ? and (? = 0 or translated = 1)
+                """,
+                (cf_id, 1 if require_translated else 0),
+            ).fetchone()
+        if row is None:
+            return None
+        return _statement_from_json(row[0])
+
+    def cache_statement(
+        self,
+        problem: CFProblem,
+        statement: ProblemStatement,
+        source: str,
+        translated: bool,
+    ) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                insert into statement_cache
+                    (cf_id, problem_json, statement_json, source, translated, cached_at)
+                values (?, ?, ?, ?, ?, ?)
+                on conflict(cf_id) do update set
+                    problem_json = excluded.problem_json,
+                    statement_json = excluded.statement_json,
+                    source = excluded.source,
+                    translated = excluded.translated,
+                    cached_at = excluded.cached_at
+                """,
+                (
+                    problem.cf_id,
+                    json.dumps(_problem_to_json(problem), ensure_ascii=False),
+                    json.dumps(_statement_to_json(statement), ensure_ascii=False),
+                    source,
+                    1 if translated else 0,
+                    now,
+                ),
+            )
+
     def clear_active_problem(self, group_id: int) -> None:
         with self._connect() as conn:
             conn.execute("delete from active_problems where group_id = ?", (str(group_id),))
@@ -414,6 +459,18 @@ class SentProblemStore:
                     statement_json text not null,
                     image_paths_json text not null,
                     created_at text not null
+                )
+                """
+            )
+            conn.execute(
+                """
+                create table if not exists statement_cache (
+                    cf_id text primary key,
+                    problem_json text not null,
+                    statement_json text not null,
+                    source text not null,
+                    translated integer not null,
+                    cached_at text not null
                 )
                 """
             )

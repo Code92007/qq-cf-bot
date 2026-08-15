@@ -9,12 +9,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
+from .cf_statement import CodeforcesStatementClient
 from .codeforces import CodeforcesClient
 from .config import Config
 from .judge import SolutionJudge
 from .luogu import LuoguClient
 from .message import extract_plain_text, looks_like_code_submission, parse_code_submission, parse_command
-from .models import CFProblem, CodeSubmission, GroupMessage, RatingRange, RemoteJudgeResult
+from .models import CFProblem, CodeSubmission, GroupMessage, ProblemStatement, RatingRange, RemoteJudgeResult
 from .onebot import OneBotClient
 from .rank_renderer import RanklistRenderer
 from .rating import accepted_rating_update
@@ -23,6 +24,7 @@ from .selector import ProblemSelector
 from .solution_bank import SolutionBank
 from .storage import SentProblemStore
 from .submitter import CodeforcesRemoteJudge
+from .translator import OpenAIStatementTranslator
 
 
 LOGGER = logging.getLogger(__name__)
@@ -61,6 +63,7 @@ class CodeforcesPushBot:
         self.config = config
         self.cf = CodeforcesClient(config.cache_path, config.cf_cache_ttl_seconds)
         self.luogu = LuoguClient()
+        self.cf_statement = CodeforcesStatementClient()
         self.store = SentProblemStore(config.db_path, config.dedup_scope)
         self.selector = ProblemSelector(config.min_rating, config.max_rating)
         self.renderer = StatementRenderer(
@@ -100,6 +103,14 @@ class CodeforcesPushBot:
             fetch_luogu=config.solution_bank_fetch_luogu,
             fetch_cf_editorial=config.solution_bank_fetch_cf_editorial,
             fetch_cf_ac_code=config.solution_bank_fetch_cf_ac_code,
+        )
+        self.translator = OpenAIStatementTranslator(
+            api_url=config.translate_api_url,
+            api_key=config.translate_api_key,
+            model=config.translate_model,
+            timeout_seconds=config.translate_timeout_seconds,
+            max_chars=config.translate_max_chars,
+            enabled=config.translate_enabled,
         )
         self._code_queue: "queue.Queue[_QueuedCodeSubmission]" = queue.Queue()
         self._code_worker_started = False
@@ -369,7 +380,7 @@ class CodeforcesPushBot:
                 break
             attempted += 1
             try:
-                statement = self.luogu.fetch_statement(problem)
+                statement = self._fetch_renderable_statement(problem)
                 images = self.renderer.render(problem, statement)
             except Exception as exc:
                 last_error = exc
@@ -387,6 +398,34 @@ class CodeforcesPushBot:
         raise RuntimeError(
             f"no unsent Codeforces problem remains in rating range {rating_range.min_rating}-{rating_range.max_rating}"
         )
+
+    def _fetch_renderable_statement(self, problem: CFProblem) -> ProblemStatement:
+        cached = self.store.get_cached_statement(problem.cf_id, require_translated=self.translator.configured)
+        if cached is not None:
+            return cached
+        cached_untranslated = self.store.get_cached_statement(problem.cf_id) if self.translator.configured else None
+
+        try:
+            statement = self.luogu.fetch_statement(problem)
+            self.store.cache_statement(problem, statement, source="luogu", translated=True)
+            return statement
+        except Exception as luogu_error:
+            if self.config.fallback_statement_source != "codeforces":
+                raise
+            LOGGER.warning("Luogu statement failed for %s, falling back to Codeforces: %s", problem.cf_id, luogu_error)
+
+        statement = cached_untranslated or self.cf_statement.fetch_statement(problem)
+        if not self.translator.configured:
+            self.store.cache_statement(problem, statement, source="codeforces", translated=False)
+            return statement
+        try:
+            translated = self.translator.translate_statement(statement)
+            self.store.cache_statement(problem, translated, source="codeforces_llm_translate", translated=True)
+            return translated
+        except Exception as exc:
+            LOGGER.warning("statement translation failed for %s, using English Codeforces statement: %s", problem.cf_id, exc)
+            self.store.cache_statement(problem, statement, source="codeforces", translated=False)
+            return statement
 
     def _group_lock(self, group_id: int) -> threading.Lock:
         with self._locks_lock:

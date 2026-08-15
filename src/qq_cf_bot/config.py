@@ -70,6 +70,13 @@ class Config:
     solution_bank_fetch_luogu: bool
     solution_bank_fetch_cf_editorial: bool
     solution_bank_fetch_cf_ac_code: bool
+    fallback_statement_source: str
+    translate_enabled: bool
+    translate_api_url: str
+    translate_api_key: str
+    translate_model: str
+    translate_timeout_seconds: int
+    translate_max_chars: int
     cf_submit_enabled: bool
     cf_username: str
     cf_password: str
@@ -85,6 +92,9 @@ class Config:
     @classmethod
     def from_env(cls) -> "Config":
         root = Path(os.getenv("BOT_DATA_DIR", "data"))
+        judge_api_url = os.getenv("JUDGE_API_URL", "https://api.openai.com/v1/chat/completions").rstrip("/")
+        judge_api_key = os.getenv("JUDGE_API_KEY", "")
+        judge_model = os.getenv("JUDGE_MODEL", "")
         dedup_scope = os.getenv("BOT_DEDUP_SCOPE", "group").strip().lower()
         if dedup_scope not in {"group", "global"}:
             raise ValueError("BOT_DEDUP_SCOPE must be either 'group' or 'global'")
@@ -96,6 +106,9 @@ class Config:
         onebot_image_mode = os.getenv("ONEBOT_IMAGE_MODE", "base64").strip().lower()
         if onebot_image_mode not in {"base64", "file_uri"}:
             raise ValueError("ONEBOT_IMAGE_MODE must be either 'base64' or 'file_uri'")
+        fallback_statement_source = os.getenv("FALLBACK_STATEMENT_SOURCE", "codeforces").strip().lower()
+        if fallback_statement_source not in {"codeforces", "none"}:
+            raise ValueError("FALLBACK_STATEMENT_SOURCE must be either 'codeforces' or 'none'")
 
         return cls(
             host=os.getenv("BOT_HOST", "127.0.0.1"),
@@ -117,9 +130,9 @@ class Config:
             render_max_slice_height=_int_env("RENDER_MAX_SLICE_HEIGHT", 2400),
             initial_rating=float(os.getenv("RANK_INITIAL_RATING", "1500")),
             rating_k_factor=float(os.getenv("RANK_K_FACTOR", "64")),
-            judge_api_url=os.getenv("JUDGE_API_URL", "https://api.openai.com/v1/chat/completions").rstrip("/"),
-            judge_api_key=os.getenv("JUDGE_API_KEY", ""),
-            judge_model=os.getenv("JUDGE_MODEL", ""),
+            judge_api_url=judge_api_url,
+            judge_api_key=judge_api_key,
+            judge_model=judge_model,
             judge_enabled=_bool_env("JUDGE_ENABLED", True),
             judge_timeout_seconds=_int_env("JUDGE_TIMEOUT_SECONDS", 60),
             judge_statement_max_chars=_int_env("JUDGE_STATEMENT_MAX_CHARS", 12_000),
@@ -131,6 +144,13 @@ class Config:
             solution_bank_fetch_luogu=_bool_env("SOLUTION_BANK_FETCH_LUOGU", True),
             solution_bank_fetch_cf_editorial=_bool_env("SOLUTION_BANK_FETCH_CF_EDITORIAL", True),
             solution_bank_fetch_cf_ac_code=_bool_env("SOLUTION_BANK_FETCH_CF_AC_CODE", False),
+            fallback_statement_source=fallback_statement_source,
+            translate_enabled=_bool_env("TRANSLATE_ENABLED", False),
+            translate_api_url=(os.getenv("TRANSLATE_API_URL") or judge_api_url).rstrip("/"),
+            translate_api_key=os.getenv("TRANSLATE_API_KEY") or judge_api_key,
+            translate_model=os.getenv("TRANSLATE_MODEL") or judge_model,
+            translate_timeout_seconds=_int_env("TRANSLATE_TIMEOUT_SECONDS", 60),
+            translate_max_chars=_int_env("TRANSLATE_MAX_CHARS", 24_000),
             cf_submit_enabled=_bool_env("CF_SUBMIT_ENABLED", False),
             cf_username=os.getenv("CF_USERNAME", ""),
             cf_password=os.getenv("CF_PASSWORD", ""),
