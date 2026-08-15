@@ -64,6 +64,7 @@ python -m qq_cf_bot
 | `CF_MIN_RATING` | `1900` | 默认最低题目 rating |
 | `CF_MAX_RATING` | `2600` | 默认最高题目 rating |
 | `BOT_DEDUP_SCOPE` | `group` | `group` 每群去重，`global` 全局去重 |
+| `FALLBACK_STATEMENT_SOURCE` | `codeforces` | 洛谷中文题面失败时，回退到 Codeforces 官方英文题面 |
 | `CF_SUBMIT_ENABLED` | `false` | 是否开启 `/submitcode` 远端提交 |
 | `CF_USERNAME` | 空 | Codeforces 登录账号或邮箱 |
 | `CF_PASSWORD` | 空 | Codeforces 密码，只放在服务器 `.env`，不要提交到 GitHub |
@@ -80,6 +81,12 @@ python -m qq_cf_bot
 | `JUDGE_MODEL` | 空 | 口头做法审核模型名 |
 | `JUDGE_STATEMENT_MAX_CHARS` | `12000` | 单次判题传给模型的题面最大字符数 |
 | `JUDGE_SOLUTION_CONTEXT_MAX_CHARS` | `10000` | 单次判题传给模型的题解库上下文最大字符数 |
+| `TRANSLATE_ENABLED` | `false` | 是否用 OpenAI-compatible 模型把 CF 英文题面翻译成中文 |
+| `TRANSLATE_API_URL` | `JUDGE_API_URL` | 翻译模型 API；为空时复用 `JUDGE_API_URL` |
+| `TRANSLATE_API_KEY` | `JUDGE_API_KEY` | 翻译模型 key；为空时复用 `JUDGE_API_KEY` |
+| `TRANSLATE_MODEL` | `JUDGE_MODEL` | 翻译模型名；为空时复用 `JUDGE_MODEL` |
+| `TRANSLATE_TIMEOUT_SECONDS` | `60` | 单次翻译请求超时 |
+| `TRANSLATE_MAX_CHARS` | `24000` | 单次翻译传给模型的题面最大字符数 |
 | `SOLUTION_BANK_ENABLED` | `true` | 是否开启题解库缓存 |
 | `SOLUTION_BANK_MIN_REFS` | `1` | 每题至少缓存多少条参考材料后不再主动抓取 |
 | `SOLUTION_BANK_MAX_REFS` | `4` | 每题最多缓存/提供多少条参考材料 |
@@ -131,6 +138,12 @@ int main() { return 0; }
 4. 把题面和受限长度的参考材料交给大模型审核。
 
 题解库保存在 `data/bot.sqlite3`，一题可以对应多条题解，后续同一题不会重复抓取。模型只用于做法审核，不用于 `/submitcode` 的最终 verdict。
+
+## 题面兜底和缓存
+
+`/new` 优先抓取洛谷中文题面。若洛谷返回 403 或暂时不可用，默认回退到 Codeforces 官方英文题面，避免出题失败。
+
+如果配置 `TRANSLATE_ENABLED=true` 且提供 OpenAI-compatible 翻译模型，机器人会把 Codeforces 英文题面翻译成中文再渲染。成功生成的题面会缓存到 `data/bot.sqlite3` 的题面缓存中，当前题图片也会保存在 `data/assets`；后续同题复用缓存，不会重复请求翻译。
 
 ## GitHub 上传注意
 
