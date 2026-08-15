@@ -27,7 +27,7 @@
 ```bash
 cp .env.example .env
 # 编辑 .env，填 ONEBOT_HTTP_URL、BOT_ALLOWED_GROUPS、CF_* 等配置
-docker compose up -d --build
+./scripts/deploy.sh
 ```
 
 健康检查：
@@ -35,6 +35,8 @@ docker compose up -d --build
 ```bash
 curl http://127.0.0.1:8088/health
 ```
+
+`scripts/deploy.sh` 会先执行 Tailscale preflight，再执行 `docker compose up -d --build`。如果你不需要 Tailscale，把 `.env` 里的 `TAILSCALE_REQUIRED=false` 留着即可。
 
 OneBot 和机器人在同一台机器时，`ONEBOT_HTTP_URL` 通常填 `http://127.0.0.1:3000`。如果 OneBot 在另一台机器，填 OneBot HTTP API 的可访问地址。
 
@@ -83,6 +85,11 @@ python -m qq_cf_bot
 | `JUDGE_WIRE_API` | 自动 | 模型接口协议；支持 `chat_completions` 和 `responses` |
 | `JUDGE_STATEMENT_MAX_CHARS` | `12000` | 单次判题传给模型的题面最大字符数 |
 | `JUDGE_SOLUTION_CONTEXT_MAX_CHARS` | `10000` | 单次判题传给模型的题解库上下文最大字符数 |
+| `TAILSCALE_REQUIRED` | `false` | `true` 时 `scripts/deploy.sh` 会强制检查 Tailscale 已启动并已登录 |
+| `TAILSCALE_AUTHKEY` | 空 | 可选，服务器自动 `tailscale up` 用的一次性 auth key；不要提交到 Git |
+| `TAILSCALE_HOSTNAME` | `qq-cf-bot` | 服务器加入 tailnet 时显示的设备名 |
+| `TAILSCALE_EXTRA_ARGS` | 空 | 可选，传给 `tailscale up` 的额外参数，例如 `--accept-routes` |
+| `TAILSCALE_PING_HOST` | 空 | 可选，部署前必须能 ping 通的 tailnet 主机；为空时会从 `JUDGE_API_URL` 自动识别 `100.*` 或 `*.ts.net` |
 | `TRANSLATE_ENABLED` | `true` | 是否用 OpenAI-compatible 模型把 CF 英文题面翻译成中文；未配置 key/model 时不会发起请求 |
 | `TRANSLATE_API_URL` | `JUDGE_API_URL` | 翻译模型 API；为空时复用 `JUDGE_API_URL` |
 | `TRANSLATE_API_KEY` | `JUDGE_API_KEY` | 翻译模型 key；为空时复用 `JUDGE_API_KEY` |
@@ -170,11 +177,38 @@ JUDGE_MODEL=<codex-model>
 
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
+sudo systemctl enable --now tailscaled
 sudo tailscale up --authkey tskey-... --hostname qq-cf-bot
 tailscale status
 ```
 
 `tskey-...` 建议使用 Tailscale 后台生成的一次性 auth key，只放在服务器命令行或部署密钥里，不要写进 Git 仓库。
+
+为了以后不忘记启动 Tailscale，服务器 `.env` 里建议加：
+
+```env
+TAILSCALE_REQUIRED=true
+TAILSCALE_AUTHKEY=tskey-...
+TAILSCALE_HOSTNAME=qq-cf-bot
+TAILSCALE_PING_HOST=<模型服务的 100.x 地址或 ts.net 域名>
+```
+
+之后部署统一跑：
+
+```bash
+./scripts/deploy.sh
+```
+
+脚本会自动启动 `tailscaled`，未登录时用 `TAILSCALE_AUTHKEY` 执行 `tailscale up`，并在模型服务不可达时拒绝启动 Docker。
+
+如果希望服务器重启后也自动按这个顺序拉起工程，可以使用 `deploy/systemd/qq-cf-bot.service.example`：
+
+```bash
+sudo cp deploy/systemd/qq-cf-bot.service.example /etc/systemd/system/qq-cf-bot.service
+sudo sed -i 's#/opt/qq-cf-bot#'\"$(pwd)\"'#g' /etc/systemd/system/qq-cf-bot.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now qq-cf-bot
+```
 
 ## 题面兜底和缓存
 

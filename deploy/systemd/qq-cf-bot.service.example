@@ -1,0 +1,16 @@
+[Unit]
+Description=QQ Codeforces Bot Docker Compose stack
+After=network-online.target docker.service tailscaled.service
+Wants=network-online.target
+Requires=docker.service tailscaled.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/qq-cf-bot
+ExecStart=/opt/qq-cf-bot/scripts/deploy.sh
+ExecStop=/usr/bin/docker compose down
+RemainAfterExit=yes
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
