@@ -16,8 +16,9 @@ from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple
 
 
-SUPPORTED_WIRE_APIS = frozenset({"chat_completions", "responses", "responses_websocket"})
+SUPPORTED_WIRE_APIS = frozenset({"chat_completions", "responses", "responses_stream", "responses_websocket"})
 RESPONSES_WEBSOCKET_BETA = "responses_websockets=2026-02-06"
+JSON_OUTPUT_SUFFIX = "\n\nOutput requirement: return only valid json."
 
 
 class OpenAICompatibleTextClient:
@@ -103,13 +104,13 @@ class _HTTPTransport(_BaseTransport):
                 body = response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             error_body = exc.read().decode("utf-8", errors="replace")
-            if self.config.wire_api == "responses" and exc.code == 426 and "websocket" in error_body.lower():
-                return _ResponsesWebSocketTransport(
+            if self.config.wire_api == "responses" and exc.code == 426 and _mentions_upgrade_required(error_body):
+                return _ResponsesStreamTransport(
                     _TransportConfig(
                         api_url=self.config.api_url,
                         api_key=self.config.api_key,
                         model=self.config.model,
-                        wire_api="responses_websocket",
+                        wire_api="responses_stream",
                         timeout_seconds=self.config.timeout_seconds,
                     )
                 ).complete_json(system_prompt, user_prompt)
@@ -120,6 +121,35 @@ class _HTTPTransport(_BaseTransport):
         if error:
             raise RuntimeError(f"model API returned error: {error!r}")
         return extract_text(result)
+
+
+class _ResponsesStreamTransport(_BaseTransport):
+    def complete_json(self, system_prompt: str, user_prompt: str) -> str:
+        if not self.configured:
+            raise RuntimeError("model API is not configured")
+
+        payload = _responses_payload(self.config.model, system_prompt, user_prompt, include_temperature=False)
+        payload["stream"] = True
+        payload["store"] = False
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        request = urllib.request.Request(
+            self.api_url,
+            data=data,
+            headers={
+                "Accept": "text/event-stream",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.config.api_key}",
+                "User-Agent": "qq-cf-bot/0.1",
+                "x-client-request-id": str(uuid.uuid4()),
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=self.config.timeout_seconds) as response:
+                return _read_responses_sse_json(response, self.config.timeout_seconds)
+        except urllib.error.HTTPError as exc:
+            error_body = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"model API returned HTTP {exc.code}: {error_body}") from exc
 
 
 class _ResponsesWebSocketTransport(_BaseTransport):
@@ -158,6 +188,8 @@ def _make_transport(
         wire_api=normalize_wire_api(wire_api),
         timeout_seconds=timeout_seconds,
     )
+    if config.wire_api == "responses_stream":
+        return _ResponsesStreamTransport(config)
     if config.wire_api == "responses_websocket":
         return _ResponsesWebSocketTransport(config)
     return _HTTPTransport(config)
@@ -165,7 +197,7 @@ def _make_transport(
 
 def _payload(wire_api: str, model: str, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
     normalized = normalize_wire_api(wire_api)
-    if normalized in {"responses", "responses_websocket"}:
+    if normalized in {"responses", "responses_stream", "responses_websocket"}:
         return _responses_payload(model, system_prompt, user_prompt, include_temperature=normalized == "responses")
     return {
         "model": model,
@@ -187,7 +219,7 @@ def _responses_payload(
     payload = {
         "model": model,
         "instructions": system_prompt,
-        "input": [{"role": "user", "content": [{"type": "input_text", "text": user_prompt}]}],
+        "input": [{"role": "user", "content": [{"type": "input_text", "text": user_prompt + JSON_OUTPUT_SUFFIX}]}],
         "text": {"format": {"type": "json_object"}},
     }
     if include_temperature:
@@ -204,6 +236,11 @@ def normalize_wire_api(value: str) -> str:
         "response": "responses",
         "responses": "responses",
         "responses_http": "responses",
+        "response_stream": "responses_stream",
+        "responses_stream": "responses_stream",
+        "response_sse": "responses_stream",
+        "responses_sse": "responses_stream",
+        "sse": "responses_stream",
         "response_websocket": "responses_websocket",
         "responses_websocket": "responses_websocket",
         "response_ws": "responses_websocket",
@@ -212,7 +249,9 @@ def normalize_wire_api(value: str) -> str:
         "ws": "responses_websocket",
     }
     if normalized not in aliases:
-        raise ValueError("wire API must be one of 'chat_completions', 'responses', or 'responses_websocket'")
+        raise ValueError(
+            "wire API must be one of 'chat_completions', 'responses', 'responses_stream', or 'responses_websocket'"
+        )
     return aliases[normalized]
 
 
@@ -233,7 +272,7 @@ def endpoint_url(api_url: str, wire_api: str) -> str:
     if not url:
         return ""
     wire_api = normalize_wire_api(wire_api)
-    if wire_api in {"responses", "responses_websocket"}:
+    if wire_api in {"responses", "responses_stream", "responses_websocket"}:
         url = _coerce_scheme(url, websocket=wire_api == "responses_websocket")
         if url.endswith("/chat/completions"):
             return url[: -len("/chat/completions")] + "/responses"
@@ -261,6 +300,11 @@ def _coerce_scheme(url: str, websocket: bool) -> str:
     if url.startswith("ws://"):
         return "http://" + url[len("ws://") :]
     return url
+
+
+def _mentions_upgrade_required(text: str) -> bool:
+    lowered = text.lower()
+    return "upgrade" in lowered or "websocket" in lowered or "event-stream" in lowered
 
 
 def extract_text(result: Dict[str, Any]) -> str:
@@ -465,21 +509,65 @@ class _WebSocketConnection:
 
 def _read_responses_websocket_json(websocket: _WebSocketConnection, timeout_seconds: int) -> str:
     deadline = time.monotonic() + timeout_seconds
-    text_parts: List[str] = []
-    final_text: Optional[str] = None
+    collector = _ResponseTextCollector()
     while time.monotonic() < deadline:
         event = json.loads(websocket.recv_text())
+        result = collector.add(event)
+        if result is not None:
+            return result
+
+    raise RuntimeError("model API websocket timed out before response.completed")
+
+
+def _read_responses_sse_json(response: Any, timeout_seconds: int) -> str:
+    deadline = time.monotonic() + timeout_seconds
+    collector = _ResponseTextCollector()
+    data_lines: List[str] = []
+
+    def flush_event() -> Optional[str]:
+        if not data_lines:
+            return None
+        data = "\n".join(data_lines).strip()
+        data_lines.clear()
+        if not data or data == "[DONE]":
+            return None
+        return collector.add(json.loads(data))
+
+    for raw_line in response:
+        if time.monotonic() > deadline:
+            break
+        line = raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
+        if not line:
+            result = flush_event()
+            if result is not None:
+                return result
+            continue
+        if line.startswith("data:"):
+            data_lines.append(line[5:].lstrip())
+
+    result = flush_event()
+    if result is not None:
+        return result
+    raise RuntimeError("model API stream ended before response.completed")
+
+
+class _ResponseTextCollector:
+    def __init__(self) -> None:
+        self.text_parts: List[str] = []
+        self.final_text: Optional[str] = None
+
+    def add(self, event: Dict[str, Any]) -> Optional[str]:
         event_type = event.get("type")
         error = event.get("error")
         if error:
             raise RuntimeError(f"model API returned error: {error!r}")
 
         if event_type == "response.output_text.delta" and isinstance(event.get("delta"), str):
-            text_parts.append(event["delta"])
-            continue
+            self.text_parts.append(event["delta"])
+            return None
         if event_type == "response.output_text.done" and isinstance(event.get("text"), str):
-            final_text = event["text"]
-            continue
+            self.final_text = event["text"]
+            return None
         if event_type in {"response.completed", "response.done"}:
             response = event.get("response")
             if isinstance(response, dict):
@@ -487,12 +575,11 @@ def _read_responses_websocket_json(websocket: _WebSocketConnection, timeout_seco
                     return extract_text(response)
                 except RuntimeError:
                     pass
-            return final_text or "".join(text_parts)
+            return self.final_text or "".join(self.text_parts)
         if event_type in {"response.failed", "response.incomplete"}:
             response_error = event.get("response", {}).get("error") if isinstance(event.get("response"), dict) else None
             raise RuntimeError(f"model API returned error: {response_error or event!r}")
-
-    raise RuntimeError("model API websocket timed out before response.completed")
+        return None
 
 
 def _recv_exact(raw_socket: socket.socket, size: int) -> bytes:

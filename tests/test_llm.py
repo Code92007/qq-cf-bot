@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from qq_cf_bot.llm import (
     OpenAICompatibleTextClient,
+    _read_responses_sse_json,
     _read_responses_websocket_json,
     endpoint_url,
     extract_text,
@@ -35,6 +36,10 @@ class LLMClientTest(unittest.TestCase):
             "ws://100.64.0.1:8080/responses",
         )
         self.assertEqual(
+            endpoint_url("http://100.64.0.1:8080", "responses_stream"),
+            "http://100.64.0.1:8080/responses",
+        )
+        self.assertEqual(
             endpoint_url("https://api.openai.com/v1", "responses_ws"),
             "wss://api.openai.com/v1/responses",
         )
@@ -52,6 +57,8 @@ class LLMClientTest(unittest.TestCase):
         )
 
     def test_normalizes_responses_websocket_aliases(self):
+        self.assertEqual(normalize_wire_api("responses_sse"), "responses_stream")
+        self.assertEqual(normalize_wire_api("responses-stream"), "responses_stream")
         self.assertEqual(normalize_wire_api("responses-websocket"), "responses_websocket")
         self.assertEqual(normalize_wire_api("responses_ws"), "responses_websocket")
         self.assertEqual(normalize_wire_api("websocket"), "responses_websocket")
@@ -63,6 +70,7 @@ class LLMClientTest(unittest.TestCase):
 
         self.assertEqual(payload["instructions"], "system")
         self.assertEqual(payload["input"][0]["content"][0]["type"], "input_text")
+        self.assertIn("valid json", payload["input"][0]["content"][0]["text"])
         self.assertEqual(payload["text"]["format"]["type"], "json_object")
 
     def test_extracts_text_from_chat_and_responses_results(self):
@@ -115,7 +123,24 @@ class LLMClientTest(unittest.TestCase):
 
         self.assertEqual(_read_responses_websocket_json(websocket, 60), "{\"ok\":true}")
 
-    def test_responses_http_426_falls_back_to_websocket(self):
+    def test_collects_responses_sse_output_text_events(self):
+        response = FakeSseResponse(
+            [
+                'event: response.output_text.delta\n',
+                'data: {"type":"response.output_text.delta","delta":"{\\"ok\\":"}\n',
+                "\n",
+                'event: response.output_text.delta\n',
+                'data: {"type":"response.output_text.delta","delta":"true}"}\n',
+                "\n",
+                'event: response.completed\n',
+                'data: {"type":"response.completed","response":{"output":[]}}\n',
+                "\n",
+            ]
+        )
+
+        self.assertEqual(_read_responses_sse_json(response, 60), "{\"ok\":true}")
+
+    def test_responses_http_426_falls_back_to_streaming_responses(self):
         client = OpenAICompatibleTextClient("http://llm.internal", "key", "model", "responses")
         http_error = urllib.error.HTTPError(
             "http://llm.internal/responses",
@@ -126,7 +151,7 @@ class LLMClientTest(unittest.TestCase):
         )
 
         with patch("urllib.request.urlopen", side_effect=http_error), patch(
-            "qq_cf_bot.llm._ResponsesWebSocketTransport.complete_json",
+            "qq_cf_bot.llm._ResponsesStreamTransport.complete_json",
             return_value='{"accepted":true}',
         ) as complete_json:
             self.assertEqual(client.complete_json("system", "user"), '{"accepted":true}')
@@ -144,6 +169,14 @@ class FakeWebSocket:
         if not self.events:
             raise EOFError("no more events")
         return self.events.pop(0)
+
+
+class FakeSseResponse:
+    def __init__(self, lines):
+        self.lines = [line.encode("utf-8") for line in lines]
+
+    def __iter__(self):
+        return iter(self.lines)
 
 
 class FakeErrorBody:

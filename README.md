@@ -82,7 +82,7 @@ python -m qq_cf_bot
 | `JUDGE_API_URL` | `https://api.openai.com/v1/chat/completions` | OpenAI-compatible 模型服务地址；可填完整 endpoint 或 provider base URL |
 | `JUDGE_API_KEY` | 空 | 口头做法审核模型 key |
 | `JUDGE_MODEL` | 空 | 口头做法审核模型名 |
-| `JUDGE_WIRE_API` | 自动 | 模型接口协议；支持 `chat_completions`、`responses` 和 `responses_websocket` |
+| `JUDGE_WIRE_API` | 自动 | 模型接口协议；支持 `chat_completions`、`responses`、`responses_stream` 和 `responses_websocket` |
 | `JUDGE_STATEMENT_MAX_CHARS` | `12000` | 单次判题传给模型的题面最大字符数 |
 | `JUDGE_SOLUTION_CONTEXT_MAX_CHARS` | `10000` | 单次判题传给模型的题解库上下文最大字符数 |
 | `TAILSCALE_REQUIRED` | `false` | `true` 时 `scripts/deploy.sh` 会强制检查 Tailscale 已启动并已登录 |
@@ -154,7 +154,8 @@ int main() { return 0; }
 `/submit` 调用的是统一的大模型 JSON 输出能力，当前支持三种 OpenAI-compatible 协议：
 
 - `chat_completions`：传统 `/chat/completions` HTTP POST。
-- `responses`：`/responses` HTTP POST；如果服务端返回 `426 WebSocket upgrade required`，机器人会自动改走 WebSocket。
+- `responses`：`/responses` HTTP POST；如果服务端返回 `426 WebSocket upgrade required`，机器人会自动改走 SSE 流式 Responses。
+- `responses_stream`：Codex CLI 常用的 `/responses` HTTP SSE 流式接口，发送 `stream: true` 和 `Accept: text/event-stream`。
 - `responses_websocket`：Codex 风格的 `/responses` WebSocket，首帧发送顶层 `response.create`。
 
 普通 OpenAI-compatible Chat Completions 服务可以这样配：
@@ -180,7 +181,7 @@ JUDGE_MODEL=<codex-model>
 如果这个 provider 的 `/responses` 返回 `WebSocket upgrade required`，可以直接显式改成：
 
 ```env
-JUDGE_WIRE_API=responses_websocket
+JUDGE_WIRE_API=responses_stream
 JUDGE_API_URL=http://<codex-provider-base-url>
 ```
 
