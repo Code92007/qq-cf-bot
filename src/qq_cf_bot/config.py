@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import FrozenSet
+from typing import FrozenSet, Optional
+
+from .llm import infer_wire_api, normalize_wire_api
 
 
 def _int_env(name: str, default: int) -> int:
@@ -28,11 +30,26 @@ def _groups_env(name: str) -> FrozenSet[int]:
     return frozenset(groups)
 
 
+def _optional_int_env(name: str) -> Optional[int]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer, got {raw!r}") from exc
+
+
 def _bool_env(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
     if raw is None or raw == "":
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _wire_api_env(name: str, default: str) -> str:
+    raw = os.getenv(name, "").strip()
+    return normalize_wire_api(raw or default)
 
 
 @dataclass(frozen=True)
@@ -42,6 +59,7 @@ class Config:
     onebot_http_url: str
     onebot_access_token: str
     onebot_image_mode: str
+    onebot_self_id: Optional[int]
     allowed_groups: FrozenSet[int]
     db_path: Path
     cache_path: Path
@@ -59,6 +77,7 @@ class Config:
     judge_api_url: str
     judge_api_key: str
     judge_model: str
+    judge_wire_api: str
     judge_enabled: bool
     judge_timeout_seconds: int
     judge_statement_max_chars: int
@@ -75,6 +94,7 @@ class Config:
     translate_api_url: str
     translate_api_key: str
     translate_model: str
+    translate_wire_api: str
     translate_timeout_seconds: int
     translate_max_chars: int
     cf_submit_enabled: bool
@@ -95,6 +115,7 @@ class Config:
         judge_api_url = os.getenv("JUDGE_API_URL", "https://api.openai.com/v1/chat/completions").rstrip("/")
         judge_api_key = os.getenv("JUDGE_API_KEY", "")
         judge_model = os.getenv("JUDGE_MODEL", "")
+        judge_wire_api = _wire_api_env("JUDGE_WIRE_API", infer_wire_api(judge_api_url))
         dedup_scope = os.getenv("BOT_DEDUP_SCOPE", "group").strip().lower()
         if dedup_scope not in {"group", "global"}:
             raise ValueError("BOT_DEDUP_SCOPE must be either 'group' or 'global'")
@@ -116,6 +137,7 @@ class Config:
             onebot_http_url=os.getenv("ONEBOT_HTTP_URL", "http://127.0.0.1:3000").rstrip("/"),
             onebot_access_token=os.getenv("ONEBOT_ACCESS_TOKEN", ""),
             onebot_image_mode=onebot_image_mode,
+            onebot_self_id=_optional_int_env("ONEBOT_SELF_ID"),
             allowed_groups=_groups_env("BOT_ALLOWED_GROUPS"),
             db_path=Path(os.getenv("BOT_DB_PATH", str(root / "bot.sqlite3"))),
             cache_path=Path(os.getenv("CF_CACHE_PATH", str(root / "codeforces_problems.json"))),
@@ -133,6 +155,7 @@ class Config:
             judge_api_url=judge_api_url,
             judge_api_key=judge_api_key,
             judge_model=judge_model,
+            judge_wire_api=judge_wire_api,
             judge_enabled=_bool_env("JUDGE_ENABLED", True),
             judge_timeout_seconds=_int_env("JUDGE_TIMEOUT_SECONDS", 60),
             judge_statement_max_chars=_int_env("JUDGE_STATEMENT_MAX_CHARS", 12_000),
@@ -145,10 +168,11 @@ class Config:
             solution_bank_fetch_cf_editorial=_bool_env("SOLUTION_BANK_FETCH_CF_EDITORIAL", True),
             solution_bank_fetch_cf_ac_code=_bool_env("SOLUTION_BANK_FETCH_CF_AC_CODE", False),
             fallback_statement_source=fallback_statement_source,
-            translate_enabled=_bool_env("TRANSLATE_ENABLED", False),
+            translate_enabled=_bool_env("TRANSLATE_ENABLED", True),
             translate_api_url=(os.getenv("TRANSLATE_API_URL") or judge_api_url).rstrip("/"),
             translate_api_key=os.getenv("TRANSLATE_API_KEY") or judge_api_key,
             translate_model=os.getenv("TRANSLATE_MODEL") or judge_model,
+            translate_wire_api=_wire_api_env("TRANSLATE_WIRE_API", judge_wire_api),
             translate_timeout_seconds=_int_env("TRANSLATE_TIMEOUT_SECONDS", 60),
             translate_max_chars=_int_env("TRANSLATE_MAX_CHARS", 24_000),
             cf_submit_enabled=_bool_env("CF_SUBMIT_ENABLED", False),

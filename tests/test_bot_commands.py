@@ -1,6 +1,6 @@
 import unittest
 
-from qq_cf_bot.bot import _parse_rating_range
+from qq_cf_bot.bot import _needs_title_translation, _parse_rating_range
 
 
 class BotCommandTest(unittest.TestCase):
@@ -14,6 +14,11 @@ class BotCommandTest(unittest.TestCase):
         self.assertIsNone(_parse_rating_range("abc"))
         self.assertIsNone(_parse_rating_range("700 2600"))
         self.assertIsNone(_parse_rating_range("1900 5000"))
+
+    def test_detects_untranslated_english_title(self):
+        self.assertTrue(_needs_title_translation("Don't fear, DravDe is kind"))
+        self.assertFalse(_needs_title_translation("不要害怕，DravDe 很善良"))
+        self.assertFalse(_needs_title_translation(""))
 
 
 if __name__ == "__main__":

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import json
 import re
-import urllib.error
-import urllib.request
 from typing import Sequence
 
+from .llm import OpenAICompatibleTextClient
 from .models import CFProblem, JudgeResult, ProblemStatement, SolutionReference
 
 
@@ -19,10 +18,15 @@ class SolutionJudge:
         max_statement_chars: int,
         max_solution_context_chars: int,
         enabled: bool = True,
+        wire_api: str = "chat_completions",
     ) -> None:
-        self.api_url = api_url.rstrip("/")
-        self.api_key = api_key
-        self.model = model
+        self.client = OpenAICompatibleTextClient(
+            api_url=api_url,
+            api_key=api_key,
+            model=model,
+            wire_api=wire_api,
+            timeout_seconds=timeout_seconds,
+        )
         self.timeout_seconds = timeout_seconds
         self.max_statement_chars = max_statement_chars
         self.max_solution_context_chars = max_solution_context_chars
@@ -30,7 +34,7 @@ class SolutionJudge:
 
     @property
     def configured(self) -> bool:
-        return bool(self.enabled and self.api_url and self.api_key and self.model)
+        return bool(self.enabled and self.client.configured)
 
     def judge(
         self,
@@ -45,51 +49,16 @@ class SolutionJudge:
         if not submission.strip():
             return JudgeResult(False, "提交内容为空。")
 
-        payload = {
-            "model": self.model,
-            "temperature": 0,
-            "response_format": {"type": "json_object"},
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "你是算法竞赛题解审核员。你需要根据题面判断群友口头提交的做法是否足以通过本题。"
-                        "你会同时收到已缓存的参考题解或 AC 代码片段；必须优先用这些参考材料校对算法方向、关键不变量、复杂度和边界条件。"
-                        "只返回 JSON 对象，格式为 {\"accepted\": boolean, \"reason\": string}。"
-                        "判定必须严格：复杂度不满足、关键边界漏掉、逻辑错误或描述过于含糊，都算不通过。"
-                        "如果参考题解不足以覆盖本题，也要依据题面独立判断，不要假装已经校对。"
-                        "如果不通过，reason 用中文简要指出具体错误，不要给出正确做法、提示、改法或完整思路。"
-                        "如果通过，reason 写“通过”。"
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": self._build_prompt(
-                        problem,
-                        statement,
-                        submission,
-                        solution_references,
-                        solution_context,
-                    ),
-                },
-            ],
-        }
-        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-            "User-Agent": "qq-cf-bot/0.1",
-        }
-        request = urllib.request.Request(self.api_url, data=data, headers=headers, method="POST")
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
-                body = response.read().decode("utf-8")
-        except urllib.error.HTTPError as exc:
-            error_body = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"judge API returned HTTP {exc.code}: {error_body}") from exc
-
-        result = json.loads(body)
-        content = result["choices"][0]["message"]["content"]
+        content = self.client.complete_json(
+            _JUDGE_SYSTEM_PROMPT,
+            self._build_prompt(
+                problem,
+                statement,
+                submission,
+                solution_references,
+                solution_context,
+            ),
+        )
         parsed = _parse_json_object(content)
         return JudgeResult(
             accepted=bool(parsed.get("accepted")),
@@ -130,6 +99,17 @@ class SolutionJudge:
             f"已缓存参考材料：\n{reference_text}\n\n"
             f"群友提交的口头做法：\n{submission.strip()}"
         )
+
+
+_JUDGE_SYSTEM_PROMPT = (
+    "你是算法竞赛题解审核员。你需要根据题面判断群友口头提交的做法是否足以通过本题。"
+    "你会同时收到已缓存的参考题解或 AC 代码片段；必须优先用这些参考材料校对算法方向、关键不变量、复杂度和边界条件。"
+    "只返回 JSON 对象，格式为 {\"accepted\": boolean, \"reason\": string}。"
+    "判定必须严格：复杂度不满足、关键边界漏掉、逻辑错误或描述过于含糊，都算不通过。"
+    "如果参考题解不足以覆盖本题，也要依据题面独立判断，不要假装已经校对。"
+    "如果不通过，reason 用中文简要指出具体错误，不要给出正确做法、提示、改法或完整思路。"
+    "如果通过，reason 写“通过”。"
+)
 
 
 def _format_samples(statement: ProblemStatement) -> str:

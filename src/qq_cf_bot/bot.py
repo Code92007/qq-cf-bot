@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 import queue
 import hashlib
+import re
 import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Iterable, Optional, Tuple
 
 from .cf_statement import CodeforcesStatementClient
 from .codeforces import CodeforcesClient
@@ -39,7 +40,7 @@ _HELP_TEXT = """可用命令：
 /giveup：放弃当前题
 /ranklist：查看群内榜单
 /submit 做法：提交口头做法审核（需配置模型）
-/solutions：查看当前题题解来源
+/solutions：题目结束前不公开题解来源
 /submitcode cpp + 代码：提交代码到 CF（需开启远端提交）"""
 
 
@@ -77,12 +78,18 @@ class CodeforcesPushBot:
             api_url=config.judge_api_url,
             api_key=config.judge_api_key,
             model=config.judge_model,
+            wire_api=config.judge_wire_api,
             timeout_seconds=config.judge_timeout_seconds,
             max_statement_chars=config.judge_statement_max_chars,
             max_solution_context_chars=config.judge_solution_context_max_chars,
             enabled=config.judge_enabled,
         )
-        self.onebot = OneBotClient(config.onebot_http_url, config.onebot_access_token, config.onebot_image_mode)
+        self.onebot = OneBotClient(
+            config.onebot_http_url,
+            config.onebot_access_token,
+            config.onebot_image_mode,
+            config.onebot_self_id,
+        )
         self.remote_judge = CodeforcesRemoteJudge(
             username=config.cf_username,
             password=config.cf_password,
@@ -108,6 +115,7 @@ class CodeforcesPushBot:
             api_url=config.translate_api_url,
             api_key=config.translate_api_key,
             model=config.translate_model,
+            wire_api=config.translate_wire_api,
             timeout_seconds=config.translate_timeout_seconds,
             max_chars=config.translate_max_chars,
             enabled=config.translate_enabled,
@@ -209,7 +217,8 @@ class CodeforcesPushBot:
         if active is None:
             self.onebot.send_group_text(event.group_id, "当前没有题目，用 /new 刷一道。")
             return
-        self.onebot.send_group_problem(event.group_id, self._current_problem_text(active.problem), active.images)
+        self.onebot.send_group_text(event.group_id, "当前题面在这里。")
+        self._send_statement_images(event.group_id, active.images)
 
     def handle_giveup(self, event: GroupMessage) -> None:
         active = self.store.get_active_problem(event.group_id)
@@ -219,7 +228,7 @@ class CodeforcesPushBot:
         self.store.clear_active_problem(event.group_id)
         self.onebot.send_group_text(
             event.group_id,
-            f"已放弃当前题：{active.problem.luogu_pid} {active.problem.name} ({active.problem.rating})",
+            "已放弃当前题：\n" + self._problem_summary(active.problem, active.statement),
         )
 
     def handle_ranklist(self, event: GroupMessage) -> None:
@@ -239,7 +248,7 @@ class CodeforcesPushBot:
             self.onebot.send_group_text(event.group_id, f"@{event.sender_name} 请在 /submit 后面写你的做法。")
             return
         if not self.judge.configured:
-            self.onebot.send_group_text(event.group_id, "还没有配置判题模型，无法审核 /submit。")
+            self.onebot.send_group_text(event.group_id, _JUDGE_SETUP_HINT)
             return
 
         solution_references = self.solution_bank.ensure(active.problem)
@@ -291,7 +300,7 @@ class CodeforcesPushBot:
             event.group_id,
             (
                 f"恭喜@{event.sender_name} 拿下本题 first blood! "
-                f"本题是 {active.problem.cf_id} {active.problem.name} ({active.problem.rating})\n"
+                f"本题信息：\n{self._problem_summary(active.problem, active.statement)}\n"
                 f"通过数：{new_stat.solved_count}，Rating：{old_stat.rating:.2f} -> {new_stat.rating:.2f}"
             ),
         )
@@ -301,16 +310,7 @@ class CodeforcesPushBot:
         if active is None:
             self.onebot.send_group_text(event.group_id, "当前没有题目，用 /new 刷一道。")
             return
-        references = self.solution_bank.ensure(active.problem)
-        if not references:
-            self.onebot.send_group_text(event.group_id, "当前题暂未抓到可用题解缓存。")
-            return
-        lines = [f"{active.problem.cf_id} 题解库：{len(references)} 条"]
-        for index, reference in enumerate(references, start=1):
-            author = f" by {reference.author}" if reference.author else ""
-            url = f"\n{reference.url}" if reference.url else ""
-            lines.append(f"{index}. [{reference.source}] {reference.title}{author}{url}")
-        self.onebot.send_group_text(event.group_id, "\n".join(lines))
+        self.onebot.send_group_text(event.group_id, "当前题还未结束，不能提前公开题解来源。")
 
     def handle_submitcode(self, event: GroupMessage, raw_submission: str) -> None:
         active = self.store.get_active_problem(event.group_id)
@@ -345,7 +345,7 @@ class CodeforcesPushBot:
             event.group_id,
             (
                 f"@{event.sender_name} 已加入 CF 远端提交队列。"
-                f"题目 {active.problem.cf_id}，语言 {parsed.language}，当前队列约 {position} 个。"
+                f"语言 {parsed.language}，当前队列约 {position} 个。"
             ),
         )
 
@@ -381,14 +381,14 @@ class CodeforcesPushBot:
             attempted += 1
             try:
                 statement = self._fetch_renderable_statement(problem)
-                images = self.renderer.render(problem, statement)
+                images = self.renderer.render(problem, statement, reveal_metadata=False)
             except Exception as exc:
                 last_error = exc
                 LOGGER.warning("skip %s because statement rendering failed: %s", problem.cf_id, exc)
                 continue
 
             self.onebot.send_group_text(group_id, "刷新了一道新题目~")
-            self.onebot.send_group_problem(group_id, self._problem_summary(problem), images)
+            self._send_statement_images(group_id, images)
             self.store.mark_sent(group_id, problem)
             self.store.set_active_problem(group_id, problem, statement, images)
             return PushResult(problem=problem, image_count=len(images))
@@ -402,12 +402,24 @@ class CodeforcesPushBot:
     def _fetch_renderable_statement(self, problem: CFProblem) -> ProblemStatement:
         cached = self.store.get_cached_statement(problem.cf_id, require_translated=self.translator.configured)
         if cached is not None:
+            if self.translator.configured and _needs_title_translation(cached.title):
+                try:
+                    return self._translate_title_and_cache(problem, cached, source="cached_llm_title_translate")
+                except Exception as exc:
+                    LOGGER.warning("cached statement title translation failed for %s: %s", problem.cf_id, exc)
             return cached
         cached_untranslated = self.store.get_cached_statement(problem.cf_id) if self.translator.configured else None
 
         try:
             statement = self.luogu.fetch_statement(problem)
-            self.store.cache_statement(problem, statement, source="luogu", translated=True)
+            if self.translator.configured and _needs_title_translation(statement.title):
+                return self._translate_title_and_cache(problem, statement, source="luogu_llm_title_translate")
+            self.store.cache_statement(
+                problem,
+                statement,
+                source="luogu",
+                translated=not _needs_title_translation(statement.title),
+            )
             return statement
         except Exception as luogu_error:
             if self.config.fallback_statement_source != "codeforces":
@@ -427,6 +439,13 @@ class CodeforcesPushBot:
             self.store.cache_statement(problem, statement, source="codeforces", translated=False)
             return statement
 
+    def _translate_title_and_cache(self, problem: CFProblem, statement: ProblemStatement, source: str) -> ProblemStatement:
+        from dataclasses import replace
+
+        translated = replace(statement, title=self.translator.translate_title(statement.title or problem.name))
+        self.store.cache_statement(problem, translated, source=source, translated=True)
+        return translated
+
     def _group_lock(self, group_id: int) -> threading.Lock:
         with self._locks_lock:
             lock = self._locks.get(group_id)
@@ -435,10 +454,11 @@ class CodeforcesPushBot:
                 self._locks[group_id] = lock
             return lock
 
-    def _problem_summary(self, problem: CFProblem) -> str:
+    def _problem_summary(self, problem: CFProblem, statement: Optional[ProblemStatement] = None) -> str:
         tags = ", ".join(problem.tags[:8]) if problem.tags else "无"
+        title = statement.title if statement and statement.title else problem.name
         return (
-            f"{problem.luogu_pid} {problem.name}\n"
+            f"{problem.luogu_pid} {title}\n"
             f"难度：{problem.rating}\n"
             f"标签：{tags}\n"
             f"题目：{problem.cf_url}\n"
@@ -446,7 +466,15 @@ class CodeforcesPushBot:
         )
 
     def _current_problem_text(self, problem: CFProblem) -> str:
-        return "题目在这里~\n" + self._problem_summary(problem)
+        return "题目在这里~"
+
+    def _send_statement_images(self, group_id: int, images: Iterable[Path]) -> None:
+        image_list = list(images)
+        try:
+            self.onebot.send_group_forward_images(group_id, image_list)
+        except Exception:
+            LOGGER.exception("failed to send merged forward, falling back to regular image messages")
+            self.onebot.send_group_problem(group_id, "题面", image_list)
 
     def _rating_range_for_new(self, group_id: int, arg: str) -> RatingRange:
         parsed = _parse_rating_range(arg)
@@ -482,7 +510,7 @@ class CodeforcesPushBot:
         self.store.set_meta_float("cf_last_submit_at", time.time())
         self.onebot.send_group_text(
             job.group_id,
-            f"@{job.sender_name} 开始提交到 Codeforces：{job.problem.cf_id}，语言 {job.submission.language}。",
+            f"@{job.sender_name} 开始提交到 Codeforces，语言 {job.submission.language}。",
         )
         result = self.remote_judge.judge(job.problem, job.submission)
         self._record_remote_result(job, result)
@@ -546,22 +574,23 @@ class CodeforcesPushBot:
         self.onebot.send_group_text(
             job.group_id,
             (
-                self._remote_result_text(job.sender_name, result)
+                self._remote_result_text(job.sender_name, result, reveal_details=True)
                 + "\n"
                 + f"恭喜@{job.sender_name} 拿下本题 first blood! "
+                + f"本题信息：\n{self._problem_summary(job.problem, active.statement)}\n"
                 + f"通过数：{new_stat.solved_count}，Rating：{old_stat.rating:.2f} -> {new_stat.rating:.2f}"
             ),
         )
 
-    def _remote_result_text(self, sender_name: str, result: RemoteJudgeResult) -> str:
+    def _remote_result_text(self, sender_name: str, result: RemoteJudgeResult, reveal_details: bool = False) -> str:
         parts = [f"@{sender_name} CF verdict：{result.message}"]
-        if result.submission_id:
+        if reveal_details and result.submission_id:
             parts.append(f"提交 ID：{result.submission_id}")
         if result.time_ms is not None:
             parts.append(f"耗时：{result.time_ms} ms")
         if result.memory_bytes is not None:
             parts.append(f"内存：{result.memory_bytes // 1024} KB")
-        if result.url:
+        if reveal_details and result.url:
             parts.append(result.url)
         return "\n".join(parts)
 
@@ -585,3 +614,21 @@ def _parse_rating_range(arg: str) -> Optional[Tuple[int, int]]:
     if min_rating < 800 or max_rating > 4000:
         return None
     return min_rating, max_rating
+
+
+_JUDGE_SETUP_HINT = """还没有配置判题模型，无法审核 /submit。
+服务器 .env 至少需要：
+JUDGE_ENABLED=true
+JUDGE_API_URL=<模型服务地址>
+JUDGE_API_KEY=<密钥>
+JUDGE_MODEL=<模型名>
+如果复用 Codex 的 responses 配置，再加 JUDGE_WIRE_API=responses。"""
+
+
+def _needs_title_translation(title: str) -> bool:
+    text = title.strip()
+    if not text:
+        return False
+    if re.search(r"[\u4e00-\u9fff]", text):
+        return False
+    return bool(re.search(r"[A-Za-z]", text))

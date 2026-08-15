@@ -27,7 +27,7 @@ class StatementRenderer:
         self.max_slice_height = max_slice_height
         self.asset_dir.mkdir(parents=True, exist_ok=True)
 
-    def render(self, problem: CFProblem, statement: ProblemStatement) -> List[Path]:
+    def render(self, problem: CFProblem, statement: ProblemStatement, reveal_metadata: bool = True) -> List[Path]:
         try:
             from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
             from playwright.sync_api import sync_playwright
@@ -36,7 +36,7 @@ class StatementRenderer:
                 "playwright is required for image rendering. Run: pip install -r requirements.txt && playwright install chromium"
             ) from exc
 
-        cards = self._build_cards(problem, statement)
+        cards = self._build_cards(problem, statement, reveal_metadata)
         if not cards:
             raise RuntimeError("no renderable statement cards were produced")
 
@@ -96,18 +96,21 @@ class StatementRenderer:
             part += 1
         return paths
 
-    def _build_cards(self, problem: CFProblem, statement: ProblemStatement) -> List[str]:
-        meta = [
-            f"Codeforces {html.escape(problem.cf_id)}",
-            f"Rating {problem.rating}",
-        ]
-        if problem.tags:
-            meta.append("Tags " + ", ".join(html.escape(tag) for tag in problem.tags[:8]))
-
-        overview_parts = [
-            f"<h1>{html.escape(statement.title or problem.name)}</h1>",
-            f"<div class=\"meta\">{' / '.join(meta)}</div>",
-        ]
+    def _build_cards(self, problem: CFProblem, statement: ProblemStatement, reveal_metadata: bool = True) -> List[str]:
+        overview_parts = []
+        if reveal_metadata:
+            meta = [
+                f"Codeforces {html.escape(problem.cf_id)}",
+                f"Rating {problem.rating}",
+            ]
+            if problem.tags:
+                meta.append("Tags " + ", ".join(html.escape(tag) for tag in problem.tags[:8]))
+            overview_parts.extend(
+                [
+                    f"<h1>{html.escape(statement.title or problem.name)}</h1>",
+                    f"<div class=\"meta\">{' / '.join(meta)}</div>",
+                ]
+            )
         overview_parts.extend(self._markdown_section("题目描述", statement.description, statement.source_url))
         overview_parts.extend(self._markdown_section("输入", statement.input_format, statement.source_url))
         overview_parts.extend(self._markdown_section("输出", statement.output_format, statement.source_url))
@@ -121,15 +124,17 @@ class StatementRenderer:
             sample_parts.append(f"<pre>{html.escape(sample_output.rstrip())}</pre>")
         sample_parts.extend(self._markdown_section("注释", statement.hint, statement.source_url))
 
-        footer = (
-            "<div class=\"footer\">"
-            f"<span>{html.escape(problem.cf_url)}</span>"
-            f"<span>{html.escape(problem.luogu_url)}</span>"
-            "</div>"
-        )
+        footer = ""
+        if reveal_metadata:
+            footer = (
+                "<div class=\"footer\">"
+                f"<span>{html.escape(problem.cf_url)}</span>"
+                f"<span>{html.escape(problem.luogu_url)}</span>"
+                "</div>"
+            )
 
         cards = []
-        if len(overview_parts) > 2:
+        if overview_parts:
             cards.append("<article id=\"card\" class=\"card\">" + "".join(overview_parts) + footer + "</article>")
         if sample_parts:
             cards.append("<article id=\"card\" class=\"card\">" + "".join(sample_parts) + footer + "</article>")

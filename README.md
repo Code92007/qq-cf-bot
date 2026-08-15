@@ -13,7 +13,7 @@
 - `/submitcode cpp + 代码`：提交当前题代码到 Codeforces，返回 AC/WA/TLE/CE 等 verdict。
 - `/ranklist`：发送群内榜单图片。
 - `/submit 做法`：大模型口头做法审核，默认开启。审核前会优先读取题解库，用题面、洛谷公开题解、CF 题解链接/内容和可选 AC 代码片段校对做法。
-- `/solutions`：查看当前题已经缓存的题解来源和链接。
+- `/solutions`：题目结束前不公开题解来源；题解库仅供 `/submit` 内部审核使用。
 
 ## 部署前准备
 
@@ -57,6 +57,7 @@ python -m qq_cf_bot
 | `ONEBOT_HTTP_URL` | `http://127.0.0.1:3000` | OneBot HTTP API 地址 |
 | `ONEBOT_ACCESS_TOKEN` | 空 | OneBot access token |
 | `ONEBOT_IMAGE_MODE` | `base64` | 图片发送方式；`base64` 不要求 OneBot 读取本地文件 |
+| `ONEBOT_SELF_ID` | 空 | 可选，机器人自己的 QQ 号；为空时自动调用 OneBot `get_login_info` 获取，用于先私聊自己再合并转发题面 |
 | `BOT_HOST` | `127.0.0.1` | 机器人监听地址；Docker 中为 `0.0.0.0` |
 | `BOT_PORT` | `8088` | 机器人监听端口 |
 | `BOT_ALLOWED_GROUPS` | 空 | 允许使用的群号，逗号分隔；空表示所有群 |
@@ -76,15 +77,17 @@ python -m qq_cf_bot
 | `CF_SUBMIT_POLL_TIMEOUT_SECONDS` | `180` | 单次提交最长等待 verdict 时间 |
 | `CF_AUTO_SUBMIT_DIRECT_CODE` | `false` | 是否自动识别群里的裸代码并提交，建议保持关闭 |
 | `JUDGE_ENABLED` | `true` | 是否开启 `/submit` 口头做法审核 |
-| `JUDGE_API_URL` | `https://api.openai.com/v1/chat/completions` | OpenAI-compatible chat completions 地址 |
+| `JUDGE_API_URL` | `https://api.openai.com/v1/chat/completions` | OpenAI-compatible 模型服务地址；可填完整 endpoint 或 provider base URL |
 | `JUDGE_API_KEY` | 空 | 口头做法审核模型 key |
 | `JUDGE_MODEL` | 空 | 口头做法审核模型名 |
+| `JUDGE_WIRE_API` | 自动 | 模型接口协议；支持 `chat_completions` 和 `responses` |
 | `JUDGE_STATEMENT_MAX_CHARS` | `12000` | 单次判题传给模型的题面最大字符数 |
 | `JUDGE_SOLUTION_CONTEXT_MAX_CHARS` | `10000` | 单次判题传给模型的题解库上下文最大字符数 |
-| `TRANSLATE_ENABLED` | `false` | 是否用 OpenAI-compatible 模型把 CF 英文题面翻译成中文 |
+| `TRANSLATE_ENABLED` | `true` | 是否用 OpenAI-compatible 模型把 CF 英文题面翻译成中文；未配置 key/model 时不会发起请求 |
 | `TRANSLATE_API_URL` | `JUDGE_API_URL` | 翻译模型 API；为空时复用 `JUDGE_API_URL` |
 | `TRANSLATE_API_KEY` | `JUDGE_API_KEY` | 翻译模型 key；为空时复用 `JUDGE_API_KEY` |
 | `TRANSLATE_MODEL` | `JUDGE_MODEL` | 翻译模型名；为空时复用 `JUDGE_MODEL` |
+| `TRANSLATE_WIRE_API` | `JUDGE_WIRE_API` | 翻译模型接口协议 |
 | `TRANSLATE_TIMEOUT_SECONDS` | `60` | 单次翻译请求超时 |
 | `TRANSLATE_MAX_CHARS` | `24000` | 单次翻译传给模型的题面最大字符数 |
 | `SOLUTION_BANK_ENABLED` | `true` | 是否开启题解库缓存 |
@@ -137,13 +140,51 @@ int main() { return 0; }
 3. 如果 `SOLUTION_BANK_FETCH_CF_AC_CODE=true` 且 CF 账号可登录，再限量抓取 AC 代码片段。
 4. 把题面和受限长度的参考材料交给大模型审核。
 
-题解库保存在 `data/bot.sqlite3`，一题可以对应多条题解，后续同一题不会重复抓取。模型只用于做法审核，不用于 `/submitcode` 的最终 verdict。
+题解库保存在 `data/bot.sqlite3`，一题可以对应多条题解，后续同一题不会重复抓取。模型只用于做法审核，不用于 `/submitcode` 的最终 verdict。为避免提前暴露题目来源，`/solutions` 不会在当前题结束前输出题号或题解链接。
+
+### 接入大模型判题
+
+`/submit` 调用的是 OpenAI-compatible JSON 对话接口。普通 OpenAI-compatible Chat Completions 服务可以这样配：
+
+```env
+JUDGE_ENABLED=true
+JUDGE_WIRE_API=chat_completions
+JUDGE_API_URL=https://api.openai.com/v1/chat/completions
+JUDGE_API_KEY=sk-...
+JUDGE_MODEL=gpt-...
+```
+
+如果要复用 Codex 的模型服务配置，把 `~/.codex/config.toml` 里当前 provider 的 `base_url` 填到 `JUDGE_API_URL`，把 `wire_api` 填到 `JUDGE_WIRE_API`，把 `model` 填到 `JUDGE_MODEL`。例如 Codex provider 写的是 `wire_api = "responses"` 时：
+
+```env
+JUDGE_ENABLED=true
+JUDGE_WIRE_API=responses
+JUDGE_API_URL=http://<codex-provider-base-url>
+JUDGE_API_KEY=<同一模型服务可接受的 token>
+JUDGE_MODEL=<codex-model>
+```
+
+`TRANSLATE_API_*` 默认复用 `JUDGE_API_*`，所以只要判题模型配好了，CF 英文兜底题面和洛谷英文标题也会自动走同一个模型翻译。若模型服务只暴露在 Tailscale 内网地址上，需要先让机器人服务器加入同一个 tailnet，再在服务器上验证 `curl http://<codex-provider-base-url>/health` 或模型服务自己的健康检查地址能通。
+
+服务器接入 Tailscale 的典型流程：
+
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up --authkey tskey-... --hostname qq-cf-bot
+tailscale status
+```
+
+`tskey-...` 建议使用 Tailscale 后台生成的一次性 auth key，只放在服务器命令行或部署密钥里，不要写进 Git 仓库。
 
 ## 题面兜底和缓存
 
 `/new` 优先抓取洛谷中文题面。若洛谷返回 403 或暂时不可用，默认回退到 Codeforces 官方英文题面，避免出题失败。
 
-如果配置 `TRANSLATE_ENABLED=true` 且提供 OpenAI-compatible 翻译模型，机器人会把 Codeforces 英文题面翻译成中文再渲染。成功生成的题面会缓存到 `data/bot.sqlite3` 的题面缓存中，当前题图片也会保存在 `data/assets`；后续同题复用缓存，不会重复请求翻译。
+如果 `TRANSLATE_ENABLED=true` 且提供 OpenAI-compatible 翻译模型，机器人会把 Codeforces 英文题面翻译成中文再渲染；洛谷题面若正文已是中文但标题仍是英文，也会只补翻译标题。成功生成的题面会缓存到 `data/bot.sqlite3` 的题面缓存中，当前题图片也会保存在 `data/assets`；后续同题复用缓存，不会重复请求翻译。
+
+## 题面发送方式
+
+`/new` 和 `/cur` 只发送题面图片，不暴露 Codeforces 题号、题名、难度、标签或链接。题面图片会优先先发到机器人自己的私聊窗口，再把生成的消息记录合并转发到群，避免多张图片在群里刷屏。`/giveup` 或通过判题后才会公开题号、难度、标签和链接。
 
 ## GitHub 上传注意
 
