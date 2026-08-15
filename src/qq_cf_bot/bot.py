@@ -27,6 +27,19 @@ from .submitter import CodeforcesRemoteJudge
 
 LOGGER = logging.getLogger(__name__)
 
+_HELP_TEXT = """可用命令：
+/help：查看帮助；只 @ 我也会显示本帮助
+/new：出一道默认难度题
+/new 2100 2400：临时指定难度出题
+/rating：查看本群默认难度
+/cfset rating 1900 2600：设置本群默认难度
+/cur：重发当前题
+/giveup：放弃当前题
+/ranklist：查看群内榜单
+/submit 做法：提交口头做法审核（需配置模型）
+/solutions：查看当前题题解来源
+/submitcode cpp + 代码：提交代码到 CF（需开启远端提交）"""
+
 
 @dataclass
 class PushResult:
@@ -107,6 +120,7 @@ class CodeforcesPushBot:
                 return
             direct_code = True
         elif command.name not in {
+            "help",
             "new",
             "cur",
             "giveup",
@@ -118,6 +132,10 @@ class CodeforcesPushBot:
             "solutions",
             "solution",
         }:
+            return
+
+        if command.name == "help":
+            self.handle_help(event)
             return
 
         lock = self._group_lock(event.group_id)
@@ -171,6 +189,9 @@ class CodeforcesPushBot:
             event.group_id,
             result.image_count,
         )
+
+    def handle_help(self, event: GroupMessage) -> None:
+        self.onebot.send_group_text(event.group_id, _HELP_TEXT)
 
     def handle_cur(self, event: GroupMessage) -> None:
         active = self.store.get_active_problem(event.group_id)

@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 
 _CQ_CODE_RE = re.compile(r"\[CQ:[^\]]+\]")
+_CQ_AT_RE = re.compile(r"\[CQ:at,(?P<params>[^\]]+)\]")
 _FENCED_CODE_RE = re.compile(r"```(?P<language>[A-Za-z0-9_+#.-]*)\s*\n(?P<source>.*?)```", re.DOTALL)
 _CODE_HINT_RE = re.compile(
     r"^\s*(#include\b|using\s+namespace\b|int\s+main\s*\(|import\s+\w+|from\s+\w+\s+import\b|"
@@ -46,6 +47,35 @@ def extract_plain_text(message: Any) -> str:
 def is_new_command(message: Any) -> bool:
     command = parse_command(message)
     return command is not None and command.name == "new"
+
+
+def is_at_only_mention(message: Any, self_id: Any) -> bool:
+    target = str(self_id or "").strip()
+    if not target:
+        return False
+
+    if isinstance(message, str):
+        return _is_cq_at_only(message, target)
+
+    if isinstance(message, list):
+        seen_target = False
+        for segment in message:
+            if not isinstance(segment, dict):
+                continue
+            segment_type = segment.get("type")
+            data = segment.get("data") or {}
+            if segment_type == "at":
+                if str(data.get("qq", "")).strip() != target:
+                    return False
+                seen_target = True
+            elif segment_type == "text":
+                if str(data.get("text", "")).strip():
+                    return False
+            else:
+                return False
+        return seen_target
+
+    return False
 
 
 def parse_command(message: Any) -> Optional[ParsedCommand]:
@@ -117,3 +147,26 @@ def _looks_like_language_alias(text: str) -> bool:
         "rs",
         "go",
     }
+
+
+def _is_cq_at_only(message: str, target: str) -> bool:
+    seen_target = False
+    position = 0
+    for match in _CQ_AT_RE.finditer(message):
+        if message[position : match.start()].strip():
+            return False
+        if _cq_param(match.group("params"), "qq") != target:
+            return False
+        seen_target = True
+        position = match.end()
+    if message[position:].strip():
+        return False
+    return seen_target
+
+
+def _cq_param(params: str, name: str) -> str:
+    prefix = name + "="
+    for part in params.split(","):
+        if part.startswith(prefix):
+            return part[len(prefix) :].strip()
+    return ""

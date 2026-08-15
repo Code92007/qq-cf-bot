@@ -6,7 +6,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
 
-from .message import looks_like_code_submission, parse_command
+from .message import is_at_only_mention, looks_like_code_submission, parse_command
 from .models import GroupMessage
 
 
@@ -29,8 +29,7 @@ class OneBotEventServer:
                     return
 
                 try:
-                    length = int(self.headers.get("Content-Length") or "0")
-                    body = self.rfile.read(length)
+                    body = _read_request_body(self)
                     event = json.loads(body.decode("utf-8"))
                     _handle_event(event, callback)
                 except Exception:
@@ -60,13 +59,55 @@ class OneBotEventServer:
         server.serve_forever()
 
 
+def _read_request_body(handler: BaseHTTPRequestHandler) -> bytes:
+    transfer_encoding = handler.headers.get("Transfer-Encoding", "").lower()
+    if "chunked" in transfer_encoding:
+        return _read_chunked_body(handler)
+
+    length = int(handler.headers.get("Content-Length") or "0")
+    return handler.rfile.read(length)
+
+
+def _read_chunked_body(handler: BaseHTTPRequestHandler) -> bytes:
+    chunks = []
+    while True:
+        size_line = handler.rfile.readline()
+        if not size_line:
+            break
+
+        size_text = size_line.split(b";", 1)[0].strip()
+        if not size_text:
+            continue
+
+        size = int(size_text, 16)
+        if size == 0:
+            _consume_trailing_headers(handler)
+            break
+
+        chunks.append(handler.rfile.read(size))
+        handler.rfile.read(2)
+    return b"".join(chunks)
+
+
+def _consume_trailing_headers(handler: BaseHTTPRequestHandler) -> None:
+    while True:
+        line = handler.rfile.readline()
+        if line in {b"", b"\r\n", b"\n"}:
+            return
+
+
 def _handle_event(event: dict, callback: Callable[[GroupMessage], None]) -> None:
     if event.get("post_type") != "message":
         return
     if event.get("message_type") != "group":
         return
-    if parse_command(event.get("message")) is None and not looks_like_code_submission(event.get("message")):
+
+    message = event.get("message")
+    at_only = is_at_only_mention(message, event.get("self_id"))
+    if parse_command(message) is None and not at_only and not looks_like_code_submission(message):
         return
+    if at_only:
+        message = "/help"
 
     sender = event.get("sender") or {}
     display_name = str(sender.get("card") or sender.get("nickname") or event.get("user_id") or "群友")
@@ -75,7 +116,7 @@ def _handle_event(event: dict, callback: Callable[[GroupMessage], None]) -> None
         user_id=int(event.get("user_id") or 0),
         sender_name=display_name,
         message_id=int(event["message_id"]) if event.get("message_id") is not None else None,
-        message=event.get("message"),
+        message=message,
     )
     thread = threading.Thread(target=callback, args=(group_message,), daemon=True)
     thread.start()
