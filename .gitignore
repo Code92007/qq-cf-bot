@@ -1,0 +1,10 @@
+.venv/
+.env
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+dist/
+qq-cf-bot-*.tar.gz
+*.egg-info/

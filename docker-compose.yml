@@ -1,0 +1,9 @@
+services:
+  qq-cf-bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./data:/app/data
