@@ -37,7 +37,7 @@ class OneBotClient:
         self,
         group_id: int,
         images: Iterable[Path],
-        sender_name: str = "题面",
+        sender_name: str = "刷题机器人",
         sender_uin: str = "10000",
         intro_text: str = "",
     ) -> None:
@@ -69,7 +69,7 @@ class OneBotClient:
         self,
         group_id: int,
         images: Iterable[Path],
-        sender_name: str = "题面",
+        sender_name: str = "刷题机器人",
         sender_uin: str = "10000",
         intro_text: str = "",
     ) -> None:

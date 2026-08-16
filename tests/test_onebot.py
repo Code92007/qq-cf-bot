@@ -44,6 +44,7 @@ class OneBotClientTest(unittest.TestCase):
             self.assertEqual(client.posts[-1][0], "/send_group_forward_msg")
             node = client.posts[-1][1]["messages"][0]
             self.assertEqual(node["type"], "node")
+            self.assertEqual(node["data"]["name"], "刷题机器人")
             self.assertEqual(node["data"]["content"][0]["type"], "image")
 
     def test_send_group_forward_images_can_include_intro_text(self):
