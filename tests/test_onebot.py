@@ -44,7 +44,8 @@ class OneBotClientTest(unittest.TestCase):
             self.assertEqual(client.posts[-1][0], "/send_group_forward_msg")
             node = client.posts[-1][1]["messages"][0]
             self.assertEqual(node["type"], "node")
-            self.assertEqual(node["data"]["name"], "刷题机器人")
+            self.assertEqual(node["data"]["name"], "Yzm007")
+            self.assertEqual(node["data"]["uin"], "9988")
             self.assertEqual(node["data"]["content"][0]["type"], "image")
 
     def test_send_group_forward_images_can_include_intro_text(self):
@@ -55,9 +56,23 @@ class OneBotClientTest(unittest.TestCase):
 
             client.send_group_forward_images(123, [image], intro_text="刷新了一道新题目~")
 
-            message = client.posts[1][1]["message"]
-            self.assertEqual(message[0], {"type": "text", "data": {"text": "刷新了一道新题目~\n"}})
-            self.assertEqual(message[1]["type"], "image")
+            self.assertEqual(client.posts[1][0], "/send_private_msg")
+            self.assertEqual(client.posts[1][1]["message"], [{"type": "text", "data": {"text": "刷新了一道新题目~"}}])
+            self.assertEqual(client.posts[2][0], "/send_private_msg")
+            self.assertEqual(client.posts[2][1]["message"][0]["type"], "image")
+            self.assertEqual(
+                client.posts[3],
+                (
+                    "/send_group_forward_msg",
+                    {
+                        "group_id": 123,
+                        "messages": [
+                            {"type": "node", "data": {"id": "456"}},
+                            {"type": "node", "data": {"id": "456"}},
+                        ],
+                    },
+                ),
+            )
 
     def test_extracts_message_id_from_common_result_shapes(self):
         self.assertEqual(_message_id_from_result({"data": {"message_id": "123"}}), 123)
@@ -73,7 +88,7 @@ class _FakeOneBotClient(OneBotClient):
     def _post(self, path: str, payload: dict) -> dict:
         self.posts.append((path, payload))
         if path == "/get_login_info":
-            return {"status": "ok", "data": {"user_id": 9988}}
+            return {"status": "ok", "data": {"user_id": 9988, "nickname": "Yzm007"}}
         if path == "/send_private_msg":
             return {"status": "ok", "data": {"message_id": 456}}
         return {"status": "ok", "data": {}}

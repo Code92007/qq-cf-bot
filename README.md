@@ -7,6 +7,8 @@
 - `/new`：按本群默认难度推送一道题，默认 `1900-2600`。
 - `/new 2100 2400`：临时按 `2100-2400` 推一道题，不修改群默认配置。
 - `/new 1200`：临时按精确 `1200` rating 推一道题。
+- `/new 1937 1956`：会规范到 `1900-2000`，范围下界向下取整、上界向上取整到 100 档。
+- `/share 1704F`：分享指定 Codeforces 题目，不计入常规榜单。
 - `/cfset rating 1900 2600`：设置本群默认题目难度。
 - `/rating`：查看本群默认题目难度。
 - `/cur`：重新发送当前题目。
@@ -110,6 +112,15 @@ python -m qq_cf_bot
 | `SOLUTION_BANK_FETCH_CF_EDITORIAL` | `true` | 是否抓取 Codeforces 题解/教程链接和内容 |
 | `SOLUTION_BANK_FETCH_CF_AC_CODE` | `false` | 是否抓取少量 CF AC 代码；需要 CF 登录态，默认关闭 |
 | `SOLUTION_BANK_GENERATE_LLM` | `true` | 公开题解不足时，是否用判题模型生成内部参考解法并缓存 |
+| `NAPCAT_WATCHDOG_ENABLED` | `false` | 是否启用宿主机 NapCat 掉线检测脚本 |
+| `NAPCAT_WATCHDOG_ONEBOT_URL` | `http://127.0.0.1:3000` | watchdog 调用 NapCat OneBot HTTP API 的地址 |
+| `NAPCAT_WATCHDOG_INTERVAL_SECONDS` | `60` | watchdog 检查间隔 |
+| `NAPCAT_WATCHDOG_RESTART_COOLDOWN_SECONDS` | `300` | 两次自动重启 NapCat 的最小间隔 |
+| `NAPCAT_WATCHDOG_RESTART_CMD` | `./scripts/restart-napcat.sh` | watchdog 判定离线后执行的重启命令 |
+| `NAPCAT_WATCHDOG_NOTIFY_EMAIL` | 空 | NapCat 离线/重启通知收件邮箱 |
+| `SMTP_HOST` / `SMTP_PORT` | `smtp.qq.com` / `465` | watchdog 邮件通知 SMTP 服务 |
+| `SMTP_USERNAME` / `SMTP_PASSWORD` | 空 | SMTP 登录用户名和授权码 |
+| `SMTP_FROM` | `SMTP_USERNAME` | 邮件发件人 |
 
 ## `/submitcode` 用法
 
@@ -144,6 +155,12 @@ int main() { return 0; }
 - 语言会按代码风格自动识别，主要支持 C++、C、Java、Python；识别不出时按 `CF_SUBMIT_DEFAULT_LANGUAGE`。
 - Codeforces 可能触发验证码、二次验证或账号安全确认，此时远端提交会失败，需要先手动登录账号处理。
 - 不要在正在进行的正式比赛中使用该机器人提交代码。
+
+## `/new` 和 `/share`
+
+`/new` 的 rating 参数会做严格校验，只接受单个整数、两个整数、逗号范围或短横线范围。两个端点会先按大小排序，再按 Codeforces 的 100 rating 档规范化：下界向下取整，上界向上取整。例如 `/new 1937 1956` 等价于 `/new 1900 2000`。带额外文本的参数会被拒绝，避免把聊天内容误当成参数。
+
+`/share 1704F`、`/share CF1704F`、`/share https://codeforces.com/contest/1704/problem/F` 都会分享同一道指定题。分享题也会成为当前题，支持 `/cur`、`/giveup`、`/submit` 和 `/submitcode`，但通过后不会增加 solved 数、不会涨榜单 Rating，也不会占用普通 `/new` 的去重记录。
 
 ## `/ranklist` 榜单
 
@@ -251,7 +268,40 @@ sudo systemctl enable --now qq-cf-bot
 
 ## 题面发送方式
 
-`/new` 和 `/cur` 只发送题面图片，不暴露 Codeforces 题号、题名、难度、标签或链接。题面图片会优先先发到机器人自己的私聊窗口，再把生成的消息记录合并转发到群，避免多张图片在群里刷屏；“刷新了一道新题目~”会放在合并转发内，不额外刷一条群消息。`/giveup` 或通过判题后才会公开题号、难度、标签、链接和已缓存参考材料。
+`/new` 和 `/cur` 只发送题面图片，不暴露 Codeforces 题号、题名、难度、标签或链接。题面图片会优先先发到机器人自己的私聊窗口，再把这些原始私聊消息 ID 合并转发到群，避免多张图片在群里刷屏；“刷新了一道新题目~”会放在合并转发内，不额外刷一条群消息。若 OneBot 不支持按消息 ID 转发，才会退回自定义转发节点。`/giveup` 或通过判题后才会公开题号、难度、标签、链接和已缓存参考材料。
+
+## NapCat Watchdog
+
+NapCat 掉线后 QQ 消息不会再上报给机器人。可以在服务器宿主机启用 watchdog：它每分钟调用 NapCat 的 OneBot HTTP API，检测离线或 API 不可用时执行 `docker compose restart napcat`，并用邮件通知。
+
+先在 `.env` 里配置：
+
+```env
+NAPCAT_WATCHDOG_ENABLED=true
+NAPCAT_WATCHDOG_NOTIFY_EMAIL=1072805307@qq.com
+SMTP_HOST=smtp.qq.com
+SMTP_PORT=465
+SMTP_SSL=true
+SMTP_USERNAME=<你的QQ邮箱>
+SMTP_PASSWORD=<QQ邮箱SMTP授权码>
+SMTP_FROM=<你的QQ邮箱>
+```
+
+手动重启 NapCat：
+
+```bash
+./scripts/restart-napcat.sh
+```
+
+安装成 systemd 服务：
+
+```bash
+sudo cp deploy/systemd/napcat-watchdog.service.example /etc/systemd/system/napcat-watchdog.service
+sudo sed -i 's#/opt/qq-cf-bot#'"$(pwd)"'#g' /etc/systemd/system/napcat-watchdog.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now napcat-watchdog
+sudo systemctl status napcat-watchdog --no-pager
+```
 
 ## GitHub 上传注意
 

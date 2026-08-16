@@ -1,0 +1,16 @@
+[Unit]
+Description=NapCat watchdog for qq-cf-bot
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/qq-cf-bot
+EnvironmentFile=/opt/qq-cf-bot/.env
+ExecStart=/usr/bin/python3 /opt/qq-cf-bot/scripts/napcat-watchdog.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

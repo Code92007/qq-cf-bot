@@ -38,6 +38,7 @@ _HELP_TEXT = """可用命令：
 /help：查看帮助；只 @ 我也会显示本帮助
 /new：出一道默认难度题
 /new 2100 2400：临时指定难度出题
+/share 1704F：分享指定 CF 题，不计入榜单
 /rating：查看本群默认难度
 /cfset rating 1900 2600：设置本群默认难度
 /cur：重发当前题
@@ -60,6 +61,7 @@ class _QueuedCodeSubmission:
     sender_name: str
     problem: CFProblem
     submission: CodeSubmission
+    ranked: bool
 
 
 class CodeforcesPushBot:
@@ -163,6 +165,7 @@ class CodeforcesPushBot:
         elif command.name not in {
             "help",
             "new",
+            "share",
             "cur",
             "giveup",
             "ranklist",
@@ -189,6 +192,8 @@ class CodeforcesPushBot:
                 return
             elif command.name == "new":
                 self.handle_new(event, command.arg)
+            elif command.name == "share":
+                self.handle_share(event, command.arg)
             elif command.name == "cur":
                 self.handle_cur(event)
             elif command.name == "giveup":
@@ -226,6 +231,21 @@ class CodeforcesPushBot:
             event.group_id,
             result.image_count,
         )
+
+    def handle_share(self, event: GroupMessage, arg: str) -> None:
+        if self.store.get_active_problem(event.group_id) is not None:
+            self.onebot.send_group_text(event.group_id, f"@{event.sender_name} 上一道题还没做完哦~")
+            return
+        parsed = _parse_problem_id(arg)
+        if parsed is None:
+            self.onebot.send_group_text(event.group_id, "用法：/share 1704F 或 /share https://codeforces.com/contest/1704/problem/F")
+            return
+
+        contest_id, index = parsed
+        problem = self._find_problem_by_id(contest_id, index)
+        prepared = self._prepare_specific_problem(problem)
+        self._publish_prepared_problem(event.group_id, prepared, intro_text="分享了一道题目~", ranked=False)
+        LOGGER.info("shared %s to group %s as %s image(s)", problem.cf_id, event.group_id, len(prepared.images))
 
     def handle_help(self, event: GroupMessage) -> None:
         self.onebot.send_group_text(event.group_id, _HELP_TEXT)
@@ -309,10 +329,23 @@ class CodeforcesPushBot:
             submission,
             result.accepted,
             result.reason,
+            ranked=active.ranked,
         )
 
         if not result.accepted:
             self.onebot.send_group_text(event.group_id, f"@{event.sender_name} {result.reason}")
+            return
+
+        if not active.ranked:
+            self.store.clear_active_problem(event.group_id)
+            self.onebot.send_group_text(
+                event.group_id,
+                (
+                    f"恭喜@{event.sender_name} 通过这道分享题！本题不计入榜单。\n"
+                    f"本题信息：\n{self._problem_summary(active.problem, active.statement)}"
+                ),
+            )
+            self._send_public_solution_references(event.group_id, active.problem, active.statement)
             return
 
         old_stat = self.store.get_user_stat(
@@ -374,6 +407,7 @@ class CodeforcesPushBot:
             sender_name=event.sender_name,
             problem=active.problem,
             submission=CodeSubmission(language=parsed.language, source=parsed.source),
+            ranked=active.ranked,
         )
         self._code_queue.put(job)
         position = self._code_queue.qsize()
@@ -404,7 +438,7 @@ class CodeforcesPushBot:
         prepared = self._claim_prefetched_problem(group_id, rating_range)
         if prepared is None:
             prepared = self._prepare_problem_bundle(group_id, rating_range)
-        self._publish_prepared_problem(group_id, prepared, intro_text="刷新了一道新题目~")
+        self._publish_prepared_problem(group_id, prepared, intro_text="刷新了一道新题目~", ranked=True)
         self._start_prefetch(group_id, rating_range)
         return PushResult(problem=prepared.problem, image_count=len(prepared.images))
 
@@ -445,10 +479,23 @@ class CodeforcesPushBot:
             f"no unsent Codeforces problem remains in rating range {rating_range.min_rating}-{rating_range.max_rating}"
         )
 
-    def _publish_prepared_problem(self, group_id: int, prepared: PreparedProblem, intro_text: str) -> None:
+    def _prepare_specific_problem(self, problem: CFProblem) -> PreparedProblem:
+        statement = self._fetch_renderable_statement(problem)
+        images = self.renderer.render(problem, statement, reveal_metadata=False)
+        rating = problem.rating if problem.rating > 0 else 0
+        return PreparedProblem(
+            problem=problem,
+            statement=statement,
+            images=images,
+            rating_range=RatingRange(rating, rating),
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+
+    def _publish_prepared_problem(self, group_id: int, prepared: PreparedProblem, intro_text: str, ranked: bool) -> None:
         self._send_statement_images(group_id, prepared.images, intro_text=intro_text)
-        self.store.mark_sent(group_id, prepared.problem)
-        self.store.set_active_problem(group_id, prepared.problem, prepared.statement, prepared.images)
+        if ranked:
+            self.store.mark_sent(group_id, prepared.problem)
+        self.store.set_active_problem(group_id, prepared.problem, prepared.statement, prepared.images, ranked=ranked)
 
     def _claim_prefetched_problem(self, group_id: int, rating_range: RatingRange) -> Optional[PreparedProblem]:
         if not self.config.prefetch_enabled:
@@ -514,6 +561,16 @@ class CodeforcesPushBot:
         statement = cached_untranslated or self.cf_statement.fetch_statement(problem)
         return self._translate_and_cache_if_needed(problem, statement, source="codeforces")
 
+    def _find_problem_by_id(self, contest_id: int, index: str) -> CFProblem:
+        normalized_index = index.upper()
+        try:
+            for problem in self.cf.fetch_problems():
+                if problem.contest_id == contest_id and problem.index.upper() == normalized_index:
+                    return problem
+        except Exception as exc:
+            LOGGER.warning("failed to load Codeforces problemset while sharing %s%s: %s", contest_id, index, exc)
+        return CFProblem(contest_id=contest_id, index=normalized_index, name=f"{contest_id}{normalized_index}", rating=0)
+
     def _translate_and_cache_if_needed(self, problem: CFProblem, statement: ProblemStatement, source: str) -> ProblemStatement:
         from dataclasses import replace
 
@@ -552,6 +609,7 @@ class CodeforcesPushBot:
                 statement=statement,
                 images=images,
                 created_at=active.created_at,
+                ranked=active.ranked,
             )
         except Exception as exc:
             LOGGER.warning("active statement refresh failed for %s: %s", active.problem.cf_id, exc)
@@ -568,9 +626,10 @@ class CodeforcesPushBot:
     def _problem_summary(self, problem: CFProblem, statement: Optional[ProblemStatement] = None) -> str:
         tags = ", ".join(problem.tags[:8]) if problem.tags else "无"
         title = statement.title if statement and statement.title else problem.name
+        rating = str(problem.rating) if problem.rating > 0 else "未知"
         return (
             f"{problem.luogu_pid} {title}\n"
-            f"难度：{problem.rating}\n"
+            f"难度：{rating}\n"
             f"标签：{tags}\n"
             f"题目：{problem.cf_url}\n"
             f"中文题面：{problem.luogu_url}"
@@ -678,6 +737,7 @@ class CodeforcesPushBot:
             source_hash,
             len(job.submission.source),
             result,
+            ranked=job.ranked,
         )
 
     def _settle_accepted_code(self, job: _QueuedCodeSubmission, result: RemoteJudgeResult) -> None:
@@ -687,6 +747,20 @@ class CodeforcesPushBot:
                 job.group_id,
                 self._remote_result_text(job.sender_name, result) + "\n题目已变化，不结算榜单。",
             )
+            return
+
+        if not active.ranked:
+            self.store.clear_active_problem(job.group_id)
+            self.onebot.send_group_text(
+                job.group_id,
+                (
+                    self._remote_result_text(job.sender_name, result, reveal_details=True)
+                    + "\n"
+                    + f"恭喜@{job.sender_name} 通过这道分享题！本题不计入榜单。\n"
+                    + f"本题信息：\n{self._problem_summary(job.problem, active.statement)}"
+                ),
+            )
+            self._send_public_solution_references(job.group_id, job.problem, active.statement)
             return
 
         old_stat = self.store.get_user_stat(
@@ -740,27 +814,79 @@ def _parse_rating_range(arg: str) -> Optional[Tuple[int, int]]:
         text = text[len("rating") :].strip()
     if not text:
         return None
-    parts = text.replace(",", " ").replace("-", " ").split()
-    if len(parts) == 1:
-        try:
-            rating = int(parts[0])
-        except ValueError:
-            return None
+    if re.fullmatch(r"\d+", text):
+        rating = _round_rating_to_nearest_hundred(int(text))
         if rating < 800 or rating > 4000:
             return None
         return rating, rating
-    if len(parts) < 2:
+
+    match = re.fullmatch(r"(\d+)\s*(?:,|-|\s)\s*(\d+)", text)
+    if match is None:
         return None
-    try:
-        min_rating = int(parts[0])
-        max_rating = int(parts[1])
-    except ValueError:
-        return None
+
+    min_rating = int(match.group(1))
+    max_rating = int(match.group(2))
     if min_rating > max_rating:
         min_rating, max_rating = max_rating, min_rating
     if min_rating < 800 or max_rating > 4000:
         return None
+    min_rating = _floor_rating_to_hundred(min_rating)
+    max_rating = _ceil_rating_to_hundred(max_rating)
+    if min_rating > max_rating:
+        return None
     return min_rating, max_rating
+
+
+def _floor_rating_to_hundred(value: int) -> int:
+    return (value // 100) * 100
+
+
+def _ceil_rating_to_hundred(value: int) -> int:
+    return ((value + 99) // 100) * 100
+
+
+def _round_rating_to_nearest_hundred(value: int) -> int:
+    return ((value + 50) // 100) * 100
+
+
+def _parse_problem_id(arg: str) -> Optional[Tuple[int, str]]:
+    text = arg.strip()
+    if not text:
+        return None
+
+    contest_id, index = _parse_problem_url_path(text)
+    if contest_id is not None and index:
+        return contest_id, index.upper()
+
+    compact = re.sub(r"\s+", "", text)
+    id_match = re.fullmatch(r"(?i)(?:CF)?(\d{1,7})([A-Za-z][A-Za-z0-9]*)", compact)
+    if id_match is None:
+        return None
+    contest_id = int(id_match.group(1))
+    index = id_match.group(2).upper()
+    if contest_id <= 0:
+        return None
+    return contest_id, index
+
+
+def _parse_problem_url_path(text: str) -> Tuple[Optional[int], str]:
+    problemset_match = re.search(
+        r"codeforces\.com/problemset/problem/(\d+)/([A-Za-z][A-Za-z0-9]*)",
+        text,
+        re.IGNORECASE,
+    )
+    if problemset_match:
+        return int(problemset_match.group(1)), problemset_match.group(2)
+
+    contest_match = re.search(
+        r"codeforces\.com/(?:contest|gym)/(\d+)/problem/([A-Za-z][A-Za-z0-9]*)",
+        text,
+        re.IGNORECASE,
+    )
+    if contest_match:
+        return int(contest_match.group(1)), contest_match.group(2)
+
+    return None, ""
 
 
 _JUDGE_SETUP_HINT = """还没有配置判题模型，无法审核 /submit。

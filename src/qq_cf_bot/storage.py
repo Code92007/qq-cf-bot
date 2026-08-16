@@ -62,7 +62,7 @@ class SentProblemStore:
         with self._connect() as conn:
             row = conn.execute(
                 """
-                select problem_json, statement_json, image_paths_json, created_at
+                select problem_json, statement_json, image_paths_json, created_at, ranked
                 from active_problems
                 where group_id = ?
                 """,
@@ -75,6 +75,7 @@ class SentProblemStore:
             statement=_statement_from_json(row[1]),
             images=[Path(path) for path in json.loads(row[2])],
             created_at=str(row[3]),
+            ranked=bool(row[4]),
         )
 
     def set_active_problem(
@@ -83,20 +84,22 @@ class SentProblemStore:
         problem: CFProblem,
         statement: ProblemStatement,
         image_paths: Iterable[Path],
+        ranked: bool = True,
     ) -> None:
         now = datetime.now(timezone.utc).isoformat()
         with self._connect() as conn:
             conn.execute(
                 """
                 insert into active_problems
-                    (group_id, cf_id, problem_json, statement_json, image_paths_json, created_at)
-                values (?, ?, ?, ?, ?, ?)
+                    (group_id, cf_id, problem_json, statement_json, image_paths_json, created_at, ranked)
+                values (?, ?, ?, ?, ?, ?, ?)
                 on conflict(group_id) do update set
                     cf_id = excluded.cf_id,
                     problem_json = excluded.problem_json,
                     statement_json = excluded.statement_json,
                     image_paths_json = excluded.image_paths_json,
-                    created_at = excluded.created_at
+                    created_at = excluded.created_at,
+                    ranked = excluded.ranked
                 """,
                 (
                     str(group_id),
@@ -105,6 +108,7 @@ class SentProblemStore:
                     json.dumps(_statement_to_json(statement), ensure_ascii=False),
                     json.dumps([str(path) for path in image_paths], ensure_ascii=False),
                     now,
+                    1 if ranked else 0,
                 ),
             )
 
@@ -249,14 +253,15 @@ class SentProblemStore:
         raw_text: str,
         accepted: bool,
         reason: str,
+        ranked: bool = True,
     ) -> None:
         now = datetime.now(timezone.utc).isoformat()
         with self._connect() as conn:
             conn.execute(
                 """
                 insert into submissions
-                    (group_id, user_id, display_name, cf_id, raw_text, accepted, reason, created_at)
-                values (?, ?, ?, ?, ?, ?, ?, ?)
+                    (group_id, user_id, display_name, cf_id, raw_text, accepted, reason, created_at, ranked)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     str(group_id),
@@ -267,6 +272,7 @@ class SentProblemStore:
                     1 if accepted else 0,
                     reason,
                     now,
+                    1 if ranked else 0,
                 ),
             )
 
@@ -303,6 +309,7 @@ class SentProblemStore:
         source_hash: str,
         source_chars: int,
         result: RemoteJudgeResult,
+        ranked: bool = True,
     ) -> None:
         now = datetime.now(timezone.utc).isoformat()
         with self._connect() as conn:
@@ -312,9 +319,9 @@ class SentProblemStore:
                     (
                         group_id, user_id, display_name, cf_id, language, source_hash,
                         source_chars, accepted, verdict, submission_id, passed_tests,
-                        time_ms, memory_bytes, url, message, created_at
+                        time_ms, memory_bytes, url, message, created_at, ranked
                     )
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     str(group_id),
@@ -333,6 +340,7 @@ class SentProblemStore:
                     result.url,
                     result.message,
                     now,
+                    1 if ranked else 0,
                 ),
             )
 
@@ -593,9 +601,16 @@ class SentProblemStore:
                     problem_json text not null,
                     statement_json text not null,
                     image_paths_json text not null,
-                    created_at text not null
+                    created_at text not null,
+                    ranked integer not null default 1
                 )
                 """
+            )
+            _ensure_column(
+                conn,
+                "active_problems",
+                "ranked",
+                "alter table active_problems add column ranked integer not null default 1",
             )
             conn.execute(
                 """
@@ -648,9 +663,16 @@ class SentProblemStore:
                     raw_text text not null,
                     accepted integer not null,
                     reason text not null,
-                    created_at text not null
+                    created_at text not null,
+                    ranked integer not null default 1
                 )
                 """
+            )
+            _ensure_column(
+                conn,
+                "submissions",
+                "ranked",
+                "alter table submissions add column ranked integer not null default 1",
             )
             conn.execute("create index if not exists idx_submissions_group on submissions(group_id, cf_id)")
             conn.execute(
@@ -682,9 +704,16 @@ class SentProblemStore:
                     memory_bytes integer,
                     url text not null,
                     message text not null,
-                    created_at text not null
+                    created_at text not null,
+                    ranked integer not null default 1
                 )
                 """
+            )
+            _ensure_column(
+                conn,
+                "code_submissions",
+                "ranked",
+                "alter table code_submissions add column ranked integer not null default 1",
             )
             conn.execute("create index if not exists idx_code_submissions_group on code_submissions(group_id, cf_id)")
             conn.execute(
@@ -727,6 +756,12 @@ class SentProblemStore:
         return sqlite3.connect(self.db_path)
 
 
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    columns = {str(row[1]) for row in conn.execute(f"pragma table_info({table})").fetchall()}
+    if column not in columns:
+        conn.execute(ddl)
+
+
 def _solved_ratings_for_user(conn: sqlite3.Connection, group_id: int, user_id: int) -> Tuple[int, ...]:
     return _solved_ratings_by_user(conn, group_id).get(str(user_id), ())
 
@@ -740,12 +775,12 @@ def _solved_ratings_by_user(conn: sqlite3.Connection, group_id: int) -> Dict[str
             select s.user_id as user_id, s.cf_id as cf_id, sp.rating as rating
             from submissions s
             join sent_problems sp on sp.group_id = s.group_id and sp.cf_id = s.cf_id
-            where s.group_id = ? and s.accepted = 1
+            where s.group_id = ? and s.accepted = 1 and s.ranked = 1
             union all
             select c.user_id as user_id, c.cf_id as cf_id, sp.rating as rating
             from code_submissions c
             join sent_problems sp on sp.group_id = c.group_id and sp.cf_id = c.cf_id
-            where c.group_id = ? and c.accepted = 1
+            where c.group_id = ? and c.accepted = 1 and c.ranked = 1
         )
         """,
         (str(group_id), str(group_id)),

@@ -55,6 +55,7 @@ class ActiveProblem:
     statement: ProblemStatement
     images: List[Path]
     created_at: str
+    ranked: bool = True
 
 
 @dataclass(frozen=True)

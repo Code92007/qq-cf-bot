@@ -11,6 +11,7 @@ from .models import CFProblem, ProblemStatement
 
 
 _RELATIVE_SRC_RE = re.compile(r"""(?P<prefix>\s(?:src|href)=["'])(?P<url>/[^"']+)(?P<suffix>["'])""")
+_MATH_RE = re.compile(r"(?<!\\)(\${1,3})(.+?)(?<!\\)\1", re.DOTALL)
 
 
 class StatementRenderer:
@@ -205,6 +206,20 @@ code {{
   font-family: Menlo, Consolas, "SFMono-Regular", monospace;
   font-size: 0.88em;
 }}
+.math {{
+  display: inline;
+  padding: 0 1px;
+  color: #111827;
+  font-family: "Times New Roman", "STIX Two Math", "Cambria Math", serif;
+  font-size: 1.02em;
+  overflow-wrap: anywhere;
+}}
+.math code {{
+  padding: 0 3px;
+  background: #eef0f3;
+  font-family: Menlo, Consolas, "SFMono-Regular", monospace;
+  font-size: 0.92em;
+}}
 pre {{
   width: 100%;
   margin: 8px 0 16px;
@@ -267,13 +282,72 @@ def _markdown_to_html(markdown_text: str, source_url: str = "") -> str:
     except ImportError as exc:
         raise RuntimeError("markdown is required for Luogu markdown rendering. Run: pip install -r requirements.txt") from exc
 
+    markdown_text, math_fragments = _stash_math(markdown_text)
     rendered = markdown.markdown(
         markdown_text,
         extensions=["extra", "sane_lists", "nl2br"],
         output_format="html5",
     )
+    for token, fragment in math_fragments.items():
+        rendered = rendered.replace(token, fragment)
     base_url = _origin(source_url) or "https://www.luogu.com.cn"
     return _RELATIVE_SRC_RE.sub(lambda match: _absolute_attr(match, base_url), rendered)
+
+
+def _stash_math(value: str) -> tuple[str, dict[str, str]]:
+    fragments: dict[str, str] = {}
+
+    def replace(match: re.Match) -> str:
+        content = match.group(2).strip()
+        if not content:
+            return ""
+        token = f"QQCFBOTMATH{len(fragments)}TOKEN"
+        fragments[token] = _latex_to_html(content)
+        return token
+
+    return _MATH_RE.sub(replace, value), fragments
+
+
+def _latex_to_html(value: str) -> str:
+    text = html.unescape(value).replace("\n", " ")
+    code_fragments: dict[str, str] = {}
+
+    def stash_code(match: re.Match) -> str:
+        token = f"QQCFBOTCODE{len(code_fragments)}TOKEN"
+        code_fragments[token] = f"<code>{html.escape(match.group(1))}</code>"
+        return token
+
+    text = re.sub(r"\\texttt\{([^{}]*)\}", stash_code, text)
+    text = re.sub(r"\\(?:text|mathrm|operatorname)\{([^{}]*)\}", r"\1", text)
+    replacements = {
+        r"\leq": "≤",
+        r"\le": "≤",
+        r"\geq": "≥",
+        r"\ge": "≥",
+        r"\neq": "≠",
+        r"\ne": "≠",
+        r"\cdot": "·",
+        r"\times": "×",
+        r"\ldots": "…",
+        r"\dots": "…",
+        r"\in": "∈",
+        r"\notin": "∉",
+        r"\sum": "∑",
+        r"\min": "min",
+        r"\max": "max",
+        r"\left": "",
+        r"\right": "",
+    }
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+    text = re.sub(r"\\([A-Za-z]+)", r"\1", text)
+    text = text.replace(r"\{", "{").replace(r"\}", "}")
+    text = text.replace("{", "").replace("}", "")
+    text = re.sub(r"\s+", " ", text).strip()
+    escaped = html.escape(text)
+    for token, fragment in code_fragments.items():
+        escaped = escaped.replace(token, fragment)
+    return f'<span class="math">{escaped}</span>'
 
 
 def _origin(url: str) -> str:

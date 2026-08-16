@@ -7,6 +7,7 @@ from html import unescape
 from html.parser import HTMLParser
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from .content import normalize_embedded_pre_html
 from .models import CFProblem, ProblemStatement
 
 
@@ -171,13 +172,30 @@ def _pre_text(node: "_Node") -> str:
     pre = node.find_first("pre")
     if pre is None:
         return ""
+    line_nodes = [
+        child
+        for child in pre.children
+        if child.tag == "div" and ("test-example-line" in child.class_names or child.class_names)
+    ]
+    if line_nodes:
+        return "\n".join(_normalize_text(_text(line)) for line in line_nodes).strip("\n")
     return _normalize_pre(_text(pre))
 
 
 def _clean_html(value: str) -> str:
+    pre_blocks: List[str] = []
+
+    def stash_pre(match: re.Match) -> str:
+        token = f"@@QQCFBOTPRE{len(pre_blocks)}@@"
+        pre_blocks.append(normalize_embedded_pre_html(match.group(0)))
+        return token
+
+    value = re.sub(r"<pre\b[^>]*>[\s\S]*?</pre>", stash_pre, value, flags=re.I)
     value = re.sub(r"<div[^>]*class=[\"']section-title[\"'][^>]*>.*?</div>", "", value, flags=re.DOTALL)
     value = re.sub(r"\s+", " ", value)
     value = re.sub(r">\s+<", "><", value)
+    for index, pre_html in enumerate(pre_blocks):
+        value = value.replace(f"@@QQCFBOTPRE{index}@@", pre_html)
     return value.strip()
 
 

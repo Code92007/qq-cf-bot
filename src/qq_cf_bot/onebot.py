@@ -20,6 +20,7 @@ class OneBotClient:
         self.access_token = access_token
         self.image_mode = image_mode
         self.self_id = self_id
+        self._self_name: Optional[str] = None
 
     def send_group_text(self, group_id: int, text: str) -> None:
         self.send_group_msg(group_id, [{"type": "text", "data": {"text": text}}])
@@ -37,7 +38,7 @@ class OneBotClient:
         self,
         group_id: int,
         images: Iterable[Path],
-        sender_name: str = "刷题机器人",
+        sender_name: str = "",
         sender_uin: str = "10000",
         intro_text: str = "",
     ) -> None:
@@ -48,31 +49,46 @@ class OneBotClient:
             self.send_group_forward_images_via_self(group_id, image_list, intro_text=intro_text)
             return
         except Exception:
+            if not sender_name:
+                sender_name, sender_uin = self._self_forward_sender(sender_uin)
             self.send_group_forward_custom_images(group_id, image_list, sender_name, sender_uin, intro_text=intro_text)
 
     def send_group_forward_images_via_self(self, group_id: int, images: Iterable[Path], intro_text: str = "") -> None:
         image_list = list(images)
         if not image_list:
             return
-        message: List[Dict[str, Any]] = []
+        self_id = self.get_login_user_id()
+        message_ids: List[int] = []
         if intro_text.strip():
-            message.append({"type": "text", "data": {"text": intro_text.rstrip() + "\n"}})
+            result = self.send_private_msg(
+                self_id,
+                [{"type": "text", "data": {"text": intro_text.rstrip()}}],
+            )
+            message_id = _message_id_from_result(result)
+            if message_id is None:
+                raise RuntimeError(f"OneBot send_private_msg did not return message_id: {result!r}")
+            message_ids.append(message_id)
         for image in image_list:
-            message.append({"type": "image", "data": {"file": self._image_file_value(image)}})
-        result = self.send_private_msg(self.get_login_user_id(), message)
-        message_id = _message_id_from_result(result)
-        if message_id is None:
-            raise RuntimeError(f"OneBot send_private_msg did not return message_id: {result!r}")
-        self.send_group_forward_message_ids(group_id, [message_id])
+            result = self.send_private_msg(
+                self_id,
+                [{"type": "image", "data": {"file": self._image_file_value(image)}}],
+            )
+            message_id = _message_id_from_result(result)
+            if message_id is None:
+                raise RuntimeError(f"OneBot send_private_msg did not return message_id: {result!r}")
+            message_ids.append(message_id)
+        self.send_group_forward_message_ids(group_id, message_ids)
 
     def send_group_forward_custom_images(
         self,
         group_id: int,
         images: Iterable[Path],
-        sender_name: str = "刷题机器人",
+        sender_name: str = "",
         sender_uin: str = "10000",
         intro_text: str = "",
     ) -> None:
+        if not sender_name:
+            sender_name, sender_uin = self._self_forward_sender(sender_uin)
         nodes: List[Dict[str, Any]] = []
         for index, image in enumerate(images, start=1):
             content: List[Dict[str, Any]] = []
@@ -110,13 +126,31 @@ class OneBotClient:
     def get_login_user_id(self) -> int:
         if self.self_id is not None:
             return self.self_id
+        self._load_login_info()
+        if self.self_id is not None:
+            return self.self_id
+        raise RuntimeError("OneBot get_login_info did not return user_id")
+
+    def _load_login_info(self) -> None:
         result = self._post("/get_login_info", {})
         data = result.get("data") if isinstance(result.get("data"), dict) else {}
         raw_user_id = data.get("user_id") or result.get("user_id")
         if raw_user_id is None:
             raise RuntimeError(f"OneBot get_login_info did not return user_id: {result!r}")
         self.self_id = int(raw_user_id)
-        return self.self_id
+        raw_name = data.get("nickname") or data.get("user_name") or result.get("nickname")
+        if raw_name:
+            self._self_name = str(raw_name)
+
+    def _self_forward_sender(self, fallback_uin: str = "10000") -> tuple[str, str]:
+        try:
+            if self.self_id is None or self._self_name is None:
+                self._load_login_info()
+        except Exception:
+            pass
+        name = self._self_name or "自己"
+        uin = str(self.self_id) if self.self_id is not None else fallback_uin
+        return name, uin
 
     def _post(self, path: str, payload: dict) -> dict:
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")

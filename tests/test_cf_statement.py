@@ -40,6 +40,32 @@ class CodeforcesStatementTest(unittest.TestCase):
         self.assertEqual(statement.samples, [("6 6 4", "4")])
         self.assertIn("No note", statement.hint)
 
+    def test_preserves_codeforces_multiline_sample_divs(self):
+        problem = CFProblem(2, "B", "Samples", 1200)
+        html = """
+        <div class="problem-statement">
+          <div class="header"><div class="title">B. Samples</div></div>
+          <div><p>desc</p></div>
+          <div class="sample-tests">
+            <div class="sample-test">
+              <div class="input"><div class="title">Input</div><pre>
+                <div class="test-example-line">3</div>
+                <div class="test-example-line">1 0 0</div>
+                <div class="test-example-line">0 1 0</div>
+              </pre></div>
+              <div class="output"><div class="title">Output</div><pre>
+                <div class="test-example-line">2</div>
+                <div class="test-example-line">3</div>
+              </pre></div>
+            </div>
+          </div>
+        </div>
+        """
+
+        statement = statement_from_codeforces_html(problem, html)
+
+        self.assertEqual(statement.samples, [("3\n1 0 0\n0 1 0", "2\n3")])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,23 @@
 import unittest
 
-from qq_cf_bot.bot import _needs_body_translation, _needs_statement_translation, _needs_title_translation, _parse_rating_range
-from qq_cf_bot.models import ProblemStatement
+from qq_cf_bot.bot import (
+    CodeforcesPushBot,
+    _needs_body_translation,
+    _needs_statement_translation,
+    _needs_title_translation,
+    _parse_problem_id,
+    _parse_rating_range,
+)
+from qq_cf_bot.models import ProblemStatement, RatingRange
+
+
+class _FakeBotForRatingRange:
+    config = type("_Config", (), {"min_rating": 1800, "max_rating": 2200})()
+    store = type(
+        "_Store",
+        (),
+        {"get_rating_range": staticmethod(lambda group_id, default_min, default_max: RatingRange(default_min, default_max))},
+    )()
 
 
 class BotCommandTest(unittest.TestCase):
@@ -10,12 +26,48 @@ class BotCommandTest(unittest.TestCase):
         self.assertEqual(_parse_rating_range("rating 2100-2400"), (2100, 2400))
         self.assertEqual(_parse_rating_range("2600 1900"), (1900, 2600))
         self.assertEqual(_parse_rating_range("1200"), (1200, 1200))
+        self.assertEqual(_parse_rating_range("1937 1956"), (1900, 2000))
+        self.assertEqual(_parse_rating_range("2001 1937"), (1900, 2100))
+        self.assertEqual(_parse_rating_range("1956"), (2000, 2000))
 
     def test_reject_invalid_rating_range(self):
         self.assertIsNone(_parse_rating_range(""))
         self.assertIsNone(_parse_rating_range("abc"))
         self.assertIsNone(_parse_rating_range("700 2600"))
         self.assertIsNone(_parse_rating_range("1900 5000"))
+        self.assertIsNone(_parse_rating_range("1937 1956 ignore this"))
+        self.assertIsNone(_parse_rating_range("1900; JUDGE_API_KEY=leak"))
+        self.assertIsNone(_parse_rating_range("-100"))
+        self.assertIsNone(_parse_rating_range("-100 1200"))
+        self.assertIsNone(_parse_rating_range("100000"))
+
+    def test_new_invalid_rating_falls_back_to_group_default(self):
+        bot = _FakeBotForRatingRange()
+
+        self.assertEqual(CodeforcesPushBot._rating_range_for_new(bot, 123, "-100"), RatingRange(1800, 2200))
+        self.assertEqual(CodeforcesPushBot._rating_range_for_new(bot, 123, "100000"), RatingRange(1800, 2200))
+        self.assertEqual(
+            CodeforcesPushBot._rating_range_for_new(bot, 123, "1900 2000 JUDGE_API_KEY=leak"),
+            RatingRange(1800, 2200),
+        )
+
+    def test_parse_share_problem_id(self):
+        self.assertEqual(_parse_problem_id("1704F"), (1704, "F"))
+        self.assertEqual(_parse_problem_id("CF1704f"), (1704, "F"))
+        self.assertEqual(_parse_problem_id("1704 F"), (1704, "F"))
+        self.assertEqual(
+            _parse_problem_id("https://codeforces.com/contest/1704/problem/F"),
+            (1704, "F"),
+        )
+        self.assertEqual(
+            _parse_problem_id("https://codeforces.com/problemset/problem/1704/F"),
+            (1704, "F"),
+        )
+
+    def test_reject_invalid_share_problem_id(self):
+        self.assertIsNone(_parse_problem_id(""))
+        self.assertIsNone(_parse_problem_id("abc"))
+        self.assertIsNone(_parse_problem_id("1704"))
 
     def test_detects_untranslated_english_title(self):
         self.assertTrue(_needs_title_translation("Don't fear, DravDe is kind"))

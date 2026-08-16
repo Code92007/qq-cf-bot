@@ -9,6 +9,7 @@ from http.cookiejar import CookieJar
 from html import unescape
 from typing import Any, Iterable, Optional, Tuple
 
+from .content import normalize_sample_block
 from .models import CFProblem, ProblemStatement
 
 
@@ -94,6 +95,6 @@ def statement_from_luogu_problem(raw: dict, fallback_title: str, source_url: str
 def _normalize_samples(raw_samples: Iterable[Any]) -> Iterable[Tuple[str, str]]:
     for sample in raw_samples:
         if isinstance(sample, dict):
-            yield str(sample.get("input") or ""), str(sample.get("output") or "")
+            yield normalize_sample_block(sample.get("input") or ""), normalize_sample_block(sample.get("output") or "")
         elif isinstance(sample, (list, tuple)) and len(sample) >= 2:
-            yield str(sample[0]), str(sample[1])
+            yield normalize_sample_block(sample[0]), normalize_sample_block(sample[1])

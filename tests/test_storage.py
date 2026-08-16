@@ -28,9 +28,28 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(active.problem.cf_id, "1042D")
             self.assertEqual(active.statement.samples, [("1", "2")])
             self.assertEqual([str(path) for path in active.images], ["/tmp/a.png", "/tmp/b.png"])
+            self.assertTrue(active.ranked)
 
             store.clear_active_problem(123)
             self.assertIsNone(store.get_active_problem(123))
+
+    def test_shared_active_problem_can_be_unranked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            problem = CFProblem(1704, "F", "Colouring Game", 2400)
+            statement = ProblemStatement(
+                pid="CF1704F",
+                title="Colouring Game",
+                description="desc",
+                input_format="in",
+                output_format="out",
+                samples=[],
+            )
+            store.set_active_problem(123, problem, statement, [Path("/tmp/share.png")], ranked=False)
+
+            active = store.get_active_problem(123)
+            self.assertIsNotNone(active)
+            self.assertFalse(active.ranked)
 
     def test_statement_cache_roundtrip(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -143,6 +162,22 @@ class StorageTest(unittest.TestCase):
             self.assertEqual([stat.display_name for stat in stats], ["hard", "farmer"])
             self.assertEqual(stats[0].solved_ratings, (2600,))
             self.assertEqual(stats[1].solved_ratings, (2500, 2500))
+
+    def test_unranked_submission_does_not_enter_rating_vector(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            shared = CFProblem(1, "A", "Shared", 2600)
+            normal = CFProblem(2, "A", "Normal", 1800)
+            store.mark_sent(1, shared)
+            store.mark_sent(1, normal)
+
+            store.record_submission(1, 10, "alice", shared, "ok", True, "通过", ranked=False)
+            store.record_submission(1, 10, "alice", normal, "ok", True, "通过")
+            store.mark_solved(1, 10, "alice", 1550, 1500)
+
+            stats = store.list_group_stats(1)
+
+            self.assertEqual(stats[0].solved_ratings, (1800,))
 
     def test_group_rating_range_and_meta(self):
         with tempfile.TemporaryDirectory() as tmp:
