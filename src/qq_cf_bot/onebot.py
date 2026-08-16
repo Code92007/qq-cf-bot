@@ -39,21 +39,24 @@ class OneBotClient:
         images: Iterable[Path],
         sender_name: str = "题面",
         sender_uin: str = "10000",
+        intro_text: str = "",
     ) -> None:
         image_list = list(images)
         if not image_list:
             return
         try:
-            self.send_group_forward_images_via_self(group_id, image_list)
+            self.send_group_forward_images_via_self(group_id, image_list, intro_text=intro_text)
             return
         except Exception:
-            self.send_group_forward_custom_images(group_id, image_list, sender_name, sender_uin)
+            self.send_group_forward_custom_images(group_id, image_list, sender_name, sender_uin, intro_text=intro_text)
 
-    def send_group_forward_images_via_self(self, group_id: int, images: Iterable[Path]) -> None:
+    def send_group_forward_images_via_self(self, group_id: int, images: Iterable[Path], intro_text: str = "") -> None:
         image_list = list(images)
         if not image_list:
             return
-        message: List[Dict[str, Any]] = [{"type": "text", "data": {"text": "题面\n"}}]
+        message: List[Dict[str, Any]] = []
+        if intro_text.strip():
+            message.append({"type": "text", "data": {"text": intro_text.rstrip() + "\n"}})
         for image in image_list:
             message.append({"type": "image", "data": {"file": self._image_file_value(image)}})
         result = self.send_private_msg(self.get_login_user_id(), message)
@@ -68,19 +71,21 @@ class OneBotClient:
         images: Iterable[Path],
         sender_name: str = "题面",
         sender_uin: str = "10000",
+        intro_text: str = "",
     ) -> None:
         nodes: List[Dict[str, Any]] = []
         for index, image in enumerate(images, start=1):
+            content: List[Dict[str, Any]] = []
+            if index == 1 and intro_text.strip():
+                content.append({"type": "text", "data": {"text": intro_text.rstrip() + "\n"}})
+            content.append({"type": "image", "data": {"file": self._image_file_value(image)}})
             nodes.append(
                 {
                     "type": "node",
                     "data": {
                         "name": sender_name,
                         "uin": sender_uin,
-                        "content": [
-                            {"type": "text", "data": {"text": f"题面 #{index}\n"}},
-                            {"type": "image", "data": {"file": self._image_file_value(image)}},
-                        ],
+                        "content": content,
                     },
                 }
             )

@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from typing import Optional, Sequence
 
-from .llm import OpenAICompatibleTextClient
+from .llm import LLMProviderConfig, OpenAICompatibleTextClient
 from .models import CFProblem, ProblemStatement
 from .security import redact_sensitive_text
 
@@ -25,6 +26,7 @@ class LLMSolutionGenerator:
         timeout_seconds: int,
         enabled: bool = True,
         max_statement_chars: int = 12_000,
+        providers: Optional[Sequence[LLMProviderConfig]] = None,
     ) -> None:
         self.client = OpenAICompatibleTextClient(
             api_url=api_url,
@@ -32,6 +34,7 @@ class LLMSolutionGenerator:
             model=model,
             wire_api=wire_api,
             timeout_seconds=timeout_seconds,
+            providers=providers,
         )
         self.enabled = enabled
         self.max_statement_chars = max_statement_chars

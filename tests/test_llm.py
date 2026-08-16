@@ -3,6 +3,7 @@ import urllib.error
 from unittest.mock import patch
 
 from qq_cf_bot.llm import (
+    LLMProviderConfig,
     OpenAICompatibleTextClient,
     _read_responses_sse_json,
     _read_responses_websocket_json,
@@ -158,6 +159,22 @@ class LLMClientTest(unittest.TestCase):
 
         complete_json.assert_called_once_with("system", "user")
 
+    def test_provider_fallback_tries_next_configured_transport(self):
+        client = OpenAICompatibleTextClient(
+            "http://first",
+            "key",
+            "model",
+            "responses_stream",
+            providers=[
+                LLMProviderConfig("http://first", "key", "m1", "responses_stream", "first"),
+                LLMProviderConfig("http://second", "key", "m2", "responses_stream", "second"),
+            ],
+        )
+        client._transports = [FailingTransport(), SuccessfulTransport()]
+
+        with patch("qq_cf_bot.llm.LOGGER.warning"):
+            self.assertEqual(client.complete_json("system", "user"), '{"ok":true}')
+
 
 class FakeWebSocket:
     def __init__(self, events):
@@ -188,6 +205,20 @@ class FakeErrorBody:
 
     def close(self):
         pass
+
+
+class FailingTransport:
+    configured = True
+
+    def complete_json(self, system_prompt, user_prompt):
+        raise RuntimeError("boom")
+
+
+class SuccessfulTransport:
+    configured = True
+
+    def complete_json(self, system_prompt, user_prompt):
+        return '{"ok":true}'
 
 
 if __name__ == "__main__":

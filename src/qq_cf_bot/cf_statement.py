@@ -12,14 +12,69 @@ from .models import CFProblem, ProblemStatement
 
 class CodeforcesStatementClient:
     def fetch_statement(self, problem: CFProblem) -> ProblemStatement:
-        request = urllib.request.Request(problem.cf_url, headers=_browser_headers(problem.cf_url))
-        try:
-            with urllib.request.urlopen(request, timeout=25) as response:
-                html = response.read().decode("utf-8", errors="replace")
-        except urllib.error.HTTPError as exc:
-            raise RuntimeError(f"Codeforces returned HTTP {exc.code} for {problem.cf_url}") from exc
-
+        html = fetch_codeforces_html(problem.cf_url, validate=_looks_like_problem_page)
         return statement_from_codeforces_html(problem, html)
+
+
+def fetch_codeforces_html(url: str, validate=None, timeout_seconds: int = 25) -> str:
+    last_error: Optional[Exception] = None
+    try:
+        html = _fetch_http(url, timeout_seconds)
+        if validate is None or validate(html):
+            return html
+        last_error = RuntimeError("Codeforces returned HTML that did not pass validation")
+    except Exception as exc:
+        last_error = exc
+
+    try:
+        html = _fetch_playwright(url)
+        if validate is None or validate(html):
+            return html
+        raise RuntimeError("Codeforces Playwright fallback returned invalid HTML")
+    except Exception as exc:
+        if last_error is not None:
+            raise RuntimeError(f"Codeforces fetch failed for {url}: {last_error}; fallback failed: {exc}") from exc
+        raise
+
+
+def _fetch_http(url: str, timeout_seconds: int) -> str:
+    request = urllib.request.Request(url, headers=_browser_headers(url))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            return response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Codeforces returned HTTP {exc.code} for {url}") from exc
+
+
+def _fetch_playwright(url: str) -> str:
+    try:
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        raise RuntimeError("playwright is required for Codeforces fetch fallback") from exc
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent=_browser_headers(url)["User-Agent"],
+            locale="en-US",
+            extra_http_headers={
+                key: value
+                for key, value in _browser_headers(url).items()
+                if key.lower() != "user-agent"
+            },
+        )
+        try:
+            page = context.new_page()
+            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            try:
+                page.wait_for_load_state("networkidle", timeout=8_000)
+            except PlaywrightTimeoutError:
+                pass
+            return page.content()
+        finally:
+            context.close()
+            browser.close()
 
 
 def statement_from_codeforces_html(problem: CFProblem, html: str) -> ProblemStatement:
@@ -76,6 +131,11 @@ def _browser_headers(referer: str) -> Dict[str, str]:
         "Cache-Control": "no-cache",
         "Referer": referer,
     }
+
+
+def _looks_like_problem_page(html: str) -> bool:
+    lowered = html.lower()
+    return "problem-statement" in lowered and "cf-error" not in lowered and "captcha" not in lowered
 
 
 def _section_html(node: Optional["_Node"]) -> str:

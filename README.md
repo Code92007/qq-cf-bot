@@ -6,14 +6,14 @@
 
 - `/new`：按本群默认难度推送一道题，默认 `1900-2600`。
 - `/new 2100 2400`：临时按 `2100-2400` 推一道题，不修改群默认配置。
+- `/new 1200`：临时按精确 `1200` rating 推一道题。
 - `/cfset rating 1900 2600`：设置本群默认题目难度。
 - `/rating`：查看本群默认题目难度。
 - `/cur`：重新发送当前题目。
-- `/giveup`：放弃当前题目；该题仍计入已推送，不会重复。
-- `/submitcode cpp + 代码`：提交当前题代码到 Codeforces，返回 AC/WA/TLE/CE 等 verdict。
+- `/giveup`：放弃当前题目；默认新题发布 120 秒后才能放弃，该题仍计入已推送，不会重复。
+- `/submitcode + 代码`：自动识别 C++/C/Java/Python 并提交当前题代码到 Codeforces，返回 AC/WA/TLE/CE 等 verdict。
 - `/ranklist`：发送群内榜单图片。
 - `/submit 做法`：大模型口头做法审核，默认开启。审核前会优先读取题解库，用题面、洛谷公开题解、CF 题解链接/内容和可选 AC 代码片段校对做法。
-- `/solutions`：题目结束前不公开题解来源；题解库仅供 `/submit` 内部审核使用。
 
 ## 部署前准备
 
@@ -67,6 +67,9 @@ python -m qq_cf_bot
 | `CF_MIN_RATING` | `1900` | 默认最低题目 rating |
 | `CF_MAX_RATING` | `2600` | 默认最高题目 rating |
 | `BOT_DEDUP_SCOPE` | `group` | `group` 每群去重，`global` 全局去重 |
+| `BOT_PREFETCH_ENABLED` | `true` | 是否在当前题发布后后台预制下一题，加快下一次 `/new` |
+| `CF_RECENT_SELECTION_POOL_SIZE` | `500` | 推题时优先从较新 contestId 的候选池中随机，数值越大越分散 |
+| `GIVEUP_MIN_SECONDS` | `120` | 新题发布后至少等待多少秒才能 `/giveup` |
 | `FALLBACK_STATEMENT_SOURCE` | `codeforces` | 洛谷中文题面失败时，回退到 Codeforces 官方英文题面 |
 | `CF_SUBMIT_ENABLED` | `auto` | 是否开启 `/submitcode` 远端提交；`auto` 表示账号密码齐全时自动开启，`false` 强制关闭 |
 | `CF_USERNAME` | 空 | Codeforces 登录账号或邮箱 |
@@ -83,6 +86,7 @@ python -m qq_cf_bot
 | `JUDGE_API_KEY` | 空 | 口头做法审核模型 key |
 | `JUDGE_MODEL` | 空 | 口头做法审核模型名 |
 | `JUDGE_WIRE_API` | 自动 | 模型接口协议；支持 `chat_completions`、`responses`、`responses_stream` 和 `responses_websocket` |
+| `JUDGE_PROVIDERS` | 空 | 可选 JSON provider 队列；为空时使用 `JUDGE_API_*` 单 provider |
 | `JUDGE_STATEMENT_MAX_CHARS` | `12000` | 单次判题传给模型的题面最大字符数 |
 | `JUDGE_SOLUTION_CONTEXT_MAX_CHARS` | `10000` | 单次判题传给模型的题解库上下文最大字符数 |
 | `TAILSCALE_REQUIRED` | `false` | `true` 时 `scripts/deploy.sh` 会强制检查 Tailscale 已启动并已登录 |
@@ -95,8 +99,9 @@ python -m qq_cf_bot
 | `TRANSLATE_API_KEY` | `JUDGE_API_KEY` | 翻译模型 key；为空时复用 `JUDGE_API_KEY` |
 | `TRANSLATE_MODEL` | `JUDGE_MODEL` | 翻译模型名；为空时复用 `JUDGE_MODEL` |
 | `TRANSLATE_WIRE_API` | `JUDGE_WIRE_API` | 翻译模型接口协议；为空时复用判题模型协议 |
+| `TRANSLATE_PROVIDERS` | 空 | 可选 JSON provider 队列；为空时使用 `TRANSLATE_API_*` 单 provider |
 | `TRANSLATE_TIMEOUT_SECONDS` | `60` | 单次翻译请求超时 |
-| `TRANSLATE_MAX_CHARS` | `24000` | 单次翻译传给模型的题面最大字符数 |
+| `TRANSLATE_MAX_CHARS` | `60000` | 单次翻译传给模型的题面最大字符数 |
 | `SOLUTION_BANK_ENABLED` | `true` | 是否开启题解库缓存 |
 | `SOLUTION_BANK_MIN_REFS` | `1` | 每题至少缓存多少条参考材料后不再主动抓取 |
 | `SOLUTION_BANK_MAX_REFS` | `4` | 每题最多缓存/提供多少条参考材料 |
@@ -111,7 +116,7 @@ python -m qq_cf_bot
 推荐使用代码块：
 
 ````text
-/submitcode cpp
+/submitcode
 ```cpp
 #include <bits/stdc++.h>
 using namespace std;
@@ -123,10 +128,10 @@ int main() {
 ```
 ````
 
-也支持不带代码块：
+也支持不带代码块或不写语言：
 
 ```text
-/submitcode cpp
+/submitcode
 #include <bits/stdc++.h>
 using namespace std;
 int main() { return 0; }
@@ -136,6 +141,7 @@ int main() { return 0; }
 
 - `/submitcode` 只提交当前群的当前题。
 - 提交队列是全局单线程，默认至少间隔 180 秒。
+- 语言会按代码风格自动识别，主要支持 C++、C、Java、Python；识别不出时按 `CF_SUBMIT_DEFAULT_LANGUAGE`。
 - Codeforces 可能触发验证码、二次验证或账号安全确认，此时远端提交会失败，需要先手动登录账号处理。
 - 不要在正在进行的正式比赛中使用该机器人提交代码。
 
@@ -145,19 +151,20 @@ int main() { return 0; }
 
 ## `/submit` 和题解库
 
-`/submit` 适合群友提交口头做法、复杂度和关键边界处理。机器人会：
+`/submit` 适合群友提交口头做法、复杂度和关键边界处理。判定口径是：核心算法、关键状态/性质和复杂度说清楚，足以让熟练选手补出实现即可；不会要求代码级细节全部写完。机器人会：
 
 1. 读取当前题的缓存题解库。
 2. 如果题解库不足且之前没抓过，尝试抓取洛谷公开题解和 Codeforces 题解/教程。
 3. 如果 `SOLUTION_BANK_FETCH_CF_AC_CODE=true` 且 CF 账号可登录，再限量抓取 AC 代码片段。
 4. 如果公开材料仍不足且 `SOLUTION_BANK_GENERATE_LLM=true`，先让判题模型独立生成一份内部参考解法并缓存。
-5. 把题面和受限长度的参考材料交给大模型审核。
+5. 把题面、受限长度的参考材料和本题历史口胡记录交给大模型一审。
+6. 如果一审通过且题解库已有参考材料，再用参考材料做二审复核，只拦截明显错误，不因为表述不像官方题解而驳回。
 
-题解库保存在 `data/bot.sqlite3`，一题可以对应多条题解，后续同一题不会重复抓取；模型生成的内部参考解法也会作为 `llm_generated` 缓存。模型只用于做法审核和内部参考解法生成，不用于 `/submitcode` 的最终 verdict。为避免提前暴露题目来源，`/solutions` 不会在当前题结束前输出题号或题解链接。
+题解库保存在 `data/bot.sqlite3`，一题可以对应多条题解，后续同一题不会重复抓取；模型生成的内部参考解法也会作为 `llm_generated` 缓存。模型只用于做法审核和内部参考解法生成，不用于 `/submitcode` 的最终 verdict。为避免提前暴露题目来源，当前题进行中不会公开题号或题解；`/giveup`、口胡通过或代码 AC 后才会解锁题目信息和已缓存参考材料。
 
 ### 接入大模型判题
 
-`/submit` 调用的是统一的大模型 JSON 输出能力，当前支持三种 OpenAI-compatible 协议：
+`/submit` 调用的是统一的大模型 JSON 输出能力，当前支持四种 OpenAI-compatible 协议：
 
 - `chat_completions`：传统 `/chat/completions` HTTP POST。
 - `responses`：`/responses` HTTP POST；如果服务端返回 `426 WebSocket upgrade required`，机器人会自动改走 SSE 流式 Responses。
@@ -192,6 +199,12 @@ JUDGE_API_URL=http://<codex-provider-base-url>
 ```
 
 `TRANSLATE_API_*` 默认复用 `JUDGE_API_*`，所以只要判题模型配好了，CF 英文兜底题面和洛谷英文标题也会自动走同一个模型翻译。若模型服务只暴露在 Tailscale 内网地址上，需要先让机器人服务器加入同一个 tailnet，再在服务器上验证 `curl http://<codex-provider-base-url>/health` 或模型服务自己的健康检查地址能通。
+
+如果以后有多个模型 provider，可以用 JSON 数组配置 fallback；当前只有一个 Codex provider 时不用填：
+
+```env
+JUDGE_PROVIDERS=[{"name":"codex","api_url":"http://host.docker.internal:18080","api_key":"...","model":"gpt-5.5","wire_api":"responses_stream"}]
+```
 
 服务器接入 Tailscale 的典型流程：
 
@@ -234,11 +247,11 @@ sudo systemctl enable --now qq-cf-bot
 
 `/new` 优先抓取洛谷中文题面。若洛谷返回 403 或暂时不可用，默认回退到 Codeforces 官方英文题面，避免出题失败。
 
-如果 `TRANSLATE_ENABLED=true` 且提供 OpenAI-compatible 翻译模型，机器人会把 Codeforces 英文题面翻译成中文再渲染；洛谷题面若正文已是中文但标题仍是英文，也会只补翻译标题。成功生成的题面会缓存到 `data/bot.sqlite3` 的题面缓存中，当前题图片也会保存在 `data/assets`；后续同题复用缓存，不会重复请求翻译。
+如果 `TRANSLATE_ENABLED=true` 且提供 OpenAI-compatible 翻译模型，机器人会把 Codeforces 英文题面翻译成中文再渲染；洛谷题面若正文已是中文但标题仍是英文，也会只补翻译标题。若抓取到的洛谷题面章节标题是中文但正文仍是英文，也会触发整题翻译。成功生成的题面会缓存到 `data/bot.sqlite3` 的题面缓存中，当前题图片也会保存在 `data/assets`；后续同题复用缓存，不会重复请求翻译。
 
 ## 题面发送方式
 
-`/new` 和 `/cur` 只发送题面图片，不暴露 Codeforces 题号、题名、难度、标签或链接。题面图片会优先先发到机器人自己的私聊窗口，再把生成的消息记录合并转发到群，避免多张图片在群里刷屏。`/giveup` 或通过判题后才会公开题号、难度、标签和链接。
+`/new` 和 `/cur` 只发送题面图片，不暴露 Codeforces 题号、题名、难度、标签或链接。题面图片会优先先发到机器人自己的私聊窗口，再把生成的消息记录合并转发到群，避免多张图片在群里刷屏；“刷新了一道新题目~”会放在合并转发内，不额外刷一条群消息。`/giveup` 或通过判题后才会公开题号、难度、标签、链接和已缓存参考材料。
 
 ## GitHub 上传注意
 

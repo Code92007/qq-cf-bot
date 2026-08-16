@@ -102,8 +102,8 @@ def parse_code_submission(text: str, default_language: str = "cpp") -> Optional[
 
     fence = _FENCED_CODE_RE.search(text)
     if fence:
-        language = (fence.group("language") or default_language).strip().lower()
         source = fence.group("source").strip("\n")
+        language = (fence.group("language") or infer_code_language(source, default_language)).strip().lower()
         return ParsedCodeSubmission(language=language or default_language, source=source)
 
     lines = text.splitlines()
@@ -113,7 +113,7 @@ def parse_code_submission(text: str, default_language: str = "cpp") -> Optional[
         return ParsedCodeSubmission(language=language, source=source)
 
     if looks_like_code_text(text):
-        return ParsedCodeSubmission(language=default_language, source=text)
+        return ParsedCodeSubmission(language=infer_code_language(text, default_language), source=text)
     return None
 
 
@@ -125,6 +125,24 @@ def looks_like_code_text(text: str) -> bool:
     if len(text.strip()) < 20:
         return False
     return bool(_FENCED_CODE_RE.search(text) or _CODE_HINT_RE.search(text))
+
+
+def infer_code_language(source: str, default_language: str = "cpp") -> str:
+    text = source.strip()
+    lower = text.lower()
+    if re.search(r"^\s*#include\s*<", text, re.MULTILINE):
+        if "bits/stdc++.h" in lower:
+            return "cpp"
+        if re.search(r"\busing\s+namespace\s+std\b|\bstd::|\bvector\s*<|\bmap\s*<|\bcout\s*<<|\bcin\s*>>", text):
+            return "cpp"
+        return "c"
+    if re.search(r"\bpublic\s+class\s+\w+|\bclass\s+Main\b|\bSystem\.out\.print", text):
+        return "java"
+    if re.search(r"^\s*(import\s+sys|from\s+\w+\s+import\b|def\s+\w+\s*\(|print\s*\()", text, re.MULTILINE):
+        return "python"
+    if "#include" in lower or "int main" in lower:
+        return "cpp"
+    return default_language
 
 
 def _looks_like_language_alias(text: str) -> bool:

@@ -15,6 +15,17 @@ class SelectorTest(unittest.TestCase):
         selected = ProblemSelector(1900, 2600).candidates(problems, {"3C"})
         self.assertEqual([p.cf_id for p in selected], ["2B"])
 
+    def test_shuffled_candidates_prefers_recent_contest_pool(self):
+        problems = [
+            CFProblem(1, "A", "old", 2000),
+            CFProblem(100, "A", "new a", 2000),
+            CFProblem(101, "A", "new b", 2000),
+        ]
+
+        selected = list(ProblemSelector(1900, 2600, recent_pool_size=2).shuffled_candidates(problems, set()))
+
+        self.assertEqual({problem.cf_id for problem in selected}, {"100A", "101A"})
+
 
 if __name__ == "__main__":
     unittest.main()

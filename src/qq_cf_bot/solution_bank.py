@@ -10,6 +10,7 @@ import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Iterable, List, Optional
 
+from .cf_statement import fetch_codeforces_html
 from .luogu import LuoguClient
 from .models import CFProblem, ProblemStatement, SolutionReference
 from .solution_generator import LLMSolutionGenerator
@@ -136,16 +137,16 @@ class SolutionBank:
 
     def _fetch_codeforces_editorial(self, problem: CFProblem) -> List[SolutionReference]:
         try:
-            problem_html = _http_get(problem.cf_url)
-        except (OSError, urllib.error.URLError, TimeoutError) as exc:
+            problem_html = fetch_codeforces_html(problem.cf_url, validate=_looks_like_cf_problem_page)
+        except (OSError, urllib.error.URLError, TimeoutError, RuntimeError) as exc:
             LOGGER.warning("failed to fetch Codeforces problem page for %s: %s", problem.cf_id, exc)
             return []
         editorial_url = _find_editorial_url(problem_html)
         if not editorial_url:
             return []
         try:
-            editorial_html = _http_get(editorial_url)
-        except (OSError, urllib.error.URLError, TimeoutError) as exc:
+            editorial_html = fetch_codeforces_html(editorial_url, validate=_looks_like_readable_cf_page)
+        except (OSError, urllib.error.URLError, TimeoutError, RuntimeError) as exc:
             LOGGER.warning("failed to fetch Codeforces editorial for %s: %s", problem.cf_id, exc)
             return [
                 _reference(
@@ -237,6 +238,17 @@ def _extract_luogu_solution_candidates(payload: Any) -> List[_LuoguSolutionCandi
 
     visit(payload)
     return candidates
+
+
+def _looks_like_cf_problem_page(value: str) -> bool:
+    lowered = value.lower()
+    return "problem-statement" in lowered and _looks_like_readable_cf_page(value)
+
+
+def _looks_like_readable_cf_page(value: str) -> bool:
+    lowered = value.lower()
+    blocked_markers = ("captcha", "cf-error", "enter the characters", "checking your browser")
+    return "<html" in lowered and not any(marker in lowered for marker in blocked_markers)
 
 
 def _first_text(node: dict, keys: Iterable[str]) -> str:

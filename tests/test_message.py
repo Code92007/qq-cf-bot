@@ -2,6 +2,7 @@ import unittest
 
 from qq_cf_bot.message import (
     extract_plain_text,
+    infer_code_language,
     is_at_only_mention,
     is_new_command,
     looks_like_code_text,
@@ -63,6 +64,17 @@ class MessageTest(unittest.TestCase):
     def test_detect_direct_code(self):
         self.assertTrue(looks_like_code_text("#include <bits/stdc++.h>\nusing namespace std;\nint main(){return 0;}"))
         self.assertFalse(looks_like_code_text("今天讨论一下做法"))
+
+    def test_infers_common_code_languages(self):
+        self.assertEqual(infer_code_language("#include <bits/stdc++.h>\nusing namespace std;\nint main(){}"), "cpp")
+        self.assertEqual(infer_code_language("#include <stdio.h>\nint main(){printf(\"1\");}"), "c")
+        self.assertEqual(infer_code_language("public class Main { public static void main(String[] args){} }"), "java")
+        self.assertEqual(infer_code_language("import sys\nprint(sys.stdin.readline())"), "python")
+
+    def test_parse_bare_submitcode_uses_inferred_language(self):
+        parsed = parse_code_submission("public class Main { public static void main(String[] args){} }")
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed.language, "java")
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 from .models import (
     ActiveProblem,
     CFProblem,
+    PreparedProblem,
     ProblemStatement,
     RatingRange,
     RemoteJudgeResult,
@@ -107,6 +108,89 @@ class SentProblemStore:
                 ),
             )
 
+    def update_active_problem_assets(
+        self,
+        group_id: int,
+        problem: CFProblem,
+        statement: ProblemStatement,
+        image_paths: Iterable[Path],
+    ) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                update active_problems
+                set problem_json = ?, statement_json = ?, image_paths_json = ?
+                where group_id = ? and cf_id = ?
+                """,
+                (
+                    json.dumps(_problem_to_json(problem), ensure_ascii=False),
+                    json.dumps(_statement_to_json(statement), ensure_ascii=False),
+                    json.dumps([str(path) for path in image_paths], ensure_ascii=False),
+                    str(group_id),
+                    problem.cf_id,
+                ),
+            )
+
+    def get_prefetched_problem(self, group_id: int, rating_range: RatingRange) -> Optional[PreparedProblem]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                select problem_json, statement_json, image_paths_json, min_rating, max_rating, created_at
+                from prefetched_problems
+                where group_id = ? and min_rating = ? and max_rating = ?
+                """,
+                (str(group_id), rating_range.min_rating, rating_range.max_rating),
+            ).fetchone()
+        if row is None:
+            return None
+        return PreparedProblem(
+            problem=_problem_from_json(row[0]),
+            statement=_statement_from_json(row[1]),
+            images=[Path(path) for path in json.loads(row[2])],
+            rating_range=RatingRange(int(row[3]), int(row[4])),
+            created_at=str(row[5]),
+        )
+
+    def set_prefetched_problem(
+        self,
+        group_id: int,
+        prepared: PreparedProblem,
+    ) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                insert into prefetched_problems
+                    (group_id, min_rating, max_rating, cf_id, problem_json, statement_json, image_paths_json, created_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?)
+                on conflict(group_id, min_rating, max_rating) do update set
+                    cf_id = excluded.cf_id,
+                    problem_json = excluded.problem_json,
+                    statement_json = excluded.statement_json,
+                    image_paths_json = excluded.image_paths_json,
+                    created_at = excluded.created_at
+                """,
+                (
+                    str(group_id),
+                    prepared.rating_range.min_rating,
+                    prepared.rating_range.max_rating,
+                    prepared.problem.cf_id,
+                    json.dumps(_problem_to_json(prepared.problem), ensure_ascii=False),
+                    json.dumps(_statement_to_json(prepared.statement), ensure_ascii=False),
+                    json.dumps([str(path) for path in prepared.images], ensure_ascii=False),
+                    prepared.created_at,
+                ),
+            )
+
+    def clear_prefetched_problem(self, group_id: int, rating_range: RatingRange) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                delete from prefetched_problems
+                where group_id = ? and min_rating = ? and max_rating = ?
+                """,
+                (str(group_id), rating_range.min_rating, rating_range.max_rating),
+            )
+
     def get_cached_statement(self, cf_id: str, require_translated: bool = False) -> Optional[ProblemStatement]:
         with self._connect() as conn:
             row = conn.execute(
@@ -185,6 +269,29 @@ class SentProblemStore:
                     now,
                 ),
             )
+
+    def list_submission_history(self, group_id: int, cf_id: str, limit: int = 12) -> List[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                select display_name, raw_text, accepted, reason, created_at
+                from submissions
+                where group_id = ? and cf_id = ?
+                order by id desc
+                limit ?
+                """,
+                (str(group_id), cf_id, max(1, limit)),
+            ).fetchall()
+        return [
+            {
+                "display_name": str(row[0]),
+                "text": str(row[1]),
+                "accepted": bool(row[2]),
+                "reason": str(row[3]),
+                "created_at": str(row[4]),
+            }
+            for row in reversed(rows)
+        ]
 
     def record_code_submission(
         self,
@@ -487,6 +594,21 @@ class SentProblemStore:
                     statement_json text not null,
                     image_paths_json text not null,
                     created_at text not null
+                )
+                """
+            )
+            conn.execute(
+                """
+                create table if not exists prefetched_problems (
+                    group_id text not null,
+                    min_rating integer not null,
+                    max_rating integer not null,
+                    cf_id text not null,
+                    problem_json text not null,
+                    statement_json text not null,
+                    image_paths_json text not null,
+                    created_at text not null,
+                    primary key (group_id, min_rating, max_rating)
                 )
                 """
             )

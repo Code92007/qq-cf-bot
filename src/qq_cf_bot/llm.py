@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import os
 import socket
 import ssl
@@ -13,12 +14,22 @@ import urllib.parse
 import urllib.request
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
 
 
 SUPPORTED_WIRE_APIS = frozenset({"chat_completions", "responses", "responses_stream", "responses_websocket"})
 RESPONSES_WEBSOCKET_BETA = "responses_websockets=2026-02-06"
 JSON_OUTPUT_SUFFIX = "\n\nOutput requirement: return only valid json."
+LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class LLMProviderConfig:
+    api_url: str
+    api_key: str
+    model: str
+    wire_api: str
+    name: str = ""
 
 
 class OpenAICompatibleTextClient:
@@ -29,29 +40,77 @@ class OpenAICompatibleTextClient:
         model: str,
         wire_api: str = "chat_completions",
         timeout_seconds: int = 60,
+        providers: Optional[Sequence[LLMProviderConfig]] = None,
     ) -> None:
-        self.wire_api = normalize_wire_api(wire_api)
-        self.api_url = endpoint_url(api_url, self.wire_api)
-        self.api_key = api_key
-        self.model = model
-        self.timeout_seconds = timeout_seconds
-        self._transport = _make_transport(
-            api_url=api_url,
-            api_key=api_key,
-            model=model,
-            wire_api=self.wire_api,
-            timeout_seconds=timeout_seconds,
+        provider_list = _normalize_provider_list(
+            providers,
+            fallback=LLMProviderConfig(api_url=api_url, api_key=api_key, model=model, wire_api=wire_api),
         )
+        primary = provider_list[0]
+        self.wire_api = normalize_wire_api(primary.wire_api)
+        self.api_url = endpoint_url(primary.api_url, self.wire_api)
+        self.api_key = primary.api_key
+        self.model = primary.model
+        self.timeout_seconds = timeout_seconds
+        self._providers = provider_list
+        self._transports = [
+            _make_transport(
+                api_url=provider.api_url,
+                api_key=provider.api_key,
+                model=provider.model,
+                wire_api=provider.wire_api,
+                timeout_seconds=timeout_seconds,
+            )
+            for provider in provider_list
+        ]
 
     @property
     def configured(self) -> bool:
-        return self._transport.configured
+        return any(transport.configured for transport in self._transports)
 
     def complete_json(self, system_prompt: str, user_prompt: str) -> str:
-        return self._transport.complete_json(system_prompt, user_prompt)
+        last_error: Optional[Exception] = None
+        for provider, transport in zip(self._providers, self._transports):
+            if not transport.configured:
+                continue
+            try:
+                return transport.complete_json(system_prompt, user_prompt)
+            except Exception as exc:
+                last_error = exc
+                LOGGER.warning(
+                    "LLM provider %s failed, trying next fallback: %s",
+                    provider.name or provider.model or provider.api_url,
+                    exc,
+                )
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("model API is not configured")
 
     def _payload(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
         return _payload(self.wire_api, self.model, system_prompt, user_prompt)
+
+
+def _normalize_provider_list(
+    providers: Optional[Sequence[LLMProviderConfig]],
+    fallback: LLMProviderConfig,
+) -> List[LLMProviderConfig]:
+    raw = list(providers or ())
+    if not raw:
+        raw = [fallback]
+    normalized: List[LLMProviderConfig] = []
+    for index, provider in enumerate(raw, start=1):
+        wire_api = normalize_wire_api(provider.wire_api or infer_wire_api(provider.api_url))
+        name = provider.name or f"provider_{index}"
+        normalized.append(
+            LLMProviderConfig(
+                api_url=provider.api_url,
+                api_key=provider.api_key,
+                model=provider.model,
+                wire_api=wire_api,
+                name=name,
+            )
+        )
+    return normalized
 
 
 class _TextCompletionTransport(Protocol):

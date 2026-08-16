@@ -58,6 +58,15 @@ class ActiveProblem:
 
 
 @dataclass(frozen=True)
+class PreparedProblem:
+    problem: CFProblem
+    statement: ProblemStatement
+    images: List[Path]
+    rating_range: RatingRange
+    created_at: str
+
+
+@dataclass(frozen=True)
 class GroupMessage:
     group_id: int
     user_id: int

@@ -7,9 +7,15 @@ from .models import CFProblem
 
 
 class ProblemSelector:
-    def __init__(self, min_rating: int = 1900, max_rating: int = 2600) -> None:
+    def __init__(
+        self,
+        min_rating: int = 1900,
+        max_rating: int = 2600,
+        recent_pool_size: int = 500,
+    ) -> None:
         self.min_rating = min_rating
         self.max_rating = max_rating
+        self.recent_pool_size = max(1, recent_pool_size)
         self._random = random.SystemRandom()
 
     def candidates(
@@ -35,5 +41,7 @@ class ProblemSelector:
         max_rating: Optional[int] = None,
     ) -> Iterator[CFProblem]:
         pool = list(self.candidates(problems, sent_ids, min_rating, max_rating))
+        pool.sort(key=lambda problem: (problem.contest_id, problem.index), reverse=True)
+        pool = pool[: self.recent_pool_size]
         self._random.shuffle(pool)
         return iter(pool)

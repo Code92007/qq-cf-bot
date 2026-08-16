@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import replace
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Sequence
 
-from .llm import OpenAICompatibleTextClient
+from .llm import LLMProviderConfig, OpenAICompatibleTextClient
 from .models import ProblemStatement
 
 
@@ -17,8 +17,9 @@ class OpenAIStatementTranslator:
         model: str,
         wire_api: str = "chat_completions",
         timeout_seconds: int = 60,
-        max_chars: int = 24_000,
+        max_chars: int = 60_000,
         enabled: bool = False,
+        providers: Optional[Sequence[LLMProviderConfig]] = None,
     ) -> None:
         self.client = OpenAICompatibleTextClient(
             api_url=api_url,
@@ -26,6 +27,7 @@ class OpenAIStatementTranslator:
             model=model,
             wire_api=wire_api,
             timeout_seconds=timeout_seconds,
+            providers=providers,
         )
         self.timeout_seconds = timeout_seconds
         self.max_chars = max_chars
@@ -72,6 +74,7 @@ class OpenAIStatementTranslator:
 
 _STATEMENT_TRANSLATE_PROMPT = (
     "你是算法竞赛题面翻译器。把 Codeforces 英文题面翻译成简体中文。"
+    "即使标题或章节名已经是中文，只要正文仍包含英文自然语言，也必须完整翻译正文。"
     "保留 HTML 标签、LaTeX/数学公式、变量名、复杂度记号、代码片段、样例输入输出和链接。"
     "不要解释题意，不要补充解法，不要改变题面含义。"
     "只返回 JSON 对象，键必须是 title, description, input_format, output_format, hint。"

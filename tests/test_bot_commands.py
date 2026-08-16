@@ -9,6 +9,7 @@ class BotCommandTest(unittest.TestCase):
         self.assertEqual(_parse_rating_range("1900 2600"), (1900, 2600))
         self.assertEqual(_parse_rating_range("rating 2100-2400"), (2100, 2400))
         self.assertEqual(_parse_rating_range("2600 1900"), (1900, 2600))
+        self.assertEqual(_parse_rating_range("1200"), (1200, 1200))
 
     def test_reject_invalid_rating_range(self):
         self.assertIsNone(_parse_rating_range(""))

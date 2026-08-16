@@ -24,6 +24,7 @@ class OneBotClientTest(unittest.TestCase):
             self.assertEqual(client.posts[0], ("/get_login_info", {}))
             self.assertEqual(client.posts[1][0], "/send_private_msg")
             self.assertEqual(client.posts[1][1]["user_id"], 9988)
+            self.assertEqual(client.posts[1][1]["message"][0]["type"], "image")
             self.assertEqual(
                 client.posts[2],
                 (
@@ -43,8 +44,19 @@ class OneBotClientTest(unittest.TestCase):
             self.assertEqual(client.posts[-1][0], "/send_group_forward_msg")
             node = client.posts[-1][1]["messages"][0]
             self.assertEqual(node["type"], "node")
-            self.assertEqual(node["data"]["content"][0]["type"], "text")
-            self.assertEqual(node["data"]["content"][1]["type"], "image")
+            self.assertEqual(node["data"]["content"][0]["type"], "image")
+
+    def test_send_group_forward_images_can_include_intro_text(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "x.png"
+            image.write_bytes(b"abc")
+            client = _FakeOneBotClient()
+
+            client.send_group_forward_images(123, [image], intro_text="刷新了一道新题目~")
+
+            message = client.posts[1][1]["message"]
+            self.assertEqual(message[0], {"type": "text", "data": {"text": "刷新了一道新题目~\n"}})
+            self.assertEqual(message[1]["type"], "image")
 
     def test_extracts_message_id_from_common_result_shapes(self):
         self.assertEqual(_message_id_from_result({"data": {"message_id": "123"}}), 123)

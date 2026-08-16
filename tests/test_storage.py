@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from qq_cf_bot.models import CFProblem, ProblemStatement, RemoteJudgeResult, SolutionReference
+from qq_cf_bot.models import CFProblem, PreparedProblem, ProblemStatement, RatingRange, RemoteJudgeResult, SolutionReference
 from qq_cf_bot.storage import SentProblemStore
 
 
@@ -82,6 +82,34 @@ class StorageTest(unittest.TestCase):
             store.cache_statement(problem, chinese, source="codeforces_llm_translate", translated=True)
             self.assertEqual(store.get_cached_statement("1A", require_translated=True).title, "剧院广场")
 
+    def test_prefetched_problem_roundtrip_and_clear(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            prepared = PreparedProblem(
+                problem=CFProblem(1, "A", "Theatre Square", 1000),
+                statement=ProblemStatement(
+                    pid="1A",
+                    title="剧院广场",
+                    description="题目描述",
+                    input_format="输入",
+                    output_format="输出",
+                    samples=[],
+                ),
+                images=[Path("/tmp/a.png")],
+                rating_range=RatingRange(1000, 1000),
+                created_at="now",
+            )
+
+            store.set_prefetched_problem(123, prepared)
+            cached = store.get_prefetched_problem(123, RatingRange(1000, 1000))
+            self.assertIsNotNone(cached)
+            self.assertEqual(cached.problem.cf_id, "1A")
+            self.assertEqual(cached.rating_range.min_rating, 1000)
+            self.assertIsNone(store.get_prefetched_problem(123, RatingRange(1200, 1200)))
+
+            store.clear_prefetched_problem(123, RatingRange(1000, 1000))
+            self.assertIsNone(store.get_prefetched_problem(123, RatingRange(1000, 1000)))
+
     def test_user_stats(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = SentProblemStore(Path(tmp) / "bot.sqlite3")
@@ -128,6 +156,19 @@ class StorageTest(unittest.TestCase):
 
             store.set_meta_float("cf_last_submit_at", 123.5)
             self.assertEqual(store.get_meta_float("cf_last_submit_at"), 123.5)
+
+    def test_submission_history_roundtrip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            problem = CFProblem(1, "A", "Theatre Square", 1000)
+            store.record_submission(1, 2, "alice", problem, "想法一", False, "不够")
+            store.record_submission(1, 3, "bob", problem, "想法二", True, "通过")
+
+            history = store.list_submission_history(1, "1A")
+
+            self.assertEqual([item["display_name"] for item in history], ["alice", "bob"])
+            self.assertFalse(history[0]["accepted"])
+            self.assertTrue(history[1]["accepted"])
 
     def test_records_remote_code_submission_without_source(self):
         with tempfile.TemporaryDirectory() as tmp:
