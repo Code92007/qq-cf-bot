@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Any, Tuple
+from typing import List, Tuple
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -50,9 +50,19 @@ def main() -> None:
 
 
 def check_napcat() -> Tuple[bool, str]:
-    base_url = (os.getenv("NAPCAT_WATCHDOG_ONEBOT_URL") or os.getenv("ONEBOT_HTTP_URL") or "http://127.0.0.1:3000").rstrip("/")
     token = os.getenv("ONEBOT_ACCESS_TOKEN", "")
+    errors: List[str] = []
 
+    for base_url in _watchdog_base_url_candidates():
+        ok, detail = _check_napcat_at(base_url, token)
+        if ok:
+            return True, f"{base_url}: {detail}"
+        errors.append(f"{base_url}: {detail}")
+
+    return False, " | ".join(errors) if errors else "no OneBot HTTP API URL candidates"
+
+
+def _check_napcat_at(base_url: str, token: str) -> Tuple[bool, str]:
     try:
         payload = _post_json(base_url + "/get_status", {}, token)
         data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
@@ -75,6 +85,68 @@ def check_napcat() -> Tuple[bool, str]:
         return False, f"get_login_info returned unexpected payload after status issue {status_error}: {payload}"
     except Exception as exc:
         return False, f"get_status failed: {status_error}; get_login_info failed: {exc}"
+
+
+def _watchdog_base_url_candidates() -> Tuple[str, ...]:
+    candidates: List[str] = []
+    for raw in (
+        os.getenv("NAPCAT_WATCHDOG_ONEBOT_URL", ""),
+        os.getenv("ONEBOT_HTTP_URL", ""),
+        "http://127.0.0.1:3000",
+    ):
+        _add_url_candidate(candidates, raw)
+
+    docker_port = _int_env("NAPCAT_WATCHDOG_DOCKER_PORT", 3000)
+    docker_service = os.getenv("NAPCAT_WATCHDOG_DOCKER_SERVICE", "napcat").strip() or "napcat"
+    for ip in _docker_container_ips(docker_service):
+        _add_url_candidate(candidates, f"http://{ip}:{docker_port}")
+
+    return tuple(candidates)
+
+
+def _add_url_candidate(candidates: List[str], raw: str) -> None:
+    url = raw.strip().rstrip("/")
+    if not url or url in candidates:
+        return
+    candidates.append(url)
+
+
+def _docker_container_ips(service: str) -> Tuple[str, ...]:
+    container_id = _run_quiet(["docker", "compose", "ps", "-q", service])
+    if not container_id:
+        return ()
+
+    raw = _run_quiet(
+        [
+            "docker",
+            "inspect",
+            "-f",
+            "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{println}}{{end}}",
+            container_id.splitlines()[0],
+        ]
+    )
+    ips = []
+    for line in raw.splitlines():
+        ip = line.strip()
+        if ip and ip != "<no value>" and ip not in ips:
+            ips.append(ip)
+    return tuple(ips)
+
+
+def _run_quiet(args: List[str]) -> str:
+    try:
+        result = subprocess.run(
+            args,
+            cwd=ROOT_DIR,
+            text=True,
+            capture_output=True,
+            timeout=10,
+        )
+    except Exception:
+        return ""
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
 
 
 def restart(command: str) -> None:

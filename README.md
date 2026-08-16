@@ -114,6 +114,8 @@ python -m qq_cf_bot
 | `SOLUTION_BANK_GENERATE_LLM` | `true` | 公开题解不足时，是否用判题模型生成内部参考解法并缓存 |
 | `NAPCAT_WATCHDOG_ENABLED` | `false` | 是否启用宿主机 NapCat 掉线检测脚本 |
 | `NAPCAT_WATCHDOG_ONEBOT_URL` | `http://127.0.0.1:3000` | watchdog 调用 NapCat OneBot HTTP API 的地址 |
+| `NAPCAT_WATCHDOG_DOCKER_SERVICE` | `napcat` | 宿主机直连失败时，用这个 docker compose 服务名自动发现 NapCat 容器 IP |
+| `NAPCAT_WATCHDOG_DOCKER_PORT` | `3000` | NapCat 容器内 OneBot HTTP API 端口 |
 | `NAPCAT_WATCHDOG_INTERVAL_SECONDS` | `60` | watchdog 检查间隔 |
 | `NAPCAT_WATCHDOG_RESTART_COOLDOWN_SECONDS` | `300` | 两次自动重启 NapCat 的最小间隔 |
 | `NAPCAT_WATCHDOG_RESTART_CMD` | `./scripts/restart-napcat.sh` | watchdog 判定离线后执行的重启命令 |
@@ -272,12 +274,14 @@ sudo systemctl enable --now qq-cf-bot
 
 ## NapCat Watchdog
 
-NapCat 掉线后 QQ 消息不会再上报给机器人。可以在服务器宿主机启用 watchdog：它每分钟调用 NapCat 的 OneBot HTTP API，检测离线或 API 不可用时执行 `docker compose restart napcat`，并用邮件通知。
+NapCat 掉线后 QQ 消息不会再上报给机器人。可以在服务器宿主机启用 watchdog：它每分钟调用 NapCat 的 OneBot HTTP API，检测离线或 API 不可用时执行 `docker compose restart napcat`，并用邮件通知。watchdog 会依次尝试 `NAPCAT_WATCHDOG_ONEBOT_URL`、`ONEBOT_HTTP_URL`、`127.0.0.1:3000`，以及自动发现到的 NapCat Docker 容器 IP，避免宿主机无法解析 `napcat` 或端口映射不一致时误判。
 
 先在 `.env` 里配置：
 
 ```env
 NAPCAT_WATCHDOG_ENABLED=true
+NAPCAT_WATCHDOG_DOCKER_SERVICE=napcat
+NAPCAT_WATCHDOG_DOCKER_PORT=3000
 NAPCAT_WATCHDOG_NOTIFY_EMAIL=1072805307@qq.com
 SMTP_HOST=smtp.qq.com
 SMTP_PORT=465
