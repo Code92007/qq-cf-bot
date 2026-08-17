@@ -272,6 +272,30 @@ sudo systemctl enable --now qq-cf-bot
 
 `/new` 和 `/cur` 只发送题面图片，不暴露 Codeforces 题号、题名、难度、标签或链接。题面图片会优先先发到机器人自己的私聊窗口，再把这些原始私聊消息 ID 合并转发到群，避免多张图片在群里刷屏；“刷新了一道新题目~”会放在合并转发内，不额外刷一条群消息。若 OneBot 不支持按消息 ID 转发，才会退回自定义转发节点。`/giveup` 或通过判题后才会公开题号、难度、标签、链接和已缓存参考材料。
 
+## 切换承载 QQ
+
+业务代码不绑定具体 QQ 号。`ONEBOT_SELF_ID` 留空时，机器人会在运行时调用 OneBot `get_login_info` 自动识别当前 NapCat 登录账号，并用这个账号先私聊自己再合并转发题面。
+
+如果要把机器人换到另一个 QQ，服务器执行：
+
+```bash
+cd ~/qq-cf-bot
+./scripts/switch-napcat-account.sh
+```
+
+脚本会停掉 watchdog、停止 NapCat、备份旧 NapCat 账号资料到 `napcat/backup/`、清空 `.env` 里的 `ONEBOT_SELF_ID`、启动 NapCat 并导出新的二维码到 `/tmp/napcat-qrcode.png`。随后在 Mac 本地拉取二维码：
+
+```bash
+scp root@43.155.179.39:/tmp/napcat-qrcode.png ~/Desktop/napcat-qrcode.png
+open ~/Desktop/napcat-qrcode.png
+```
+
+用新的 QQ 扫码登录后，确认 `get_login_info` 正常，再把新 QQ 拉进允许的群，并启动 watchdog：
+
+```bash
+sudo systemctl start napcat-watchdog
+```
+
 ## NapCat Watchdog
 
 NapCat 掉线后 QQ 消息不会再上报给机器人。可以在服务器宿主机启用 watchdog：它每分钟调用 NapCat 的 OneBot HTTP API，检测离线或 API 不可用时执行 `docker compose restart napcat`，并用邮件通知。watchdog 会依次尝试 `NAPCAT_WATCHDOG_ONEBOT_URL`、`ONEBOT_HTTP_URL`、`127.0.0.1:3000`，以及自动发现到的 NapCat Docker 容器 IP，避免宿主机无法解析 `napcat` 或端口映射不一致时误判。
