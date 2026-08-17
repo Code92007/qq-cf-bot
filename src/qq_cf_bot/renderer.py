@@ -293,6 +293,7 @@ def _markdown_to_html(markdown_text: str, source_url: str = "") -> str:
     for token, fragment in math_fragments.items():
         rendered = rendered.replace(token, fragment)
     rendered = _render_leftover_math(rendered)
+    rendered = _render_loose_math_tokens(rendered)
     base_url = _origin(source_url) or "https://www.luogu.com.cn"
     return _RELATIVE_SRC_RE.sub(lambda match: _absolute_attr(match, base_url), rendered)
 
@@ -349,23 +350,27 @@ def _latex_to_html(value: str) -> str:
     for source, target in replacements.items():
         text = text.replace(source, target)
     text = re.sub(r"\\([A-Za-z]+)", r"\1", text)
-    text = text.replace(r"\{", "{").replace(r"\}", "}")
-    text = text.replace("{", "").replace("}", "")
+    text = _compact_math_spacing(text)
     text = re.sub(r"\s+", " ", text).strip()
-    escaped = html.escape(text)
+    escaped = _format_math_markup(text)
     for token, fragment in code_fragments.items():
         escaped = escaped.replace(token, fragment)
     return f'<span class="math">{escaped}</span>'
 
 
-def _normalize_statement_markup(value: str) -> str:
+def normalize_statement_markup(value: str) -> str:
     text = html.unescape(value)
     text = text.replace("＄", "$")
     text = re.sub(r"\\(?=\${1,3})", "", text)
+    text = text.replace(r"\_", "_")
     text = _repair_corrupted_latex(text)
     text = _normalize_plain_latex_commands(text)
-    text = re.sub(r"([A-Za-z])_\s+([A-Za-z0-9])", r"\1_\2", text)
+    text = _compact_math_spacing(text)
     return text
+
+
+def _normalize_statement_markup(value: str) -> str:
+    return normalize_statement_markup(value)
 
 
 def _render_leftover_math(value: str) -> str:
@@ -376,6 +381,44 @@ def _render_leftover_math(value: str) -> str:
         return _latex_to_html(content)
 
     return _LEFTOVER_MATH_RE.sub(replace, value)
+
+
+def _render_loose_math_tokens(value: str) -> str:
+    chunks = re.split(
+        r"(<(?:pre|code)\b[^>]*>.*?</(?:pre|code)>|<span class=\"math\">.*?</span>|<[^>]+>)",
+        value,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    for index, chunk in enumerate(chunks):
+        if not chunk or chunk.startswith("<"):
+            continue
+        chunks[index] = _format_loose_math_text(chunk)
+    return "".join(chunks)
+
+
+def _format_loose_math_text(value: str) -> str:
+    text = re.sub(r"\${1,3}", "", value)
+    protected: dict[str, str] = {}
+
+    def protect(match: re.Match) -> str:
+        token = f"QQCFBOTLOOSEMATH{len(protected)}TOKEN"
+        protected[token] = f'<span class="math">{html.escape(match.group(1))}</span>'
+        return token
+
+    text = re.sub(r"([⌊⌈][^⌊⌋⌈⌉<>]{1,60}[⌋⌉])", protect, text)
+    text = re.sub(
+        r"(?<![A-Za-z0-9])([A-Za-z])_([A-Za-z0-9]+)(?![A-Za-z0-9])",
+        lambda match: f'<span class="math">{html.escape(match.group(1))}<sub>{html.escape(match.group(2))}</sub></span>',
+        text,
+    )
+    text = re.sub(
+        r"(?<![A-Za-z0-9])(\d+)\^([A-Za-z0-9+-]+)(?![A-Za-z0-9])",
+        lambda match: f'<span class="math">{html.escape(match.group(1))}<sup>{html.escape(match.group(2))}</sup></span>',
+        text,
+    )
+    for token, fragment in protected.items():
+        text = text.replace(token, fragment)
+    return text
 
 
 def _repair_corrupted_latex(value: str) -> str:
@@ -435,6 +478,40 @@ def _normalize_formula_text(value: str) -> str:
     text = _repair_corrupted_latex(text)
     text = _normalize_plain_latex_commands(text)
     return text
+
+
+def _compact_math_spacing(value: str) -> str:
+    text = value
+    text = re.sub(r"([A-Za-z])_\s+([A-Za-z0-9])", r"\1_\2", text)
+    text = re.sub(r"(\d+)\s*\^\s*([A-Za-z0-9+-]+)", r"\1^\2", text)
+    text = re.sub(r"([A-Za-z])\s*\^\s*([A-Za-z0-9+-]+)", r"\1^\2", text)
+    text = re.sub(r"\s+([,.;:，。；：、）\]\}])", r"\1", text)
+    return text
+
+
+def _format_math_markup(value: str) -> str:
+    text = value.replace(r"\{", "{").replace(r"\}", "}")
+    text = re.sub(r"([A-Za-z])_\{([^{}<>]+)\}", r"\1_\2", text)
+    text = re.sub(r"([A-Za-z])\^\{([^{}<>]+)\}", r"\1^\2", text)
+    text = re.sub(r"(\d+)\^\{([^{}<>]+)\}", r"\1^\2", text)
+    text = text.replace("{", "").replace("}", "")
+    escaped = html.escape(text)
+    escaped = re.sub(
+        r"(?<![A-Za-z0-9])([A-Za-z])_([A-Za-z0-9]+)(?![A-Za-z0-9])",
+        r"\1<sub>\2</sub>",
+        escaped,
+    )
+    escaped = re.sub(
+        r"(?<![A-Za-z0-9])(\d+)\^([A-Za-z0-9+-]+)(?![A-Za-z0-9])",
+        r"\1<sup>\2</sup>",
+        escaped,
+    )
+    escaped = re.sub(
+        r"(?<![A-Za-z0-9])([A-Za-z])\^([A-Za-z0-9+-]+)(?![A-Za-z0-9])",
+        r"\1<sup>\2</sup>",
+        escaped,
+    )
+    return escaped
 
 
 def _origin(url: str) -> str:

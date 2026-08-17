@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from qq_cf_bot.models import CFProblem, ProblemStatement
-from qq_cf_bot.renderer import StatementRenderer, _normalize_statement_markup, _stash_math
+from qq_cf_bot.renderer import StatementRenderer, _normalize_statement_markup, _render_loose_math_tokens, _stash_math
 
 
 class StatementRendererTest(unittest.TestCase):
@@ -38,6 +38,7 @@ class StatementRendererTest(unittest.TestCase):
 
         self.assertIn("≤", html)
         self.assertIn("·", html)
+        self.assertIn("10<sup>5</sup>", html)
         self.assertIn("<code>0</code>", html)
         self.assertNotIn("$$$", html)
 
@@ -66,6 +67,25 @@ class StatementRendererTest(unittest.TestCase):
         self.assertIn("a_1", text)
         self.assertIn("a_2", text)
         self.assertIn("a_n", text)
+
+    def test_subscript_and_power_math_are_rendered(self):
+        rendered, fragments = _stash_math(_normalize_statement_markup(r"我们用 $$$d_v$$$ 表示顶点 $$$a_v$$$ 的深度，答案对 $$$10^9 + 7$$$ 取模。"))
+        html = rendered
+        for token, fragment in fragments.items():
+            html = html.replace(token, fragment)
+
+        self.assertIn("d<sub>v</sub>", html)
+        self.assertIn("a<sub>v</sub>", html)
+        self.assertIn("10<sup>9</sup>", html)
+        self.assertNotIn("$$$", html)
+
+    def test_loose_math_tokens_are_repaired_after_markdown(self):
+        html = _render_loose_math_tokens("变量 d_v，限制 10^9，残留 $$$，操作 ⌊a_p/2⌋。")
+
+        self.assertIn("d<sub>v</sub>", html)
+        self.assertIn("10<sup>9</sup>", html)
+        self.assertIn("⌊a_p/2⌋", html)
+        self.assertNotIn("$$$", html)
 
 
 if __name__ == "__main__":

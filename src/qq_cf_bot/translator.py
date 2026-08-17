@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional, Sequence
 
 from .llm import LLMProviderConfig, OpenAICompatibleTextClient
 from .models import ProblemStatement
+from .prompt_skills import STATEMENT_RENDERING_SKILL
+from .renderer import normalize_statement_markup
 
 
 class OpenAIStatementTranslator:
@@ -54,14 +56,15 @@ class OpenAIStatementTranslator:
 
         content = self.client.complete_json(_STATEMENT_TRANSLATE_PROMPT, source)
         translated = _parse_json_object(content)
-        return replace(
+        translated_statement = replace(
             statement,
             title=_field(translated, "title", statement.title),
-            description=_field(translated, "description", statement.description),
-            input_format=_field(translated, "input_format", statement.input_format),
-            output_format=_field(translated, "output_format", statement.output_format),
-            hint=_field(translated, "hint", statement.hint),
+            description=normalize_statement_markup(_field(translated, "description", statement.description)),
+            input_format=normalize_statement_markup(_field(translated, "input_format", statement.input_format)),
+            output_format=normalize_statement_markup(_field(translated, "output_format", statement.output_format)),
+            hint=normalize_statement_markup(_field(translated, "hint", statement.hint)),
         )
+        return translated_statement
 
     def translate_title(self, title: str) -> str:
         if not self.configured or not title.strip():
@@ -73,6 +76,8 @@ class OpenAIStatementTranslator:
 
 
 _STATEMENT_TRANSLATE_PROMPT = (
+    STATEMENT_RENDERING_SKILL
+    + "\n\n"
     "你是算法竞赛题面翻译器。把 Codeforces 英文题面翻译成简体中文。"
     "即使标题或章节名已经是中文，只要正文仍包含英文自然语言，也必须完整翻译正文。"
     "保留 HTML 标签、LaTeX/数学公式、变量名、复杂度记号、代码片段、样例输入输出和链接。"

@@ -6,6 +6,7 @@ from typing import Optional, Sequence
 
 from .llm import LLMProviderConfig, OpenAICompatibleTextClient
 from .models import CFProblem, JudgeResult, ProblemStatement, SolutionReference
+from .prompt_skills import ORAL_JUDGE_SKILL
 from .security import looks_like_secret_exfiltration_request, redact_sensitive_text, safe_judge_reason
 
 
@@ -154,6 +155,8 @@ class SolutionJudge:
 
 
 _JUDGE_SYSTEM_PROMPT = (
+    ORAL_JUDGE_SKILL
+    + "\n\n"
     "你是算法竞赛题解审核员。你需要根据题面判断群友口头提交的做法是否足以通过本题。"
     "你会同时收到已缓存的参考题解或 AC 代码片段；必须优先用这些参考材料校对算法方向、关键不变量、复杂度和边界条件。"
     "只返回 JSON 对象，格式为 {\"accepted\": boolean, \"reason\": string}。"
@@ -170,6 +173,8 @@ _JUDGE_SYSTEM_PROMPT = (
 
 
 _SECOND_JUDGE_SYSTEM_PROMPT = (
+    ORAL_JUDGE_SKILL
+    + "\n\n"
     "你是算法竞赛题解复核员。已有一审认为群友做法可以通过，你需要结合参考材料做二审。"
     "只返回 JSON 对象，格式为 {\"accepted\": boolean, \"reason\": string}。"
     "二审只负责拦截明显错误：核心策略和参考材料矛盾、复杂度不可能通过、遗漏会导致反例的关键条件。"
