@@ -8,7 +8,7 @@ from qq_cf_bot.bot import (
     _parse_problem_id,
     _parse_rating_range,
 )
-from qq_cf_bot.models import ProblemStatement, RatingRange
+from qq_cf_bot.models import CFProblem, ProblemStatement, RatingRange
 
 
 class _FakeBotForRatingRange:
@@ -68,6 +68,22 @@ class BotCommandTest(unittest.TestCase):
         self.assertIsNone(_parse_problem_id(""))
         self.assertIsNone(_parse_problem_id("abc"))
         self.assertIsNone(_parse_problem_id("1704"))
+
+    def test_problem_summary_includes_luogu_solution_entry(self):
+        problem = CFProblem(1490, "D", "Permutation Transformation", 1200)
+        statement = ProblemStatement(
+            pid="CF1490D",
+            title="排列变换",
+            description="",
+            input_format="",
+            output_format="",
+            samples=[],
+        )
+
+        summary = CodeforcesPushBot._problem_summary(_FakeBotForRatingRange(), problem, statement)
+
+        self.assertIn("中文题面：https://www.luogu.com.cn/problem/CF1490D", summary)
+        self.assertIn("洛谷题解：https://www.luogu.com.cn/problem/solution/CF1490D", summary)
 
     def test_detects_untranslated_english_title(self):
         self.assertTrue(_needs_title_translation("Don't fear, DravDe is kind"))

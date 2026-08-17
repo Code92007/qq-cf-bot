@@ -272,7 +272,6 @@ class CodeforcesPushBot:
             event.group_id,
             "已放弃当前题：\n" + self._problem_summary(active.problem, active.statement),
         )
-        self._send_public_solution_references(event.group_id, active.problem, active.statement)
 
     def handle_ranklist(self, event: GroupMessage) -> None:
         stats = self.store.list_group_stats(event.group_id)
@@ -345,7 +344,6 @@ class CodeforcesPushBot:
                     f"本题信息：\n{self._problem_summary(active.problem, active.statement)}"
                 ),
             )
-            self._send_public_solution_references(event.group_id, active.problem, active.statement)
             return
 
         old_stat = self.store.get_user_stat(
@@ -376,7 +374,6 @@ class CodeforcesPushBot:
                 f"{leaderboard_rating(new_stat.solved_ratings, new_stat.rating):.2f}"
             ),
         )
-        self._send_public_solution_references(event.group_id, active.problem, active.statement)
 
     def handle_submitcode(self, event: GroupMessage, raw_submission: str) -> None:
         active = self.store.get_active_problem(event.group_id)
@@ -632,7 +629,8 @@ class CodeforcesPushBot:
             f"难度：{rating}\n"
             f"标签：{tags}\n"
             f"题目：{problem.cf_url}\n"
-            f"中文题面：{problem.luogu_url}"
+            f"中文题面：{problem.luogu_url}\n"
+            f"洛谷题解：{problem.luogu_solution_url}"
         )
 
     def _current_problem_text(self, problem: CFProblem) -> str:
@@ -658,16 +656,6 @@ class CodeforcesPushBot:
             created_at = created_at.replace(tzinfo=timezone.utc)
         elapsed = (datetime.now(timezone.utc) - created_at).total_seconds()
         return int(max(0, minimum - elapsed))
-
-    def _send_public_solution_references(self, group_id: int, problem: CFProblem, statement: ProblemStatement) -> None:
-        try:
-            refs = self.solution_bank.ensure(problem, statement)
-        except Exception as exc:
-            LOGGER.warning("failed to prepare public solution refs for %s: %s", problem.cf_id, exc)
-            return
-        text = _public_solution_text(refs)
-        if text:
-            self.onebot.send_group_text(group_id, text)
 
     def _rating_range_for_new(self, group_id: int, arg: str) -> RatingRange:
         parsed = _parse_rating_range(arg)
@@ -760,7 +748,6 @@ class CodeforcesPushBot:
                     + f"本题信息：\n{self._problem_summary(job.problem, active.statement)}"
                 ),
             )
-            self._send_public_solution_references(job.group_id, job.problem, active.statement)
             return
 
         old_stat = self.store.get_user_stat(
@@ -793,7 +780,6 @@ class CodeforcesPushBot:
                 + f"{leaderboard_rating(new_stat.solved_ratings, new_stat.rating):.2f}"
             ),
         )
-        self._send_public_solution_references(job.group_id, job.problem, active.statement)
 
     def _remote_result_text(self, sender_name: str, result: RemoteJudgeResult, reveal_details: bool = False) -> str:
         parts = [f"@{sender_name} CF verdict：{result.message}"]
@@ -946,23 +932,3 @@ def _visible_statement_text(value: str) -> str:
 
 def _images_exist(images: Iterable[Path]) -> bool:
     return all(Path(image).exists() for image in images)
-
-
-def _public_solution_text(references: Iterable[object]) -> str:
-    refs = list(references)
-    if not refs:
-        return ""
-    lines = ["题解/参考材料已解锁："]
-    for index, reference in enumerate(refs[:2], start=1):
-        source = getattr(reference, "source", "")
-        title = getattr(reference, "title", "") or "参考材料"
-        url = getattr(reference, "url", "")
-        content = getattr(reference, "content", "")
-        label = "内部参考解法" if source == "llm_generated" else title
-        lines.append(f"{index}. {label}")
-        if url:
-            lines.append(url)
-        excerpt = re.sub(r"\s+", " ", content).strip()
-        if excerpt:
-            lines.append(excerpt[:500] + ("..." if len(excerpt) > 500 else ""))
-    return "\n".join(lines)

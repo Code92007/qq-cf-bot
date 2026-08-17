@@ -12,6 +12,7 @@ from .models import CFProblem, ProblemStatement
 
 _RELATIVE_SRC_RE = re.compile(r"""(?P<prefix>\s(?:src|href)=["'])(?P<url>/[^"']+)(?P<suffix>["'])""")
 _MATH_RE = re.compile(r"(?<!\\)(\${1,3})(.+?)(?<!\\)\1", re.DOTALL)
+_LEFTOVER_MATH_RE = re.compile(r"(\${2,3})([^$<>]+?)\1", re.DOTALL)
 
 
 class StatementRenderer:
@@ -282,6 +283,7 @@ def _markdown_to_html(markdown_text: str, source_url: str = "") -> str:
     except ImportError as exc:
         raise RuntimeError("markdown is required for Luogu markdown rendering. Run: pip install -r requirements.txt") from exc
 
+    markdown_text = _normalize_statement_markup(markdown_text)
     markdown_text, math_fragments = _stash_math(markdown_text)
     rendered = markdown.markdown(
         markdown_text,
@@ -290,6 +292,7 @@ def _markdown_to_html(markdown_text: str, source_url: str = "") -> str:
     )
     for token, fragment in math_fragments.items():
         rendered = rendered.replace(token, fragment)
+    rendered = _render_leftover_math(rendered)
     base_url = _origin(source_url) or "https://www.luogu.com.cn"
     return _RELATIVE_SRC_RE.sub(lambda match: _absolute_attr(match, base_url), rendered)
 
@@ -319,6 +322,7 @@ def _latex_to_html(value: str) -> str:
 
     text = re.sub(r"\\texttt\{([^{}]*)\}", stash_code, text)
     text = re.sub(r"\\(?:text|mathrm|operatorname)\{([^{}]*)\}", r"\1", text)
+    text = _normalize_formula_text(text)
     replacements = {
         r"\leq": "≤",
         r"\le": "≤",
@@ -337,6 +341,10 @@ def _latex_to_html(value: str) -> str:
         r"\max": "max",
         r"\left": "",
         r"\right": "",
+        r"\lfloor": "⌊",
+        r"\rfloor": "⌋",
+        r"\lceil": "⌈",
+        r"\rceil": "⌉",
     }
     for source, target in replacements.items():
         text = text.replace(source, target)
@@ -348,6 +356,85 @@ def _latex_to_html(value: str) -> str:
     for token, fragment in code_fragments.items():
         escaped = escaped.replace(token, fragment)
     return f'<span class="math">{escaped}</span>'
+
+
+def _normalize_statement_markup(value: str) -> str:
+    text = html.unescape(value)
+    text = text.replace("＄", "$")
+    text = re.sub(r"\\(?=\${1,3})", "", text)
+    text = _repair_corrupted_latex(text)
+    text = _normalize_plain_latex_commands(text)
+    text = re.sub(r"([A-Za-z])_\s+([A-Za-z0-9])", r"\1_\2", text)
+    return text
+
+
+def _render_leftover_math(value: str) -> str:
+    def replace(match: re.Match) -> str:
+        content = match.group(2).strip()
+        if not content:
+            return ""
+        return _latex_to_html(content)
+
+    return _LEFTOVER_MATH_RE.sub(replace, value)
+
+
+def _repair_corrupted_latex(value: str) -> str:
+    text = value
+    text = re.sub(
+        r"[<≤]?ftl(floor|ceil)d?frac([A-Za-z](?:_[A-Za-z0-9]+)?)2r(floor|ceil)",
+        lambda match: _floor_ceil_text(match.group(1), f"{match.group(2)}/2", match.group(3)),
+        text,
+    )
+    text = re.sub(
+        r"[<≤]?ftl(floor|ceil)d?frac\{([^{}]+)\}\{([^{}]+)\}r(floor|ceil)",
+        lambda match: _floor_ceil_text(match.group(1), f"{match.group(2)}/{match.group(3)}", match.group(4)),
+        text,
+    )
+    text = re.sub(
+        r"(?<![A-Za-z])(?:d?frac)([A-Za-z](?:_[A-Za-z0-9]+)?)(\d+)(?![A-Za-z])",
+        r"\1/\2",
+        text,
+    )
+    return text
+
+
+def _floor_ceil_text(open_name: str, inner: str, close_name: str) -> str:
+    open_symbol = "⌊" if open_name == "floor" else "⌈"
+    close_symbol = "⌋" if close_name == "floor" else "⌉"
+    normalized_inner = inner.replace("{", "").replace("}", "")
+    if "/" not in normalized_inner and normalized_inner.endswith("2"):
+        normalized_inner = normalized_inner[:-1] + "/2"
+    return f"{open_symbol}{normalized_inner}{close_symbol}"
+
+
+def _normalize_plain_latex_commands(value: str) -> str:
+    text = value
+    replacements = {
+        "ldots": "…",
+        "dots": "…",
+        "cdot": "·",
+        "times": "×",
+    }
+    for source, target in replacements.items():
+        text = re.sub(rf"(?<![A-Za-z\\]){source}(?![A-Za-z])", target, text)
+    text = re.sub(r"(?<![A-Za-z\\])leq?(?![A-Za-z])", "≤", text)
+    text = re.sub(r"(?<![A-Za-z\\])geq?(?![A-Za-z])", "≥", text)
+    text = re.sub(r"(?<![A-Za-z\\])neq?(?![A-Za-z])", "≠", text)
+    return text
+
+
+def _normalize_formula_text(value: str) -> str:
+    text = value
+    for _ in range(4):
+        next_text = re.sub(r"\\(?:dfrac|frac)\{([^{}]+)\}\{([^{}]+)\}", r"\1/\2", text)
+        if next_text == text:
+            break
+        text = next_text
+    text = re.sub(r"\\?lfloor\s*([^⌊⌋]+?)\s*\\?rfloor", r"⌊\1⌋", text)
+    text = re.sub(r"\\?lceil\s*([^⌈⌉]+?)\s*\\?rceil", r"⌈\1⌉", text)
+    text = _repair_corrupted_latex(text)
+    text = _normalize_plain_latex_commands(text)
+    return text
 
 
 def _origin(url: str) -> str:

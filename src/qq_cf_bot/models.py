@@ -29,6 +29,10 @@ class CFProblem:
     def luogu_url(self) -> str:
         return f"https://www.luogu.com.cn/problem/{self.luogu_pid}"
 
+    @property
+    def luogu_solution_url(self) -> str:
+        return f"https://www.luogu.com.cn/problem/solution/{self.luogu_pid}"
+
 
 @dataclass(frozen=True)
 class ProblemStatement:
