@@ -106,6 +106,23 @@ class BotCommandTest(unittest.TestCase):
         self.assertTrue(_needs_body_translation(statement))
         self.assertTrue(_needs_statement_translation(statement))
 
+    def test_detects_untranslated_statement_with_formula_heavy_text(self):
+        statement = ProblemStatement(
+            pid="CF1A",
+            title="题目描述",
+            description=(
+                "Quack the Duck has a permutation $$$a$$$ of length $$$n$$$ and an incomplete sequence "
+                "$$$b_1,b_2,\\ldots,b_n$$$. Each element of $$$b$$$ is either -1 or an integer from 1 to n. "
+                "After replacing every -1 in b, the equality $$$a_{b_i}=b_{a_i}$$$ should hold for every i."
+            ),
+            input_format="Each test contains multiple test cases.",
+            output_format="For each test case, print YES if the answer exists, and NO otherwise.",
+            samples=[],
+        )
+
+        self.assertTrue(_needs_body_translation(statement))
+        self.assertTrue(_needs_statement_translation(statement))
+
     def test_ignores_chinese_statement_with_formulas_and_variable_names(self):
         statement = ProblemStatement(
             pid="CF1A",

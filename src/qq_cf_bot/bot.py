@@ -544,6 +544,9 @@ class CodeforcesPushBot:
                     return self._translate_and_cache_if_needed(problem, cached, source="cached")
                 except Exception as exc:
                     LOGGER.warning("cached statement translation failed for %s: %s", problem.cf_id, exc)
+                    raise
+            if self.translator.configured and _needs_statement_translation(cached):
+                raise RuntimeError(f"cached statement for {problem.cf_id} is still untranslated")
             return cached
         cached_untranslated = self.store.get_cached_statement(problem.cf_id) if self.translator.configured else None
 
@@ -580,6 +583,8 @@ class CodeforcesPushBot:
                 translated = self.translator.translate_statement(statement)
                 translated_ok = not _needs_statement_translation(translated)
                 self.store.cache_statement(problem, translated, source=f"{source}_llm_translate", translated=translated_ok)
+                if not translated_ok:
+                    raise RuntimeError(f"translated statement for {problem.cf_id} still contains untranslated English")
                 return translated
             if _needs_title_translation(statement.title):
                 translated = replace(statement, title=self.translator.translate_title(statement.title or problem.name))
@@ -588,6 +593,9 @@ class CodeforcesPushBot:
                 return translated
         except Exception as exc:
             LOGGER.warning("statement translation failed for %s from %s: %s", problem.cf_id, source, exc)
+            if _needs_body_translation(statement):
+                self.store.cache_statement(problem, statement, source=source, translated=False)
+                raise
 
         self.store.cache_statement(problem, statement, source=source, translated=not _needs_statement_translation(statement))
         return statement

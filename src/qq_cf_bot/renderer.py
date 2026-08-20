@@ -400,12 +400,34 @@ def _format_loose_math_text(value: str) -> str:
     text = re.sub(r"\${1,3}", "", value)
     protected: dict[str, str] = {}
 
-    def protect(match: re.Match) -> str:
+    def protect_raw(fragment: str) -> str:
         token = f"QQCFBOTLOOSEMATH{len(protected)}TOKEN"
-        protected[token] = f'<span class="math">{html.escape(match.group(1))}</span>'
+        protected[token] = f'<span class="math">{html.escape(fragment)}</span>'
         return token
 
-    text = re.sub(r"([⌊⌈][^⌊⌋⌈⌉<>]{1,60}[⌋⌉])", protect, text)
+    def protect_latex(match: re.Match) -> str:
+        token = f"QQCFBOTLOOSEMATH{len(protected)}TOKEN"
+        protected[token] = _latex_to_html(match.group(1))
+        return token
+
+    script = r"(?:_\{(?:[^{}]|\{[^{}]*\}){1,120}\}|_[A-Za-z0-9]+|\^\{(?:[^{}]|\{[^{}]*\}){1,120}\}|\^[A-Za-z0-9]+)"
+    scripted_term = rf"[A-Za-z]\s*(?:{script})+"
+    math_term = rf"(?:{scripted_term}|[A-Za-z0-9]+)"
+    text = re.sub(r"([⌊⌈][^⌊⌋⌈⌉<>]{1,60}[⌋⌉])", lambda match: protect_raw(match.group(1)), text)
+    text = re.sub(
+        r"(?<![A-Za-z0-9])"
+        rf"({scripted_term}(?:\s*[=+\-*/<>≤≥]\s*{math_term})+)"
+        r"(?![A-Za-z0-9])",
+        protect_latex,
+        text,
+    )
+    text = re.sub(
+        r"(?<![A-Za-z0-9])"
+        rf"({scripted_term})"
+        r"(?![A-Za-z0-9])",
+        protect_latex,
+        text,
+    )
     text = re.sub(
         r"(?<![A-Za-z0-9])([A-Za-z])_([A-Za-z0-9]+)(?![A-Za-z0-9])",
         lambda match: f'<span class="math">{html.escape(match.group(1))}<sub>{html.escape(match.group(2))}</sub></span>',
@@ -491,27 +513,94 @@ def _compact_math_spacing(value: str) -> str:
 
 def _format_math_markup(value: str) -> str:
     text = value.replace(r"\{", "{").replace(r"\}", "}")
-    text = re.sub(r"([A-Za-z])_\{([^{}<>]+)\}", r"\1_\2", text)
-    text = re.sub(r"([A-Za-z])\^\{([^{}<>]+)\}", r"\1^\2", text)
-    text = re.sub(r"(\d+)\^\{([^{}<>]+)\}", r"\1^\2", text)
-    text = text.replace("{", "").replace("}", "")
-    escaped = html.escape(text)
-    escaped = re.sub(
-        r"(?<![A-Za-z0-9])([A-Za-z])_([A-Za-z0-9]+)(?![A-Za-z0-9])",
-        r"\1<sub>\2</sub>",
-        escaped,
-    )
-    escaped = re.sub(
-        r"(?<![A-Za-z0-9])(\d+)\^([A-Za-z0-9+-]+)(?![A-Za-z0-9])",
-        r"\1<sup>\2</sup>",
-        escaped,
-    )
-    escaped = re.sub(
-        r"(?<![A-Za-z0-9])([A-Za-z])\^([A-Za-z0-9+-]+)(?![A-Za-z0-9])",
-        r"\1<sup>\2</sup>",
-        escaped,
-    )
-    return escaped
+    text = text.replace("<=", "≤").replace(">=", "≥").replace("!=", "≠")
+    rendered, _ = _format_math_sequence(text, 0, "")
+    return rendered
+
+
+def _format_math_sequence(value: str, index: int = 0, stop: str = "") -> tuple[str, int]:
+    parts: List[str] = []
+    while index < len(value):
+        char = value[index]
+        if stop and char == stop:
+            return "".join(parts), index + 1
+        if char in "_^":
+            tag = "sub" if char == "_" else "sup"
+            inner, index = _consume_math_script(value, index + 1)
+            if inner:
+                parts.append(f"<{tag}>{inner}</{tag}>")
+            continue
+        if char == "{":
+            inner, index = _format_math_sequence(value, index + 1, "}")
+            parts.append(inner)
+            continue
+        if char == "}":
+            return "".join(parts), index + 1
+        if char == "\\":
+            command, next_index = _consume_latex_command(value, index)
+            if command:
+                parts.append(html.escape(_latex_command_text(command)))
+                index = next_index
+                continue
+        parts.append(html.escape(char))
+        index += 1
+    return "".join(parts), index
+
+
+def _consume_math_script(value: str, index: int) -> tuple[str, int]:
+    while index < len(value) and value[index].isspace():
+        index += 1
+    if index >= len(value):
+        return "", index
+    if value[index] == "{":
+        return _format_math_sequence(value, index + 1, "}")
+    if value[index] == "\\":
+        command, next_index = _consume_latex_command(value, index)
+        if command:
+            return html.escape(_latex_command_text(command)), next_index
+
+    start = index
+    if value[index].isalnum():
+        while index < len(value) and value[index].isalnum():
+            index += 1
+    else:
+        index += 1
+    return html.escape(value[start:index]), index
+
+
+def _consume_latex_command(value: str, index: int) -> tuple[str, int]:
+    match = re.match(r"\\[A-Za-z]+", value[index:])
+    if not match:
+        return "", index
+    command = match.group(0)
+    return command, index + len(command)
+
+
+def _latex_command_text(command: str) -> str:
+    replacements = {
+        r"\leq": "≤",
+        r"\le": "≤",
+        r"\geq": "≥",
+        r"\ge": "≥",
+        r"\neq": "≠",
+        r"\ne": "≠",
+        r"\cdot": "·",
+        r"\times": "×",
+        r"\ldots": "…",
+        r"\dots": "…",
+        r"\in": "∈",
+        r"\notin": "∉",
+        r"\sum": "∑",
+        r"\min": "min",
+        r"\max": "max",
+        r"\left": "",
+        r"\right": "",
+        r"\lfloor": "⌊",
+        r"\rfloor": "⌋",
+        r"\lceil": "⌈",
+        r"\rceil": "⌉",
+    }
+    return replacements.get(command, command.lstrip("\\"))
 
 
 def _origin(url: str) -> str:

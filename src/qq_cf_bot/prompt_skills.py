@@ -42,12 +42,14 @@ STATEMENT_RENDERING_SKILL = """
 - 保留 LaTeX 命令和数学分隔符：$$$...$$$、$...$、\\(...\\)、\\[...\\] 不得改写、拆散或转义。
 - 公式内部只翻译自然语言，不翻译变量名和命令；\\lfloor、\\lceil、\\frac、\\dfrac、\\ldots、\\le、\\ge、\\texttt 必须保留。
 - 不要把 \\lfloor \\frac{a_p}{2} \\rfloor 翻成 ftlfoor、≤ftlfloor、floorfrac、dfraca_p2rfloor 等文本残渣。
-- 不要把 a_i、d_v、10^9、n(n-1)/2 拆成 a_ i、d_ v、10 ^ 9 或普通中文。
+- 不要把 a_i、d_v、b_{a_i}、a_{b_i}、p_{a_i}、10^9、n(n-1)/2 拆成 a_ i、d_ v、b_a_i、10 ^ 9 或普通中文。
+- 嵌套下标必须保持花括号结构，例如 b_{a_i}、a_{b_i}、b_{a_{i}}，不要拍平成 b_a_i 或 b_a_{i}。
 - 样例输入输出必须保持原始换行，不压成一行。
 
 渲染验收：
 - 不允许出现裸露的 $$$、\\$\\$\\$、ldots、cdot、leq、geq、ftlfloor、ftlceil、rfloor、rceil。
 - 变量下标应显示为下标或至少紧凑文本：a_i、d_v、a_1 不得变成 a_ i。
+- 嵌套下标应保持层次：b_{a_i} 应读作 b 下标 a_i，不得渲染成 b_a_i 或 b<sub>a</sub>_i。
 - 幂应显示为上标或至少紧凑文本：10^9 不得变成 10 ^ 9。
 - 向下取整/向上取整必须可读：⌊a_p/2⌋、⌈a_i/2⌉。
 

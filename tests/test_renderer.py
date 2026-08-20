@@ -79,6 +79,25 @@ class StatementRendererTest(unittest.TestCase):
         self.assertIn("10<sup>9</sup>", html)
         self.assertNotIn("$$$", html)
 
+    def test_nested_subscript_math_is_rendered(self):
+        rendered, fragments = _stash_math(
+            _normalize_statement_markup(r"要求 $$$a_{b_i}=b_{a_i}$$$，也就是 $$$b_{a_{i}}$$$。")
+        )
+        html = rendered
+        for token, fragment in fragments.items():
+            html = html.replace(token, fragment)
+
+        self.assertIn("a<sub>b<sub>i</sub></sub>", html)
+        self.assertIn("b<sub>a<sub>i</sub></sub>", html)
+        self.assertNotIn("a<sub>b</sub>_i", html)
+
+    def test_loose_nested_subscript_math_is_rendered(self):
+        html = _render_loose_math_tokens("它必须满足 a_{p_i}=p_{a_i}，并且 b_{a_{i}} 合法。")
+
+        self.assertIn("a<sub>p<sub>i</sub></sub>", html)
+        self.assertIn("p<sub>a<sub>i</sub></sub>", html)
+        self.assertIn("b<sub>a<sub>i</sub></sub>", html)
+
     def test_loose_math_tokens_are_repaired_after_markdown(self):
         html = _render_loose_math_tokens("变量 d_v，限制 10^9，残留 $$$，操作 ⌊a_p/2⌋。")
 

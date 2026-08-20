@@ -54,17 +54,26 @@ class OpenAIStatementTranslator:
         if len(source) > self.max_chars:
             raise RuntimeError(f"statement is too large to translate safely: {len(source)} chars")
 
-        content = self.client.complete_json(_STATEMENT_TRANSLATE_PROMPT, source)
-        translated = _parse_json_object(content)
-        translated_statement = replace(
-            statement,
-            title=_field(translated, "title", statement.title),
-            description=normalize_statement_markup(_field(translated, "description", statement.description)),
-            input_format=normalize_statement_markup(_field(translated, "input_format", statement.input_format)),
-            output_format=normalize_statement_markup(_field(translated, "output_format", statement.output_format)),
-            hint=normalize_statement_markup(_field(translated, "hint", statement.hint)),
+        first = self._translate_statement_once(statement, source, _STATEMENT_TRANSLATE_PROMPT)
+        if not _looks_untranslated(first):
+            return first
+
+        retry_source = json.dumps(
+            {
+                "previous_translation_still_untranslated": {
+                    "title": first.title,
+                    "description": first.description,
+                    "input_format": first.input_format,
+                    "output_format": first.output_format,
+                    "hint": first.hint,
+                },
+                "original": fields,
+            },
+            ensure_ascii=False,
         )
-        return translated_statement
+        if len(retry_source) > self.max_chars:
+            return first
+        return self._translate_statement_once(statement, retry_source, _STATEMENT_RETRANSLATE_PROMPT)
 
     def translate_title(self, title: str) -> str:
         if not self.configured or not title.strip():
@@ -73,6 +82,18 @@ class OpenAIStatementTranslator:
         content = self.client.complete_json(_TITLE_TRANSLATE_PROMPT, source)
         translated = _parse_json_object(content)
         return _field(translated, "title", title)
+
+    def _translate_statement_once(self, statement: ProblemStatement, source: str, prompt: str) -> ProblemStatement:
+        content = self.client.complete_json(prompt, source)
+        translated = _parse_json_object(content)
+        return replace(
+            statement,
+            title=_field(translated, "title", statement.title),
+            description=normalize_statement_markup(_field(translated, "description", statement.description)),
+            input_format=normalize_statement_markup(_field(translated, "input_format", statement.input_format)),
+            output_format=normalize_statement_markup(_field(translated, "output_format", statement.output_format)),
+            hint=normalize_statement_markup(_field(translated, "hint", statement.hint)),
+        )
 
 
 _STATEMENT_TRANSLATE_PROMPT = (
@@ -87,6 +108,18 @@ _STATEMENT_TRANSLATE_PROMPT = (
     "不要解释题意，不要补充解法，不要改变题面含义。"
     "只返回 JSON 对象，键必须是 title, description, input_format, output_format, hint。"
     "值里可以保留原 HTML 标签。"
+)
+
+
+_STATEMENT_RETRANSLATE_PROMPT = (
+    STATEMENT_RENDERING_SKILL
+    + "\n\n"
+    "上一轮输出仍包含大量英文自然语言，视为失败。请重新翻译成简体中文。"
+    "必须把 description、input_format、output_format、hint 中的英文句子翻译成中文；"
+    "人名、变量名、YES/NO、代码、样例和 LaTeX 公式保持原样。"
+    "对于数学表达式，保留 $$$...$$$、$...$、\\(...\\)、\\[...\\] 分隔符和命令，"
+    "尤其要保留 a_{b_i}、b_{a_i}、p_{a_i}、\\le、\\cdot、10^9 这类结构。"
+    "只返回 JSON 对象，键必须是 title, description, input_format, output_format, hint。"
 )
 
 
@@ -113,3 +146,24 @@ def _parse_json_object(text: str) -> dict:
         if not match:
             raise
         return json.loads(match.group(0))
+
+
+def _looks_untranslated(statement: ProblemStatement) -> bool:
+    text = " ".join(
+        [
+            statement.description,
+            statement.input_format,
+            statement.output_format,
+            statement.hint,
+        ]
+    )
+    text = re.sub(r"\${1,3}.*?\${1,3}", " ", text, flags=re.DOTALL)
+    text = re.sub(r"\\\(.+?\\\)|\\\[.+?\\\]", " ", text, flags=re.DOTALL)
+    text = re.sub(r"<[^>]+>", " ", text)
+    cjk_chars = len(re.findall(r"[\u4e00-\u9fff]", text))
+    english_words = re.findall(r"[A-Za-z][A-Za-z']{2,}", text)
+    if len(english_words) < 10:
+        return False
+    if cjk_chars == 0:
+        return True
+    return len(english_words) >= 25 and len(english_words) > cjk_chars / 3

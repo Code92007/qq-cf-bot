@@ -44,6 +44,42 @@ class PromptSkillTest(unittest.TestCase):
         self.assertIn("⌊a_p/2⌋", translated.output_format)
         self.assertNotIn("ftlfloor", translated.output_format)
 
+    def test_translator_retries_when_output_is_still_english(self):
+        translator = OpenAIStatementTranslator("http://llm", "key", "model", enabled=True)
+        translator.client = Mock()
+        translator.client.configured = True
+        translator.client.complete_json.side_effect = [
+            (
+                '{"title":"Commuting Permutation",'
+                '"description":"Quack the Duck has a permutation a and an incomplete sequence b.",'
+                '"input_format":"Each test contains multiple test cases.",'
+                '"output_format":"For each test case, print YES if the answer exists.",'
+                '"hint":"In the first test case, b=[1,2,3]."}'
+            ),
+            (
+                '{"title":"可交换排列",'
+                '"description":"小鸭 Quack 有一个排列 $$$a$$$ 和一个不完整的序列 $$$b$$$。",'
+                '"input_format":"每个测试包含多个测试用例。",'
+                '"output_format":"对于每个测试用例，如果答案存在则输出 YES。",'
+                '"hint":"在第一个测试用例中，$$$b=[1,2,3]$$$。"}'
+            ),
+        ]
+        statement = ProblemStatement(
+            pid="CF1A",
+            title="Commuting Permutation",
+            description="Quack the Duck has a permutation a and an incomplete sequence b.",
+            input_format="Each test contains multiple test cases.",
+            output_format="For each test case, print YES if the answer exists.",
+            hint="In the first test case, b=[1,2,3].",
+            samples=[],
+        )
+
+        translated = translator.translate_statement(statement)
+
+        self.assertEqual(translator.client.complete_json.call_count, 2)
+        self.assertIn("小鸭", translated.description)
+        self.assertIn("每个测试", translated.input_format)
+
 
 if __name__ == "__main__":
     unittest.main()
