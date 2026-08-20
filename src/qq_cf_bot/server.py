@@ -104,10 +104,21 @@ def _handle_event(event: dict, callback: Callable[[GroupMessage], None]) -> None
 
     message = event.get("message")
     at_only = is_at_only_mention(message, event.get("self_id"))
-    if parse_command(message) is None and not at_only and not looks_like_code_submission(message):
+    command = parse_command(message)
+    direct_code = command is None and looks_like_code_submission(message)
+    if command is None and not at_only and not direct_code:
         return
     if at_only:
         message = "/help"
+        command = parse_command(message)
+
+    LOGGER.info(
+        "onebot command ingress group=%s user=%s message_id=%s command=%s",
+        event.get("group_id"),
+        event.get("user_id"),
+        event.get("message_id"),
+        command.name if command is not None else "direct-code",
+    )
 
     sender = event.get("sender") or {}
     display_name = str(sender.get("card") or sender.get("nickname") or event.get("user_id") or "群友")

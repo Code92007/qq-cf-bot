@@ -178,15 +178,39 @@ class CodeforcesPushBot:
         }:
             return
 
+        command_name = "direct-code" if direct_code or command is None else command.name
+        LOGGER.info(
+            "bot command accepted group=%s user=%s message_id=%s command=%s",
+            event.group_id,
+            event.user_id,
+            event.message_id,
+            command_name,
+        )
+
         if command is not None and command.name == "help":
             self.handle_help(event)
+            LOGGER.info(
+                "bot command finished group=%s user=%s message_id=%s command=%s elapsed=0.00s",
+                event.group_id,
+                event.user_id,
+                event.message_id,
+                command_name,
+            )
             return
 
         lock = self._group_lock(event.group_id)
         if not lock.acquire(blocking=False):
+            LOGGER.info(
+                "bot command blocked by group lock group=%s user=%s message_id=%s command=%s",
+                event.group_id,
+                event.user_id,
+                event.message_id,
+                command_name,
+            )
             self.onebot.send_group_text(event.group_id, f"@{event.sender_name} 上一个操作还在处理中，稍等一下。")
             return
 
+        started_at = time.monotonic()
         try:
             if direct_code:
                 self.handle_submitcode(event, extract_plain_text(event.message))
@@ -213,11 +237,19 @@ class CodeforcesPushBot:
         except Exception:
             LOGGER.exception(
                 "failed to handle command %s in group %s",
-                "direct-code" if direct_code or command is None else command.name,
+                command_name,
                 event.group_id,
             )
             self.onebot.send_group_text(event.group_id, "操作失败了：题库、中文题面、图片渲染或判题服务暂时不可用。")
         finally:
+            LOGGER.info(
+                "bot command finished group=%s user=%s message_id=%s command=%s elapsed=%.2fs",
+                event.group_id,
+                event.user_id,
+                event.message_id,
+                command_name,
+                time.monotonic() - started_at,
+            )
             lock.release()
 
     def handle_new(self, event: GroupMessage, arg: str = "") -> None:
