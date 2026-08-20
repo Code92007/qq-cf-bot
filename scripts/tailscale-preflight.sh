@@ -18,6 +18,19 @@ is_true() {
     esac
 }
 
+int_env() {
+    value=${1:-}
+    default=$2
+    minimum=$3
+    case "$value" in
+        '' | *[!0-9]*) value=$default ;;
+    esac
+    if [ "$value" -lt "$minimum" ]; then
+        value=$minimum
+    fi
+    printf '%s\n' "$value"
+}
+
 run_as_root() {
     if [ "$(id -u)" = "0" ]; then
         "$@"
@@ -104,13 +117,30 @@ fi
 
 if [ -n "$ping_host" ]; then
     echo "Checking Tailscale reachability: $ping_host"
-    if ! tailscale ping -c 1 "$ping_host" >/dev/null 2>&1; then
+    ping_attempts=$(int_env "${TAILSCALE_PING_ATTEMPTS:-4}" 4 1)
+    ping_delay=$(int_env "${TAILSCALE_PING_RETRY_DELAY_SECONDS:-5}" 5 0)
+    ping_ok=false
+    attempt=1
+    while [ "$attempt" -le "$ping_attempts" ]; do
+        if tailscale ping -c 1 "$ping_host" >/dev/null 2>&1; then
+            ping_ok=true
+            break
+        fi
+        if [ "$attempt" -lt "$ping_attempts" ]; then
+            echo "Tailscale ping failed for $ping_host (attempt $attempt/$ping_attempts), retrying in ${ping_delay}s..."
+            sleep "$ping_delay"
+        fi
+        attempt=$((attempt + 1))
+    done
+
+    if [ "$ping_ok" != true ]; then
         cat >&2 <<EOF
-Tailscale is running, but $ping_host is not reachable.
+Tailscale is running, but $ping_host is not reachable after $ping_attempts attempts.
 Check that the model server is online and both machines are in the same tailnet.
 EOF
         exit 1
     fi
+    echo "Tailscale reachability OK: $ping_host (attempt $attempt/$ping_attempts)"
 fi
 
 echo "Tailscale preflight OK."

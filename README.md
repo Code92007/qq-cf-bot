@@ -96,6 +96,8 @@ python -m qq_cf_bot
 | `TAILSCALE_HOSTNAME` | `qq-cf-bot` | 服务器加入 tailnet 时显示的设备名 |
 | `TAILSCALE_EXTRA_ARGS` | 空 | 可选，传给 `tailscale up` 的额外参数，例如 `--accept-routes` |
 | `TAILSCALE_PING_HOST` | 空 | 可选，部署前必须能 ping 通的 tailnet 主机；为空时会从 `JUDGE_API_URL` 自动识别 `100.*` 或 `*.ts.net` |
+| `TAILSCALE_PING_ATTEMPTS` | `4` | Tailscale reachability 检查最多尝试次数 |
+| `TAILSCALE_PING_RETRY_DELAY_SECONDS` | `5` | Tailscale reachability 检查失败后的重试间隔秒数 |
 | `TRANSLATE_ENABLED` | `true` | 是否用 OpenAI-compatible 模型把 CF 英文题面翻译成中文；未配置 key/model 时不会发起请求 |
 | `TRANSLATE_API_URL` | `JUDGE_API_URL` | 翻译模型 API；为空时复用 `JUDGE_API_URL` |
 | `TRANSLATE_API_KEY` | `JUDGE_API_KEY` | 翻译模型 key；为空时复用 `JUDGE_API_KEY` |
@@ -243,6 +245,8 @@ TAILSCALE_REQUIRED=true
 TAILSCALE_AUTHKEY=tskey-...
 TAILSCALE_HOSTNAME=qq-cf-bot
 TAILSCALE_PING_HOST=<模型服务的 100.x 地址或 ts.net 域名>
+TAILSCALE_PING_ATTEMPTS=4
+TAILSCALE_PING_RETRY_DELAY_SECONDS=5
 ```
 
 之后部署统一跑：
@@ -251,7 +255,7 @@ TAILSCALE_PING_HOST=<模型服务的 100.x 地址或 ts.net 域名>
 ./scripts/deploy.sh
 ```
 
-脚本会自动启动 `tailscaled`，未登录时用 `TAILSCALE_AUTHKEY` 执行 `tailscale up`，并在模型服务不可达时拒绝启动 Docker。
+脚本会自动启动 `tailscaled`，未登录时用 `TAILSCALE_AUTHKEY` 执行 `tailscale up`，并在模型服务不可达时按 `TAILSCALE_PING_ATTEMPTS` 重试；多次仍不可达才拒绝启动 Docker。
 
 如果希望服务器重启后也自动按这个顺序拉起工程，可以使用 `deploy/systemd/qq-cf-bot.service.example`：
 
