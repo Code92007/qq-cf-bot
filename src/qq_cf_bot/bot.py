@@ -34,6 +34,8 @@ from .translator import OpenAIStatementTranslator
 
 LOGGER = logging.getLogger(__name__)
 
+_REMOTE_SUBMIT_QUEUE_NOTICE_THRESHOLD = 3
+
 _HELP_TEXT = """可用命令：
 /help：查看帮助；只 @ 我也会显示本帮助
 /new：出一道默认难度题
@@ -408,13 +410,14 @@ class CodeforcesPushBot:
         )
         self._code_queue.put(job)
         position = self._code_queue.qsize()
-        self.onebot.send_group_text(
-            event.group_id,
-            (
-                f"@{event.sender_name} 已加入 CF 远端提交队列。"
-                f"语言 {parsed.language}，当前队列约 {position} 个。"
-            ),
-        )
+        if position >= _REMOTE_SUBMIT_QUEUE_NOTICE_THRESHOLD:
+            self.onebot.send_group_text(
+                event.group_id,
+                (
+                    f"@{event.sender_name} CF 远端提交队列较忙。"
+                    f"语言 {parsed.language}，当前队列约 {position} 个。"
+                ),
+            )
 
     def handle_cfset(self, event: GroupMessage, arg: str) -> None:
         parsed = _parse_rating_range(arg)
@@ -700,10 +703,6 @@ class CodeforcesPushBot:
 
         self._wait_for_submit_interval(job.group_id)
         self.store.set_meta_float("cf_last_submit_at", time.time())
-        self.onebot.send_group_text(
-            job.group_id,
-            f"@{job.sender_name} 开始提交到 Codeforces，语言 {job.submission.language}。",
-        )
         result = self.remote_judge.judge(job.problem, job.submission)
         self._record_remote_result(job, result)
         if result.accepted:
@@ -719,7 +718,7 @@ class CodeforcesPushBot:
         wait_seconds = int(max(0.0, last_submit_at + interval - time.time()))
         if wait_seconds <= 0:
             return
-        self.onebot.send_group_text(group_id, f"为保护 CF 账号，距离上次提交过近，将等待约 {wait_seconds} 秒后提交。")
+        LOGGER.info("delaying Codeforces submit for %s seconds", wait_seconds)
         time.sleep(wait_seconds)
 
     def _record_remote_result(self, job: _QueuedCodeSubmission, result: RemoteJudgeResult) -> None:

@@ -124,6 +124,14 @@ class StatementRendererTest(unittest.TestCase):
         self.assertNotIn(" lt ", html)
         self.assertNotIn("Σ_i=2^n", html)
 
+    def test_plain_arrow_residue_is_repaired(self):
+        text = _normalize_statement_markup(
+            "变化如下：[1, 3, 2, 1, 4] arrow [1, 3, 2, 2, 4] arrow [1, 3, 2, 3, 4]。"
+        )
+
+        self.assertIn("[1, 3, 2, 1, 4] → [1, 3, 2, 2, 4]", text)
+        self.assertNotIn(" arrow ", text)
+
 
 if __name__ == "__main__":
     unittest.main()

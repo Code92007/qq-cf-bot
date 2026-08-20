@@ -18,6 +18,11 @@ from .models import CFProblem, CodeSubmission, RemoteJudgeResult, SolutionRefere
 
 
 CODEFORCES_BASE_URL = "https://codeforces.com"
+_BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
+)
 
 
 _VERDICT_ZH = {
@@ -99,6 +104,10 @@ class _FormParser(HTMLParser):
             self._current = None
 
 
+class CodeforcesForbiddenError(RuntimeError):
+    """Codeforces rejected the request before normal form handling."""
+
+
 class CodeforcesRemoteJudge:
     def __init__(
         self,
@@ -133,7 +142,7 @@ class CodeforcesRemoteJudge:
             return RemoteJudgeResult(False, "EMPTY_SOURCE", "代码为空。")
 
         before_id = self._latest_matching_submission_id(problem)
-        self._submit(problem, submission)
+        self._submit_with_retry(problem, submission)
         return self._poll_result(problem, before_id)
 
     def fetch_accepted_code_references(
@@ -176,6 +185,21 @@ class CodeforcesRemoteJudge:
                 )
             )
         return references
+
+    def _submit_with_retry(self, problem: CFProblem, submission: CodeSubmission) -> None:
+        try:
+            self._submit(problem, submission)
+            return
+        except CodeforcesForbiddenError:
+            self._reset_session()
+
+        try:
+            self._submit(problem, submission)
+        except CodeforcesForbiddenError as exc:
+            raise RuntimeError(
+                "Codeforces 返回 403 Forbidden，已刷新登录态重试仍失败。"
+                "可能是 CF 风控、验证码或账号安全确认，请稍后再试。"
+            ) from exc
 
     def _submit(self, problem: CFProblem, submission: CodeSubmission) -> None:
         self._ensure_logged_in()
@@ -233,6 +257,11 @@ class CodeforcesRemoteJudge:
                 raise RuntimeError("Codeforces 登录失败" + suffix)
         self._logged_in = True
 
+    def _reset_session(self) -> None:
+        self._cookie_jar = CookieJar()
+        self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookie_jar))
+        self._logged_in = False
+
     def _latest_matching_submission_id(self, problem: CFProblem) -> int:
         try:
             submissions = self._status.fetch_recent(count=20)
@@ -265,26 +294,32 @@ class CodeforcesRemoteJudge:
     def _get(self, path_or_url: str) -> str:
         request = urllib.request.Request(
             _absolute_url(path_or_url),
-            headers={"User-Agent": "qq-cf-bot/0.1", "Accept-Language": "en,zh-CN;q=0.9"},
+            headers=_browser_headers(),
         )
-        with self._opener.open(request, timeout=self.http_timeout_seconds) as response:
-            return response.read().decode("utf-8", errors="replace")
+        return self._open_text(request)
 
     def _post(self, path_or_url: str, fields: Dict[str, str], referer: str) -> str:
         data = urllib.parse.urlencode(fields).encode("utf-8")
         request = urllib.request.Request(
             _absolute_url(path_or_url),
             data=data,
-            headers={
-                "User-Agent": "qq-cf-bot/0.1",
-                "Accept-Language": "en,zh-CN;q=0.9",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Referer": _absolute_url(referer),
-            },
+            headers=_browser_headers(referer=referer, form=True),
             method="POST",
         )
-        with self._opener.open(request, timeout=self.http_timeout_seconds) as response:
-            return response.read().decode("utf-8", errors="replace")
+        return self._open_text(request)
+
+    def _open_text(self, request: urllib.request.Request) -> str:
+        try:
+            with self._opener.open(request, timeout=self.http_timeout_seconds) as response:
+                return response.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            error = _extract_cf_error(body)
+            if exc.code == 403:
+                detail = f"：{error}" if error else ""
+                raise CodeforcesForbiddenError(f"Codeforces 返回 403 Forbidden{detail}") from exc
+            detail = f"：{error}" if error else ""
+            raise RuntimeError(f"Codeforces HTTP {exc.code}{detail}") from exc
 
 
 def _parse_forms(page_html: str) -> List[_ParsedForm]:
@@ -440,6 +475,43 @@ def _submission_url(submission: dict) -> str:
 
 def _absolute_url(path_or_url: str) -> str:
     return urllib.parse.urljoin(CODEFORCES_BASE_URL, path_or_url)
+
+
+def _browser_headers(referer: str = "", form: bool = False) -> Dict[str, str]:
+    headers = {
+        "User-Agent": _BROWSER_USER_AGENT,
+        "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
+    if form:
+        headers.update(
+            {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Origin": CODEFORCES_BASE_URL,
+                "Referer": _absolute_url(referer),
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-User": "?1",
+                "Upgrade-Insecure-Requests": "1",
+            }
+        )
+    else:
+        headers.update(
+            {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none" if not referer else "same-origin",
+                "Sec-Fetch-User": "?1",
+                "Upgrade-Insecure-Requests": "1",
+            }
+        )
+        if referer:
+            headers["Referer"] = _absolute_url(referer)
+    return headers
 
 
 def _extract_submission_ids(page_html: str, contest_id: int) -> List[int]:
