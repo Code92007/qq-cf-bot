@@ -69,9 +69,9 @@ class _QueuedCodeSubmission:
 class CodeforcesPushBot:
     def __init__(self, config: Config) -> None:
         self.config = config
-        self.cf = CodeforcesClient(config.cache_path, config.cf_cache_ttl_seconds)
+        self.cf = CodeforcesClient(config.cache_path, config.cf_cache_ttl_seconds, base_urls=config.cf_base_urls)
         self.luogu = LuoguClient()
-        self.cf_statement = CodeforcesStatementClient()
+        self.cf_statement = CodeforcesStatementClient(config.cf_base_urls)
         self.store = SentProblemStore(config.db_path, config.dedup_scope)
         self.selector = ProblemSelector(
             config.min_rating,
@@ -110,6 +110,7 @@ class CodeforcesPushBot:
             http_timeout_seconds=config.cf_submit_http_timeout_seconds,
             poll_interval_seconds=config.cf_submit_poll_interval_seconds,
             poll_timeout_seconds=config.cf_submit_poll_timeout_seconds,
+            base_urls=config.cf_base_urls,
         )
         self.solution_generator = LLMSolutionGenerator(
             api_url=config.judge_api_url,

@@ -13,6 +13,7 @@ from html.parser import HTMLParser
 from http.cookiejar import CookieJar
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from .cf_mirrors import normalize_codeforces_base_urls
 from .codeforces import CodeforcesStatusClient
 from .models import CFProblem, CodeSubmission, RemoteJudgeResult, SolutionReference
 
@@ -118,6 +119,7 @@ class CodeforcesRemoteJudge:
         http_timeout_seconds: int = 30,
         poll_interval_seconds: int = 8,
         poll_timeout_seconds: int = 180,
+        base_urls: Iterable[str] | str | None = None,
     ) -> None:
         self.username = username
         self.password = password
@@ -129,7 +131,12 @@ class CodeforcesRemoteJudge:
         self._cookie_jar = CookieJar()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookie_jar))
         self._logged_in = False
-        self._status = CodeforcesStatusClient(self.handle, timeout_seconds=http_timeout_seconds)
+        self.base_urls = normalize_codeforces_base_urls(base_urls)
+        self._status = CodeforcesStatusClient(
+            self.handle,
+            timeout_seconds=http_timeout_seconds,
+            base_urls=self.base_urls,
+        )
 
     @property
     def configured(self) -> bool:

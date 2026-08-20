@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import urllib.error
 import urllib.request
@@ -7,17 +8,43 @@ from html import unescape
 from html.parser import HTMLParser
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from .cf_mirrors import codeforces_url_variants, normalize_codeforces_base_urls
 from .content import normalize_embedded_pre_html
 from .models import CFProblem, ProblemStatement
 
 
+_LOGGER = logging.getLogger(__name__)
+
+
 class CodeforcesStatementClient:
+    def __init__(self, base_urls: Iterable[str] | str | None = None) -> None:
+        self.base_urls = normalize_codeforces_base_urls(base_urls)
+
     def fetch_statement(self, problem: CFProblem) -> ProblemStatement:
-        html = fetch_codeforces_html(problem.cf_url, validate=_looks_like_problem_page)
+        html = fetch_codeforces_html(problem.cf_url, validate=_looks_like_problem_page, base_urls=self.base_urls)
         return statement_from_codeforces_html(problem, html)
 
 
-def fetch_codeforces_html(url: str, validate=None, timeout_seconds: int = 25) -> str:
+def fetch_codeforces_html(
+    url: str,
+    validate=None,
+    timeout_seconds: int = 25,
+    base_urls: Iterable[str] | str | None = None,
+) -> str:
+    errors = []
+    candidates = codeforces_url_variants(url, base_urls)
+    for index, candidate in enumerate(candidates):
+        try:
+            html = _fetch_codeforces_html_once(candidate, validate=validate, timeout_seconds=timeout_seconds)
+            if index > 0:
+                _LOGGER.info("Codeforces fetch succeeded via fallback mirror: %s", candidate)
+            return html
+        except Exception as exc:
+            errors.append(f"{candidate}: {exc}")
+    raise RuntimeError("Codeforces fetch failed for all configured mirrors: " + "; ".join(errors))
+
+
+def _fetch_codeforces_html_once(url: str, validate=None, timeout_seconds: int = 25) -> str:
     last_error: Optional[Exception] = None
     try:
         html = _fetch_http(url, timeout_seconds)

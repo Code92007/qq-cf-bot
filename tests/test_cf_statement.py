@@ -1,6 +1,7 @@
 import unittest
+from unittest.mock import patch
 
-from qq_cf_bot.cf_statement import statement_from_codeforces_html
+from qq_cf_bot.cf_statement import fetch_codeforces_html, statement_from_codeforces_html
 from qq_cf_bot.models import CFProblem
 
 
@@ -65,6 +66,35 @@ class CodeforcesStatementTest(unittest.TestCase):
         statement = statement_from_codeforces_html(problem, html)
 
         self.assertEqual(statement.samples, [("3\n1 0 0\n0 1 0", "2\n3")])
+
+    def test_fetch_falls_back_to_codeforces_mirror(self):
+        seen_urls = []
+
+        def fake_fetch_http(url, _timeout_seconds):
+            seen_urls.append(url)
+            if url.startswith("https://m2.codeforces.com/"):
+                return '<div class="problem-statement">ok</div>'
+            raise RuntimeError("down")
+
+        with (
+            patch("qq_cf_bot.cf_statement._fetch_http", side_effect=fake_fetch_http),
+            patch("qq_cf_bot.cf_statement._fetch_playwright", side_effect=RuntimeError("browser down")),
+        ):
+            html = fetch_codeforces_html(
+                "https://codeforces.com/problemset/problem/1/A",
+                validate=lambda value: "problem-statement" in value,
+                base_urls=("https://codeforces.com", "https://m1.codeforces.com", "https://m2.codeforces.com"),
+            )
+
+        self.assertEqual(html, '<div class="problem-statement">ok</div>')
+        self.assertEqual(
+            seen_urls,
+            [
+                "https://codeforces.com/problemset/problem/1/A",
+                "https://m1.codeforces.com/problemset/problem/1/A",
+                "https://m2.codeforces.com/problemset/problem/1/A",
+            ],
+        )
 
 
 if __name__ == "__main__":

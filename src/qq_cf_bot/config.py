@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import FrozenSet, Optional, Tuple
 
+from .cf_mirrors import normalize_codeforces_base_urls
 from .llm import LLMProviderConfig, infer_wire_api, normalize_wire_api
 
 
@@ -120,6 +121,7 @@ class Config:
     asset_dir: Path
     min_rating: int
     max_rating: int
+    cf_base_urls: Tuple[str, ...]
     dedup_scope: str
     cf_cache_ttl_seconds: int
     max_selection_attempts: int
@@ -211,6 +213,7 @@ class Config:
             asset_dir=Path(os.getenv("BOT_ASSET_DIR", str(root / "assets"))),
             min_rating=min_rating,
             max_rating=max_rating,
+            cf_base_urls=normalize_codeforces_base_urls(os.getenv("CF_BASE_URLS")),
             dedup_scope=dedup_scope,
             cf_cache_ttl_seconds=_int_env("CF_CACHE_TTL_SECONDS", 6 * 60 * 60),
             max_selection_attempts=_int_env("BOT_MAX_SELECTION_ATTEMPTS", 30),

@@ -68,6 +68,7 @@ python -m qq_cf_bot
 | `BOT_DATA_DIR` | `data` | SQLite、题库缓存和图片输出目录 |
 | `CF_MIN_RATING` | `1900` | 默认最低题目 rating |
 | `CF_MAX_RATING` | `2600` | 默认最高题目 rating |
+| `CF_BASE_URLS` | `https://codeforces.com,https://m1.codeforces.com,https://m2.codeforces.com,https://m3.codeforces.com` | Codeforces 主站和官方镜像候选；题库 API、题面抓取和提交状态查询会按顺序降级 |
 | `BOT_DEDUP_SCOPE` | `group` | `group` 每群去重，`global` 全局去重 |
 | `BOT_PREFETCH_ENABLED` | `true` | 是否在当前题发布后后台预制下一题，加快下一次 `/new` |
 | `CF_RECENT_SELECTION_POOL_SIZE` | `500` | 推题时优先从较新 contestId 的候选池中随机，数值越大越分散 |

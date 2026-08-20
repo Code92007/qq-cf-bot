@@ -59,6 +59,13 @@ class ConfigTest(unittest.TestCase):
         self.assertTrue(config.prefetch_enabled)
         self.assertEqual(config.recent_selection_pool_size, 500)
         self.assertEqual(config.giveup_min_seconds, 120)
+        self.assertIn("https://m1.codeforces.com", config.cf_base_urls)
+
+    def test_cf_base_urls_can_be_overridden(self):
+        with patch.dict(os.environ, {"CF_BASE_URLS": "codeforces.com,m2.codeforces.com"}, clear=True):
+            config = Config.from_env()
+
+        self.assertEqual(config.cf_base_urls, ("https://codeforces.com", "https://m2.codeforces.com"))
 
 
 if __name__ == "__main__":
