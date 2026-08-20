@@ -8,7 +8,7 @@ from qq_cf_bot.bot import (
     _parse_problem_id,
     _parse_rating_range,
 )
-from qq_cf_bot.models import CFProblem, ProblemStatement, RatingRange
+from qq_cf_bot.models import ActiveProblem, CFProblem, GroupMessage, JudgeResult, ProblemStatement, RatingRange
 
 
 class _FakeBotForRatingRange:
@@ -135,6 +135,69 @@ class BotCommandTest(unittest.TestCase):
 
         self.assertFalse(_needs_body_translation(statement))
         self.assertFalse(_needs_statement_translation(statement))
+
+    def test_submit_sends_only_model_result_without_ack(self):
+        problem = CFProblem(1, "A", "Theatre Square", 1000)
+        statement = ProblemStatement(
+            pid="CF1A",
+            title="剧院广场",
+            description="给定 n 和 m。",
+            input_format="输入。",
+            output_format="输出。",
+            samples=[],
+        )
+        bot = CodeforcesPushBot.__new__(CodeforcesPushBot)
+        bot.store = _FakeSubmitStore(ActiveProblem(problem, statement, [], "2026-08-20T00:00:00Z"))
+        bot.onebot = _FakeOneBot()
+        bot.judge = _FakeSubmitJudge()
+        bot.solution_bank = _FakeSolutionBank()
+        bot.config = type("_Config", (), {"judge_solution_context_max_chars": 1000})()
+
+        bot.handle_submit(
+            GroupMessage(group_id=1, user_id=2, sender_name="alice", message_id=3, message="/submit 做法"),
+            "用 DP 维护状态。",
+        )
+
+        self.assertEqual(len(bot.onebot.messages), 1)
+        self.assertIn("还不够完整", bot.onebot.messages[0][1])
+
+
+class _FakeOneBot:
+    def __init__(self):
+        self.messages = []
+
+    def send_group_text(self, group_id, text):
+        self.messages.append((group_id, text))
+
+
+class _FakeSubmitStore:
+    def __init__(self, active):
+        self.active = active
+        self.recorded = []
+
+    def get_active_problem(self, group_id):
+        return self.active
+
+    def list_submission_history(self, group_id, cf_id):
+        return []
+
+    def record_submission(self, *args, **kwargs):
+        self.recorded.append((args, kwargs))
+
+
+class _FakeSolutionBank:
+    def ensure(self, problem, statement):
+        return []
+
+    def context_for_prompt(self, references, max_chars):
+        return ""
+
+
+class _FakeSubmitJudge:
+    configured = True
+
+    def judge(self, *args, **kwargs):
+        return JudgeResult(False, "还不够完整。")
 
 
 if __name__ == "__main__":

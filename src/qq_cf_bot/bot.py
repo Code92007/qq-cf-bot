@@ -295,7 +295,24 @@ class CodeforcesPushBot:
             self.onebot.send_group_text(event.group_id, _JUDGE_SETUP_HINT)
             return
 
+        started_at = time.monotonic()
+        LOGGER.info(
+            "oral submit judge start group=%s user=%s cf_id=%s ranked=%s chars=%s",
+            event.group_id,
+            event.user_id,
+            active.problem.cf_id,
+            active.ranked,
+            len(submission),
+        )
+
         solution_references = self.solution_bank.ensure(active.problem, active.statement)
+        LOGGER.info(
+            "oral submit references ready group=%s cf_id=%s refs=%s elapsed=%.2fs",
+            event.group_id,
+            active.problem.cf_id,
+            len(solution_references),
+            time.monotonic() - started_at,
+        )
         solution_context = self.solution_bank.context_for_prompt(
             solution_references,
             self.config.judge_solution_context_max_chars,
@@ -309,6 +326,13 @@ class CodeforcesPushBot:
             solution_context=solution_context,
             submission_history=history,
         )
+        LOGGER.info(
+            "oral submit first judge done group=%s cf_id=%s accepted=%s elapsed=%.2fs",
+            event.group_id,
+            active.problem.cf_id,
+            result.accepted,
+            time.monotonic() - started_at,
+        )
         if result.accepted and solution_references:
             try:
                 result = self.judge.second_judge(
@@ -319,6 +343,13 @@ class CodeforcesPushBot:
                     solution_references=solution_references,
                     solution_context=solution_context,
                     submission_history=history,
+                )
+                LOGGER.info(
+                    "oral submit second judge done group=%s cf_id=%s accepted=%s elapsed=%.2fs",
+                    event.group_id,
+                    active.problem.cf_id,
+                    result.accepted,
+                    time.monotonic() - started_at,
                 )
             except Exception as exc:
                 LOGGER.warning("second judge failed for %s, keeping first result: %s", active.problem.cf_id, exc)
@@ -331,6 +362,14 @@ class CodeforcesPushBot:
             result.accepted,
             result.reason,
             ranked=active.ranked,
+        )
+        LOGGER.info(
+            "oral submit recorded group=%s user=%s cf_id=%s accepted=%s elapsed=%.2fs",
+            event.group_id,
+            event.user_id,
+            active.problem.cf_id,
+            result.accepted,
+            time.monotonic() - started_at,
         )
 
         if not result.accepted:
