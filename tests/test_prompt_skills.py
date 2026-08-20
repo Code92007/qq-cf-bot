@@ -17,6 +17,9 @@ class PromptSkillTest(unittest.TestCase):
         self.assertIn(STATEMENT_RENDERING_SKILL, _STATEMENT_TRANSLATE_PROMPT)
         self.assertIn("ftlfloor", _STATEMENT_TRANSLATE_PROMPT)
         self.assertIn("10^9", _STATEMENT_TRANSLATE_PROMPT)
+        self.assertIn("\\mid", _STATEMENT_TRANSLATE_PROMPT)
+        self.assertIn("严格递增", _STATEMENT_TRANSLATE_PROMPT)
+        self.assertIn("a_i lt a_{i+1}", STATEMENT_RENDERING_SKILL)
 
     def test_translated_statement_is_normalized_before_returning(self):
         translator = OpenAIStatementTranslator("http://llm", "key", "model", enabled=True)

@@ -215,6 +215,13 @@ code {{
   font-size: 1.02em;
   overflow-wrap: anywhere;
 }}
+.math-display {{
+  display: block;
+  margin: 8px auto 14px;
+  text-align: center;
+  font-size: 1.08em;
+  line-height: 1.55;
+}}
 .math code {{
   padding: 0 3px;
   background: #eef0f3;
@@ -306,13 +313,16 @@ def _stash_math(value: str) -> tuple[str, dict[str, str]]:
         if not content:
             return ""
         token = f"QQCFBOTMATH{len(fragments)}TOKEN"
-        fragments[token] = _latex_to_html(content)
+        display = _is_line_standalone_math(match)
+        fragments[token] = _latex_to_html(content, display=display)
+        if display:
+            return f"\n\n{token}\n\n"
         return token
 
     return _MATH_RE.sub(replace, value), fragments
 
 
-def _latex_to_html(value: str) -> str:
+def _latex_to_html(value: str, display: bool = False) -> str:
     text = html.unescape(value).replace("\n", " ")
     code_fragments: dict[str, str] = {}
 
@@ -331,6 +341,10 @@ def _latex_to_html(value: str) -> str:
         r"\ge": "≥",
         r"\neq": "≠",
         r"\ne": "≠",
+        r"\lt": "<",
+        r"\gt": ">",
+        r"\mid": "∣",
+        r"\nmid": "∤",
         r"\cdot": "·",
         r"\times": "×",
         r"\ldots": "…",
@@ -355,7 +369,19 @@ def _latex_to_html(value: str) -> str:
     escaped = _format_math_markup(text)
     for token, fragment in code_fragments.items():
         escaped = escaped.replace(token, fragment)
-    return f'<span class="math">{escaped}</span>'
+    css_class = "math math-display" if display else "math"
+    return f'<span class="{css_class}">{escaped}</span>'
+
+
+def _is_line_standalone_math(match: re.Match) -> bool:
+    source = match.string
+    start, end = match.span()
+    line_start = source.rfind("\n", 0, start) + 1
+    line_end = source.find("\n", end)
+    if line_end == -1:
+        line_end = len(source)
+    line = source[line_start:line_end].strip()
+    return line == match.group(0).strip()
 
 
 def normalize_statement_markup(value: str) -> str:
@@ -411,12 +437,12 @@ def _format_loose_math_text(value: str) -> str:
         return token
 
     script = r"(?:_\{(?:[^{}]|\{[^{}]*\}){1,120}\}|_[A-Za-z0-9]+|\^\{(?:[^{}]|\{[^{}]*\}){1,120}\}|\^[A-Za-z0-9]+)"
-    scripted_term = rf"[A-Za-z]\s*(?:{script})+"
-    math_term = rf"(?:{scripted_term}|[A-Za-z0-9]+)"
+    scripted_term = rf"[A-Za-z∑Σ]\s*(?:{script})+"
+    math_term = rf"(?:{scripted_term}|[A-Za-z∑Σ0-9]+)"
     text = re.sub(r"([⌊⌈][^⌊⌋⌈⌉<>]{1,60}[⌋⌉])", lambda match: protect_raw(match.group(1)), text)
     text = re.sub(
         r"(?<![A-Za-z0-9])"
-        rf"({scripted_term}(?:\s*[=+\-*/<>≤≥]\s*{math_term})+)"
+        rf"({scripted_term}(?:\s*[=+\-*/<>≤≥∣]\s*{math_term})+)"
         r"(?![A-Za-z0-9])",
         protect_latex,
         text,
@@ -445,6 +471,16 @@ def _format_loose_math_text(value: str) -> str:
 
 def _repair_corrupted_latex(value: str) -> str:
     text = value
+    text = re.sub(
+        r"([∑Σ])_([A-Za-z])=([A-Za-z0-9+\-]+)\^([A-Za-z0-9+\-]+)",
+        lambda match: rf"\sum_{{{match.group(2)}={match.group(3)}}}^{{{match.group(4)}}}",
+        text,
+    )
+    text = re.sub(
+        r"([∑Σ])\s*([A-Za-z])\s*=\s*([A-Za-z0-9+\-]+)\s*\^\s*([A-Za-z0-9+\-]+)",
+        lambda match: rf"\sum_{{{match.group(2)}={match.group(3)}}}^{{{match.group(4)}}}",
+        text,
+    )
     text = re.sub(
         r"[<≤]?ftl(floor|ceil)d?frac([A-Za-z](?:_[A-Za-z0-9]+)?)2r(floor|ceil)",
         lambda match: _floor_ceil_text(match.group(1), f"{match.group(2)}/2", match.group(3)),
@@ -482,6 +518,11 @@ def _normalize_plain_latex_commands(value: str) -> str:
     }
     for source, target in replacements.items():
         text = re.sub(rf"(?<![A-Za-z\\]){source}(?![A-Za-z])", target, text)
+    math_atom = r"([A-Za-z∑Σ0-9_^{}\[\]()+\-]+)"
+    text = re.sub(rf"(?<![A-Za-z]){math_atom}\s+mid\s+{math_atom}(?![A-Za-z])", r"\1 ∣ \2", text)
+    text = re.sub(rf"(?<![A-Za-z]){math_atom}\s+nmid\s+{math_atom}(?![A-Za-z])", r"\1 ∤ \2", text)
+    text = re.sub(rf"(?<![A-Za-z]){math_atom}\s+lt\s+{math_atom}(?![A-Za-z])", r"\1 < \2", text)
+    text = re.sub(rf"(?<![A-Za-z]){math_atom}\s+gt\s+{math_atom}(?![A-Za-z])", r"\1 > \2", text)
     text = re.sub(r"(?<![A-Za-z\\])leq?(?![A-Za-z])", "≤", text)
     text = re.sub(r"(?<![A-Za-z\\])geq?(?![A-Za-z])", "≥", text)
     text = re.sub(r"(?<![A-Za-z\\])neq?(?![A-Za-z])", "≠", text)
@@ -584,6 +625,10 @@ def _latex_command_text(command: str) -> str:
         r"\ge": "≥",
         r"\neq": "≠",
         r"\ne": "≠",
+        r"\lt": "<",
+        r"\gt": ">",
+        r"\mid": "∣",
+        r"\nmid": "∤",
         r"\cdot": "·",
         r"\times": "×",
         r"\ldots": "…",

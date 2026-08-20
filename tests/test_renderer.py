@@ -106,6 +106,24 @@ class StatementRendererTest(unittest.TestCase):
         self.assertIn("⌊a_p/2⌋", html)
         self.assertNotIn("$$$", html)
 
+    def test_corrupted_mid_lt_and_sum_are_repaired(self):
+        rendered, fragments = _stash_math(
+            _normalize_statement_markup(
+                "对于 $$$b^k mid x$$$，数组满足 $$$a_i lt a_{i+1}$$$。\n\n$$$Σ_i=2^n v(i,a_i)$$$"
+            )
+        )
+        html = rendered
+        for token, fragment in fragments.items():
+            html = html.replace(token, fragment)
+
+        self.assertIn("b<sup>k</sup> ∣ x", html)
+        self.assertIn("a<sub>i</sub> &lt; a<sub>i+1</sub>", html)
+        self.assertIn("∑<sub>i=2</sub><sup>n</sup>", html)
+        self.assertIn("math-display", html)
+        self.assertNotIn(" mid ", html)
+        self.assertNotIn(" lt ", html)
+        self.assertNotIn("Σ_i=2^n", html)
+
 
 if __name__ == "__main__":
     unittest.main()
