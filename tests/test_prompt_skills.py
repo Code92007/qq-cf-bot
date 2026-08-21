@@ -20,6 +20,8 @@ class PromptSkillTest(unittest.TestCase):
         self.assertIn("\\mid", _STATEMENT_TRANSLATE_PROMPT)
         self.assertIn("严格递增", _STATEMENT_TRANSLATE_PROMPT)
         self.assertIn("a_i lt a_{i+1}", STATEMENT_RENDERING_SKILL)
+        self.assertIn("65\\,535", STATEMENT_RENDERING_SKILL)
+        self.assertIn("a_i=<=ft[i/2]", STATEMENT_RENDERING_SKILL)
 
     def test_translated_statement_is_normalized_before_returning(self):
         translator = OpenAIStatementTranslator("http://llm", "key", "model", enabled=True)
@@ -27,8 +29,8 @@ class PromptSkillTest(unittest.TestCase):
         translator.client.configured = True
         translator.client.complete_json.return_value = (
             '{"title":"T","description":"我们用 $$$d_v$$$ 表示深度。",'
-            '"input_format":"限制 10 ^ 9。",'
-            '"output_format":"将 a_p 替换为 ≤ftlfloordfraca_p2rfloor。","hint":""}'
+            '"input_format":"限制 10 ^ 9，且 n 不超过 65\\\\,535。",'
+            '"output_format":"将 a_p 替换为 ≤ftlfloordfraca_p2rfloor，保证 a_i=<=ft[i/2]。","hint":""}'
         )
         statement = ProblemStatement(
             pid="CF1A",
@@ -44,8 +46,12 @@ class PromptSkillTest(unittest.TestCase):
         self.assertEqual(translated.title, "T")
         self.assertIn("d_v", translated.description)
         self.assertIn("10^9", translated.input_format)
+        self.assertIn("65,535", translated.input_format)
+        self.assertNotIn("65\\,535", translated.input_format)
         self.assertIn("⌊a_p/2⌋", translated.output_format)
+        self.assertIn("a_i=⌊i/2⌋", translated.output_format)
         self.assertNotIn("ftlfloor", translated.output_format)
+        self.assertNotIn("<=ft", translated.output_format)
 
     def test_translator_retries_when_output_is_still_english(self):
         translator = OpenAIStatementTranslator("http://llm", "key", "model", enabled=True)

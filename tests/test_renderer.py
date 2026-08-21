@@ -61,6 +61,16 @@ class StatementRendererTest(unittest.TestCase):
         self.assertNotIn("ftlfloor", text)
         self.assertNotIn("ftlceil", text)
 
+    def test_escaped_digit_commas_and_bracket_floor_residue_are_repaired(self):
+        text = _normalize_statement_markup(r"限制 n 不超过 65\,535，保证 a_i=<=ft[i/2]，另一处为 ≤ft[j/2]。")
+
+        self.assertIn("65,535", text)
+        self.assertIn("a_i=⌊i/2⌋", text)
+        self.assertIn("⌊j/2⌋", text)
+        self.assertNotIn(r"65\,535", text)
+        self.assertNotIn("<=ft", text)
+        self.assertNotIn("≤ft", text)
+
     def test_split_subscript_spacing_is_compacted(self):
         text = _normalize_statement_markup("威廉写下了 n 个正整数 a_ 1, a_ 2, ..., a_ n。")
 

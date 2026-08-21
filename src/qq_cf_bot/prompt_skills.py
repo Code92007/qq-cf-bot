@@ -45,7 +45,9 @@ STATEMENT_RENDERING_SKILL = """
 - 箭头必须保留为数学箭头：\\to、\\rightarrow、\\Rightarrow 或英文残留 arrow 应渲染/翻译为 → 或 ⇒，不要原样输出 `arrow`。
 - 独占一行的公式保持独立段落，不要塞回正文；例如 \\sum_{i=2}^{n} v(i,a_i) 应保留完整上下标结构。
 - 不要把 \\lfloor \\frac{a_p}{2} \\rfloor 翻成 ftlfoor、≤ftlfloor、floorfrac、dfraca_p2rfloor 等文本残渣。
+- 不要把 \\lfloor i/2 \\rfloor 翻成 `a_i=<=ft[i/2]`、`≤ft[i/2]`、`<=ft[i/2]` 这类残渣；应写成 `$$$a_i = \\lfloor i/2 \\rfloor$$$` 或可读文本 `a_i = ⌊i/2⌋`。
 - 不要把 a_i、d_v、b_{a_i}、a_{b_i}、p_{a_i}、10^9、n(n-1)/2、b^k \\mid x、a_i < a_{i+1} 拆成 a_ i、d_ v、b_a_i、10 ^ 9、b^k mid x、a_i lt a_{i+1} 或普通中文。
+- 普通数字里的千分位逗号不要转义：`65,535` 必须保持为 `65,535`，不要写成 `65\\,535`。
 - 不要把样例解释里的状态变化写成 `[1, 3, 2, 1, 4] arrow [1, 3, 2, 2, 4]`；应写成 `[1, 3, 2, 1, 4] → [1, 3, 2, 2, 4]`。
 - 嵌套下标必须保持花括号结构，例如 b_{a_i}、a_{b_i}、b_{a_{i}}，不要拍平成 b_a_i 或 b_a_{i}。
 - 英文自然语言必须翻译成中文；人名可以保留，变量、YES/NO 和代码可以保留，但不要整段英文原样输出。
@@ -53,6 +55,7 @@ STATEMENT_RENDERING_SKILL = """
 
 渲染验收：
 - 不允许出现裸露的 $$$、\\$\\$\\$、ldots、cdot、leq、geq、ftlfloor、ftlceil、rfloor、rceil、 mid 、 lt 、 gt 、 arrow 这类数学命令残渣。
+- 不允许出现 `65\\,535`、`<=ft[i/2]`、`≤ft[i/2]` 这类翻译/LaTeX 损坏残渣。
 - 变量下标应显示为下标或至少紧凑文本：a_i、d_v、a_1 不得变成 a_ i。
 - 嵌套下标应保持层次：b_{a_i} 应读作 b 下标 a_i，不得渲染成 b_a_i 或 b<sub>a</sub>_i。
 - 幂应显示为上标或至少紧凑文本：10^9 不得变成 10 ^ 9。
@@ -70,6 +73,7 @@ STATEMENT_RENDERING_SKILL = """
 坏例子：
 - `长度为 $$$n$$$ ... $$$d_v$$$ ... \\ldots` 原样露出 dollar 或命令。
 - `≤ftlfloordfraca_p2rfloor`、`≤ftlceildfraca_i2rceil` 原样出现在题面。
+- `65\\,535`、`a_i=<=ft[i/2]`、`≤ft[i/2]` 原样出现在题面。
 - `b^k mid x`、`a_i lt a_{i+1}`、`Σ_i=2^n v(i,a_i)` 原样出现在题面。
 - `[1, 2, 3] arrow [2, 3, 4]` 原样出现在样例解释。
 """.strip()

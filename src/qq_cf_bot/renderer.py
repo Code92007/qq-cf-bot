@@ -394,6 +394,7 @@ def normalize_statement_markup(value: str) -> str:
     text = text.replace("＄", "$")
     text = re.sub(r"\\(?=\${1,3})", "", text)
     text = text.replace(r"\_", "_")
+    text = re.sub(r"(?<=\d)\\,(?=\d)", ",", text)
     text = _repair_corrupted_latex(text)
     text = _normalize_plain_latex_commands(text)
     text = _compact_math_spacing(text)
@@ -494,6 +495,16 @@ def _repair_corrupted_latex(value: str) -> str:
     text = re.sub(
         r"[<≤]?ftl(floor|ceil)d?frac\{([^{}]+)\}\{([^{}]+)\}r(floor|ceil)",
         lambda match: _floor_ceil_text(match.group(1), f"{match.group(2)}/{match.group(3)}", match.group(4)),
+        text,
+    )
+    text = re.sub(
+        r"(?:[<≤]=?)?ft\s*\[\s*([^\[\]\n]{1,80})\s*\]",
+        lambda match: f"⌊{match.group(1).strip()}⌋",
+        text,
+    )
+    text = re.sub(
+        r"(?:[<≤]=?)?ftL\s*([A-Za-z0-9_+\-*/ ]{1,80})\s*L",
+        lambda match: f"⌊{match.group(1).strip()}⌋",
         text,
     )
     text = re.sub(
