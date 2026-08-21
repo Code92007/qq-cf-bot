@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 import urllib.error
 import urllib.parse
@@ -10,6 +11,9 @@ from typing import Iterable, List, Optional
 
 from .cf_mirrors import codeforces_url_variants, normalize_codeforces_base_urls
 from .models import CFProblem
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class CodeforcesClient:
@@ -111,7 +115,7 @@ def _fetch_json_from_codeforces_variants(
     timeout_seconds: int,
 ) -> dict:
     errors = []
-    for url in codeforces_url_variants(path_or_url, base_urls):
+    for index, url in enumerate(codeforces_url_variants(path_or_url, base_urls)):
         request = urllib.request.Request(
             url,
             headers={"User-Agent": "qq-cf-bot/0.1"},
@@ -121,7 +125,10 @@ def _fetch_json_from_codeforces_variants(
                 payload = json.loads(response.read().decode("utf-8"))
             if payload.get("status") != "OK":
                 raise RuntimeError(f"non-OK status {payload.get('status')!r}")
+            if index > 0:
+                LOGGER.info("Codeforces API succeeded via fallback mirror: %s", url)
             return payload
         except Exception as exc:
+            LOGGER.warning("Codeforces API candidate failed url=%s error=%s", url, exc)
             errors.append(f"{url}: {exc}")
     raise RuntimeError("Codeforces API failed for all configured mirrors: " + "; ".join(errors))

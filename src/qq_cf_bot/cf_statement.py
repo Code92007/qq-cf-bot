@@ -40,6 +40,7 @@ def fetch_codeforces_html(
                 _LOGGER.info("Codeforces fetch succeeded via fallback mirror: %s", candidate)
             return html
         except Exception as exc:
+            _LOGGER.warning("Codeforces fetch candidate failed url=%s error=%s", candidate, exc)
             errors.append(f"{candidate}: {exc}")
     raise RuntimeError("Codeforces fetch failed for all configured mirrors: " + "; ".join(errors))
 

@@ -31,6 +31,7 @@ class OneBotEventServer:
                 try:
                     body = _read_request_body(self)
                     event = json.loads(body.decode("utf-8"))
+                    _log_onebot_post(event, self.client_address)
                     _handle_event(event, callback)
                 except Exception:
                     LOGGER.exception("failed to handle incoming OneBot event")
@@ -107,6 +108,14 @@ def _handle_event(event: dict, callback: Callable[[GroupMessage], None]) -> None
     command = parse_command(message)
     direct_code = command is None and looks_like_code_submission(message)
     if command is None and not at_only and not direct_code:
+        if _looks_command_like(message):
+            LOGGER.warning(
+                "onebot command-like message ignored group=%s user=%s message_id=%s raw=%r",
+                event.get("group_id"),
+                event.get("user_id"),
+                event.get("message_id"),
+                _message_preview(message),
+            )
         return
     if at_only:
         message = "/help"
@@ -131,3 +140,58 @@ def _handle_event(event: dict, callback: Callable[[GroupMessage], None]) -> None
     )
     thread = threading.Thread(target=callback, args=(group_message,), daemon=True)
     thread.start()
+
+
+def _log_onebot_post(event: dict, client_address: Any) -> None:
+    message = event.get("message")
+    interesting = (
+        event.get("post_type") == "message"
+        and event.get("message_type") == "group"
+        and (_looks_command_like(message) or parse_command(message) is not None or looks_like_code_submission(message))
+    )
+    log = LOGGER.info if interesting else LOGGER.debug
+    log(
+        "onebot post received remote=%s post_type=%s message_type=%s group=%s user=%s message_id=%s raw=%r",
+        _remote_address(client_address),
+        event.get("post_type"),
+        event.get("message_type"),
+        event.get("group_id"),
+        event.get("user_id"),
+        event.get("message_id"),
+        _message_preview(message),
+    )
+
+
+def _remote_address(client_address: Any) -> str:
+    if isinstance(client_address, tuple) and client_address:
+        return str(client_address[0])
+    return str(client_address)
+
+
+def _looks_command_like(message: Any) -> bool:
+    return _message_preview(message).lstrip().startswith("/")
+
+
+def _message_preview(message: Any, max_chars: int = 120) -> str:
+    if isinstance(message, str):
+        text = message
+    elif isinstance(message, list):
+        parts = []
+        for item in message:
+            if not isinstance(item, dict):
+                continue
+            item_type = item.get("type")
+            data = item.get("data") or {}
+            if item_type == "text":
+                parts.append(str(data.get("text") or ""))
+            elif item_type == "at":
+                parts.append(f"@{data.get('qq') or ''}")
+            elif item_type:
+                parts.append(f"[{item_type}]")
+        text = "".join(parts)
+    else:
+        text = ""
+    text = " ".join(text.split())
+    if len(text) > max_chars:
+        return text[: max_chars - 3] + "..."
+    return text

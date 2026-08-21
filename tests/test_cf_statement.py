@@ -91,7 +91,9 @@ class CodeforcesStatementTest(unittest.TestCase):
             seen_urls,
             [
                 "https://codeforces.com/problemset/problem/1/A",
+                "https://codeforces.com/contest/1/problem/A",
                 "https://m1.codeforces.com/problemset/problem/1/A",
+                "https://m1.codeforces.com/contest/1/problem/A",
                 "https://m2.codeforces.com/problemset/problem/1/A",
             ],
         )

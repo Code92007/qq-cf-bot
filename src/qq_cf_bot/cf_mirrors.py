@@ -48,16 +48,36 @@ def codeforces_url_variants(url: str, base_urls: Iterable[str] | str | None = No
     host = parsed.netloc.lower()
     if host == "codeforces.com" or host.endswith(".codeforces.com"):
         variants = []
+        paths = _problem_page_paths(parsed.path)
         for base in bases:
             base_parsed = urllib.parse.urlsplit(base)
-            variants.append(
-                urllib.parse.urlunsplit(
-                    (base_parsed.scheme, base_parsed.netloc, parsed.path, parsed.query, parsed.fragment)
+            for path in paths:
+                variants.append(
+                    urllib.parse.urlunsplit(
+                        (base_parsed.scheme, base_parsed.netloc, path, parsed.query, parsed.fragment)
+                    )
                 )
-            )
         return _dedupe(variants)
 
     return (url,)
+
+
+def _problem_page_paths(path: str) -> Tuple[str, ...]:
+    normalized = path.rstrip("/") or "/"
+    problemset_prefix = "/problemset/problem/"
+    contest_marker = "/problem/"
+    if normalized.startswith(problemset_prefix):
+        parts = normalized[len(problemset_prefix) :].split("/", 1)
+        if len(parts) == 2 and parts[0] and parts[1]:
+            return (path, f"/contest/{parts[0]}/problem/{parts[1]}")
+
+    if normalized.startswith("/contest/") and contest_marker in normalized:
+        prefix, index = normalized.rsplit(contest_marker, 1)
+        contest_id = prefix[len("/contest/") :]
+        if contest_id and index:
+            return (path, f"/problemset/problem/{contest_id}/{index}")
+
+    return (path,)
 
 
 def _dedupe(items: Iterable[str]) -> Tuple[str, ...]:
