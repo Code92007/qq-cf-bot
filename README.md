@@ -122,6 +122,8 @@ python -m qq_cf_bot
 | `NAPCAT_WATCHDOG_INTERVAL_SECONDS` | `60` | watchdog 检查间隔 |
 | `NAPCAT_WATCHDOG_RESTART_COOLDOWN_SECONDS` | `300` | 两次自动重启 NapCat 的最小间隔 |
 | `NAPCAT_WATCHDOG_RESTART_CMD` | `./scripts/restart-napcat.sh` | watchdog 判定离线后执行的重启命令 |
+| `NAPCAT_WATCHDOG_LOG_CHECK_ENABLED` | `true` | 是否额外扫描 NapCat 最近日志，识别账号离线、登录失败、安全风险等 API 假健康场景 |
+| `NAPCAT_WATCHDOG_LOG_SCAN_SECONDS` | `600` | 每次扫描最近多少秒 NapCat 日志 |
 | `NAPCAT_WATCHDOG_NOTIFY_EMAIL` | 空 | NapCat 离线/重启通知收件邮箱 |
 | `SMTP_HOST` / `SMTP_PORT` | `smtp.qq.com` / `465` | watchdog 邮件通知 SMTP 服务 |
 | `SMTP_USERNAME` / `SMTP_PASSWORD` | 空 | SMTP 登录用户名和授权码 |
@@ -303,7 +305,7 @@ sudo systemctl start napcat-watchdog
 
 ## NapCat Watchdog
 
-NapCat 掉线后 QQ 消息不会再上报给机器人。可以在服务器宿主机启用 watchdog：它每分钟调用 NapCat 的 OneBot HTTP API，检测离线或 API 不可用时执行 `docker compose restart napcat`，并用邮件通知。watchdog 会依次尝试 `NAPCAT_WATCHDOG_ONEBOT_URL`、`ONEBOT_HTTP_URL`、`127.0.0.1:3000`，以及自动发现到的 NapCat Docker 容器 IP，避免宿主机无法解析 `napcat` 或端口映射不一致时误判。
+NapCat 掉线后 QQ 消息不会再上报给机器人。可以在服务器宿主机启用 watchdog：它每分钟调用 NapCat 的 OneBot HTTP API，检测离线或 API 不可用时执行 `docker compose restart napcat`，并用邮件通知。watchdog 会依次尝试 `NAPCAT_WATCHDOG_ONEBOT_URL`、`ONEBOT_HTTP_URL`、`127.0.0.1:3000`，以及自动发现到的 NapCat Docker 容器 IP，避免宿主机无法解析 `napcat` 或端口映射不一致时误判。它还会扫描最近 NapCat 日志；如果出现“账号状态变更为离线”“Login Error”“安全风险”等信号，即使 `get_login_info` 仍然返回正常，也会判定为掉线。
 
 先在 `.env` 里配置：
 
@@ -311,6 +313,8 @@ NapCat 掉线后 QQ 消息不会再上报给机器人。可以在服务器宿主
 NAPCAT_WATCHDOG_ENABLED=true
 NAPCAT_WATCHDOG_DOCKER_SERVICE=napcat
 NAPCAT_WATCHDOG_DOCKER_PORT=3000
+NAPCAT_WATCHDOG_LOG_CHECK_ENABLED=true
+NAPCAT_WATCHDOG_LOG_SCAN_SECONDS=600
 NAPCAT_WATCHDOG_NOTIFY_EMAIL=1072805307@qq.com
 SMTP_HOST=smtp.qq.com
 SMTP_PORT=465

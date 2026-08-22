@@ -50,6 +50,16 @@ def main() -> None:
 
 
 def check_napcat() -> Tuple[bool, str]:
+    api_ok, api_detail = _check_napcat_api()
+    log_ok, log_detail = _check_recent_napcat_logs()
+    if not log_ok:
+        return False, f"{api_detail}; {log_detail}"
+    if api_ok:
+        return True, api_detail if log_detail == "log check disabled" else f"{api_detail}; {log_detail}"
+    return False, api_detail
+
+
+def _check_napcat_api() -> Tuple[bool, str]:
     token = os.getenv("ONEBOT_ACCESS_TOKEN", "")
     errors: List[str] = []
 
@@ -60,6 +70,53 @@ def check_napcat() -> Tuple[bool, str]:
         errors.append(f"{base_url}: {detail}")
 
     return False, " | ".join(errors) if errors else "no OneBot HTTP API URL candidates"
+
+
+def _check_recent_napcat_logs() -> Tuple[bool, str]:
+    if not _bool_env("NAPCAT_WATCHDOG_LOG_CHECK_ENABLED", True):
+        return True, "log check disabled"
+
+    service = os.getenv("NAPCAT_WATCHDOG_DOCKER_SERVICE", "napcat").strip() or "napcat"
+    since_seconds = max(60, _int_env("NAPCAT_WATCHDOG_LOG_SCAN_SECONDS", 600))
+    raw = _run_quiet(["docker", "compose", "logs", f"--since={since_seconds}s", "--tail=400", service])
+    if not raw:
+        return True, "recent log unavailable"
+
+    state = ""
+    marker = ""
+    for line in raw.splitlines():
+        if _is_napcat_bad_state_log(line):
+            state = "offline"
+            marker = line.strip()
+        elif _is_napcat_good_state_log(line):
+            state = "online"
+            marker = line.strip()
+
+    if state == "offline":
+        return False, f"recent NapCat log reports offline: {marker}"
+    if state == "online":
+        return True, f"recent NapCat log reports online: {marker}"
+    return True, "recent log has no account state marker"
+
+
+def _is_napcat_bad_state_log(line: str) -> bool:
+    markers = (
+        "账号状态变更为离线",
+        "[Core] [Login] Login Error",
+        "Login Error",
+        "serverErrorCode",
+        "安全风险",
+        "身份验证信息已失效",
+        "部分功能使用受限",
+    )
+    return any(marker in line for marker in markers)
+
+
+def _is_napcat_good_state_log(line: str) -> bool:
+    if "HTTP上报服务:" in line and "已启动" in line:
+        return True
+    markers = ("接收 <- 群聊", "发送 -> 群聊", "账号状态变更为在线")
+    return any(marker in line for marker in markers)
 
 
 def _check_napcat_at(base_url: str, token: str) -> Tuple[bool, str]:

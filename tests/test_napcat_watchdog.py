@@ -33,6 +33,40 @@ class NapcatWatchdogTest(unittest.TestCase):
             ),
         )
 
+    def test_recent_offline_log_overrides_api_health(self):
+        env = {
+            "NAPCAT_WATCHDOG_LOG_CHECK_ENABLED": "true",
+            "NAPCAT_WATCHDOG_DOCKER_SERVICE": "napcat",
+        }
+        logs = "napcat | 08-21 16:38:46 [info] Yzm007 | 账号状态变更为离线"
+        with patch.dict(os.environ, env, clear=True):
+            with patch.object(watchdog, "_check_napcat_api", return_value=(True, "api OK")):
+                with patch.object(watchdog, "_run_quiet", return_value=logs):
+                    ok, detail = watchdog.check_napcat()
+
+        self.assertFalse(ok)
+        self.assertIn("api OK", detail)
+        self.assertIn("账号状态变更为离线", detail)
+
+    def test_recent_good_log_after_error_is_healthy(self):
+        env = {
+            "NAPCAT_WATCHDOG_LOG_CHECK_ENABLED": "true",
+            "NAPCAT_WATCHDOG_DOCKER_SERVICE": "napcat",
+        }
+        logs = "\n".join(
+            [
+                "napcat | 08-21 16:29:16 [error] [Core] [Login] Login Error,ErrType: 1 ErrCode: 3",
+                "napcat | HTTP上报服务: http://qq-cf-bot:8088/onebot, : 已启动",
+            ]
+        )
+        with patch.dict(os.environ, env, clear=True):
+            with patch.object(watchdog, "_check_napcat_api", return_value=(True, "api OK")):
+                with patch.object(watchdog, "_run_quiet", return_value=logs):
+                    ok, detail = watchdog.check_napcat()
+
+        self.assertTrue(ok)
+        self.assertIn("recent NapCat log reports online", detail)
+
 
 if __name__ == "__main__":
     unittest.main()
