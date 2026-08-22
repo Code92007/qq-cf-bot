@@ -187,6 +187,13 @@ class CodeforcesPushBot:
             event.message_id,
             command_name,
         )
+        if self.store.update_user_display_name(event.group_id, event.user_id, event.sender_name):
+            LOGGER.info(
+                "updated ranklist display name group=%s user=%s display_name=%s",
+                event.group_id,
+                event.user_id,
+                event.sender_name,
+            )
 
         if command is not None and command.name == "help":
             self.handle_help(event)

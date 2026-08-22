@@ -494,6 +494,20 @@ class SentProblemStore:
             solved_ratings=solved_ratings,
         )
 
+    def update_user_display_name(self, group_id: int, user_id: int, display_name: str) -> bool:
+        if not display_name:
+            return False
+        with self._connect() as conn:
+            cursor = conn.execute(
+                """
+                update user_stats
+                set display_name = ?
+                where group_id = ? and user_id = ? and display_name <> ?
+                """,
+                (display_name, str(group_id), str(user_id), display_name),
+            )
+            return cursor.rowcount > 0
+
     def mark_solved(
         self,
         group_id: int,

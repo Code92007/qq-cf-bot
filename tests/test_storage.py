@@ -141,6 +141,19 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(stats[0].display_name, "Alice")
             self.assertEqual(stats[0].solved_count, 1)
 
+    def test_user_display_name_updates_by_group_and_user_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            store.mark_solved(1, 2, "Alice", 1532.5, 1500)
+
+            self.assertTrue(store.update_user_display_name(1, 2, "AliceNew"))
+            self.assertFalse(store.update_user_display_name(1, 3, "Bob"))
+
+            stats = store.list_group_stats(1)
+            self.assertEqual(stats[0].user_id, 2)
+            self.assertEqual(stats[0].display_name, "AliceNew")
+            self.assertEqual(stats[0].solved_count, 1)
+
     def test_group_stats_rank_by_solved_rating_vector(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = SentProblemStore(Path(tmp) / "bot.sqlite3")
