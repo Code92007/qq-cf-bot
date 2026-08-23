@@ -5,6 +5,7 @@ import logging
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
+from urllib.parse import parse_qs, urlsplit
 
 from .message import is_at_only_mention, looks_like_code_submission, parse_command
 from .models import GroupMessage
@@ -14,18 +15,36 @@ LOGGER = logging.getLogger(__name__)
 
 
 class OneBotEventServer:
-    def __init__(self, host: str, port: int, on_group_message: Callable[[GroupMessage], None]) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        on_group_message: Callable[[GroupMessage], None],
+        *,
+        access_token: str = "",
+    ) -> None:
         self.host = host
         self.port = port
         self.on_group_message = on_group_message
+        self.access_token = access_token
 
     def serve_forever(self) -> None:
         callback = self.on_group_message
+        access_token = self.access_token
 
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self) -> None:
-                if self.path != "/onebot":
+                parsed_path = urlsplit(self.path)
+                if parsed_path.path != "/onebot":
                     self.send_error(404)
+                    return
+                if not _is_authorized(self.headers, parsed_path.query, access_token):
+                    LOGGER.warning(
+                        "onebot event rejected remote=%s reason=unauthorized path=%s",
+                        _remote_address(self.client_address),
+                        parsed_path.path,
+                    )
+                    self._json_response({"status": "unauthorized"}, status=401)
                     return
 
                 try:
@@ -47,9 +66,9 @@ class OneBotEventServer:
             def log_message(self, format: str, *args: Any) -> None:
                 LOGGER.debug("http: " + format, *args)
 
-            def _json_response(self, payload: dict) -> None:
+            def _json_response(self, payload: dict, status: int = 200) -> None:
                 data = json.dumps(payload).encode("utf-8")
-                self.send_response(200)
+                self.send_response(status)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
@@ -58,6 +77,22 @@ class OneBotEventServer:
         server = ThreadingHTTPServer((self.host, self.port), Handler)
         LOGGER.info("listening on http://%s:%s/onebot", self.host, self.port)
         server.serve_forever()
+
+
+def _is_authorized(headers: Any, query: str, access_token: str) -> bool:
+    if not access_token:
+        return True
+
+    authorization = str(headers.get("Authorization") or "").strip()
+    if authorization.lower().startswith("bearer "):
+        return authorization[7:].strip() == access_token
+
+    for name in ("X-OneBot-Access-Token", "X-Access-Token", "Access-Token"):
+        if str(headers.get(name) or "").strip() == access_token:
+            return True
+
+    values = parse_qs(query).get("access_token", [])
+    return any(value == access_token for value in values)
 
 
 def _read_request_body(handler: BaseHTTPRequestHandler) -> bytes:

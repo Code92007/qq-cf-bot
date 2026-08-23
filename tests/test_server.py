@@ -3,7 +3,7 @@ import queue
 import unittest
 from email.message import Message
 
-from qq_cf_bot.server import _handle_event, _read_request_body
+from qq_cf_bot.server import _handle_event, _is_authorized, _read_request_body
 
 
 class FakeHandler:
@@ -44,6 +44,23 @@ class ServerTest(unittest.TestCase):
 
         group_message = messages.get(timeout=1)
         self.assertEqual(group_message.message, "/help")
+
+    def test_event_auth_accepts_bearer_token(self):
+        headers = Message()
+        headers["Authorization"] = "Bearer event-secret"
+
+        self.assertTrue(_is_authorized(headers, "", "event-secret"))
+
+    def test_event_auth_rejects_wrong_token(self):
+        headers = Message()
+        headers["Authorization"] = "Bearer wrong"
+
+        self.assertFalse(_is_authorized(headers, "", "event-secret"))
+
+    def test_event_auth_accepts_query_token(self):
+        headers = Message()
+
+        self.assertTrue(_is_authorized(headers, "access_token=event-secret", "event-secret"))
 
 
 if __name__ == "__main__":

@@ -113,6 +113,7 @@ class Config:
     port: int
     onebot_http_url: str
     onebot_access_token: str
+    onebot_event_access_token: str
     onebot_image_mode: str
     onebot_self_id: Optional[int]
     allowed_groups: FrozenSet[int]
@@ -205,6 +206,7 @@ class Config:
             port=_int_env("BOT_PORT", 8088),
             onebot_http_url=os.getenv("ONEBOT_HTTP_URL", "http://127.0.0.1:3000").rstrip("/"),
             onebot_access_token=os.getenv("ONEBOT_ACCESS_TOKEN", ""),
+            onebot_event_access_token=os.getenv("ONEBOT_EVENT_ACCESS_TOKEN", ""),
             onebot_image_mode=onebot_image_mode,
             onebot_self_id=_optional_int_env("ONEBOT_SELF_ID"),
             allowed_groups=_groups_env("BOT_ALLOWED_GROUPS"),

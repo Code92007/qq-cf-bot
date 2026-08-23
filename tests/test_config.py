@@ -57,9 +57,16 @@ class ConfigTest(unittest.TestCase):
             config = Config.from_env()
 
         self.assertTrue(config.prefetch_enabled)
+        self.assertEqual(config.onebot_event_access_token, "")
         self.assertEqual(config.recent_selection_pool_size, 500)
         self.assertEqual(config.giveup_min_seconds, 120)
         self.assertIn("https://m1.codeforces.com", config.cf_base_urls)
+
+    def test_onebot_event_token_is_optional(self):
+        with patch.dict(os.environ, {"ONEBOT_EVENT_ACCESS_TOKEN": "event-secret"}, clear=True):
+            config = Config.from_env()
+
+        self.assertEqual(config.onebot_event_access_token, "event-secret")
 
     def test_cf_base_urls_can_be_overridden(self):
         with patch.dict(os.environ, {"CF_BASE_URLS": "codeforces.com,m2.codeforces.com"}, clear=True):

@@ -14,7 +14,12 @@ def main() -> None:
     )
     config = Config.from_env()
     bot = CodeforcesPushBot(config)
-    server = OneBotEventServer(config.host, config.port, bot.handle_group_message)
+    server = OneBotEventServer(
+        config.host,
+        config.port,
+        bot.handle_group_message,
+        access_token=config.onebot_event_access_token,
+    )
     server.serve_forever()
 
 

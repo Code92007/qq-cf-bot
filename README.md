@@ -42,6 +42,47 @@ curl http://127.0.0.1:8088/health
 
 OneBot 和机器人在同一台机器、但机器人跑在 Docker 容器里时，`ONEBOT_HTTP_URL` 通常填 `http://host.docker.internal:3000`；`docker-compose.yml` 已经映射了这个宿主机地址。如果 OneBot 在另一台机器，填 OneBot HTTP API 的可访问地址。
 
+## 推荐稳定架构：国内 NapCat + 服务器 bot
+
+如果服务器在海外，QQ/NapCat 容易被判定为异地或异常登录，表现为 NapCat 日志里出现 `KickedOffline`、`账号状态变更为离线`、`账号当前登录已失效`。这种情况重启 watchdog 只能帮你尽快发现和重登，不能从根上解决风控。
+
+更稳的部署方式是把 QQ 登录环境从业务服务器里拿出来：
+
+- 国内稳定 IP 机器：只运行 NapCat/QQ 登录态。
+- 业务服务器：只运行 `qq-cf-bot`、SQLite 数据和 Codeforces/LLM 逻辑。
+- 两台机器用 Tailscale 或内网互通，不把 NapCat API 暴露到公网。
+
+服务器先查看自己的 Tailscale IP：
+
+```bash
+tailscale ip -4
+```
+
+在国内机器上运行 NapCat 后，WebUI 里建议这样配置：
+
+- HTTP 服务器：Host `0.0.0.0`，Port `3000`，Token 填一个长随机串。
+- HTTP 客户端：URL `http://<服务器Tailscale-IP>:8088/onebot`，消息格式 `Array`，Token 填同一个长随机串。
+- 图片发送建议保持 `ONEBOT_IMAGE_MODE=base64`，两台机器不需要共享图片目录。
+
+服务器 `.env` 配成访问国内 NapCat：
+
+```env
+ONEBOT_HTTP_URL=http://<国内NapCat的Tailscale-IP>:3000
+ONEBOT_ACCESS_TOKEN=<NapCat HTTP服务器 Token>
+ONEBOT_EVENT_ACCESS_TOKEN=<NapCat HTTP客户端 Token>
+ONEBOT_IMAGE_MODE=base64
+```
+
+部署并检查链路：
+
+```bash
+cd ~/qq-cf-bot
+./scripts/deploy.sh qq-cf-bot
+./scripts/check-onebot-link.sh
+```
+
+`check-onebot-link.sh` 会检查 bot 健康状态、NapCat 登录账号、NapCat 是否能看到允许群，以及最近 bot/NapCat 日志里有没有收消息、拒绝 token 或掉线信号。
+
 ## 本地运行
 
 ```bash
@@ -60,6 +101,7 @@ python -m qq_cf_bot
 | --- | --- | --- |
 | `ONEBOT_HTTP_URL` | `http://127.0.0.1:3000` | OneBot HTTP API 地址 |
 | `ONEBOT_ACCESS_TOKEN` | 空 | OneBot access token |
+| `ONEBOT_EVENT_ACCESS_TOKEN` | 空 | 可选，校验 NapCat HTTP 客户端上报到 `/onebot` 的 token；远端 NapCat 部署时建议设置 |
 | `ONEBOT_IMAGE_MODE` | `base64` | 图片发送方式；`base64` 不要求 OneBot 读取本地文件 |
 | `ONEBOT_SELF_ID` | 空 | 可选，机器人自己的 QQ 号；为空时自动调用 OneBot `get_login_info` 获取，用于先私聊自己再合并转发题面 |
 | `BOT_HOST` | `127.0.0.1` | 机器人监听地址；Docker 中为 `0.0.0.0` |
