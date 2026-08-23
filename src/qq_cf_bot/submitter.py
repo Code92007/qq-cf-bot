@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import hashlib
+import logging
 import re
 import time
 import urllib.error
@@ -19,6 +20,7 @@ from .models import CFProblem, CodeSubmission, RemoteJudgeResult, SolutionRefere
 
 
 CODEFORCES_BASE_URL = "https://codeforces.com"
+LOGGER = logging.getLogger(__name__)
 _BROWSER_USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -148,7 +150,14 @@ class CodeforcesRemoteJudge:
         if not submission.source.strip():
             return RemoteJudgeResult(False, "EMPTY_SOURCE", "代码为空。")
 
+        LOGGER.info(
+            "Codeforces submit start cf_id=%s language=%s source_chars=%s",
+            problem.cf_id,
+            submission.language,
+            len(submission.source),
+        )
         before_id = self._latest_matching_submission_id(problem)
+        LOGGER.info("Codeforces latest matching submission before submit cf_id=%s before_id=%s", problem.cf_id, before_id)
         self._submit_with_retry(problem, submission)
         return self._poll_result(problem, before_id)
 
@@ -197,16 +206,30 @@ class CodeforcesRemoteJudge:
         try:
             self._submit(problem, submission)
             return
-        except CodeforcesForbiddenError:
+        except CodeforcesForbiddenError as exc:
+            LOGGER.warning("Codeforces HTTP submit got 403 for %s, resetting session and retrying: %s", problem.cf_id, exc)
             self._reset_session()
 
         try:
             self._submit(problem, submission)
+            return
         except CodeforcesForbiddenError as exc:
-            raise RuntimeError(
-                "Codeforces 返回 403 Forbidden，已刷新登录态重试仍失败。"
-                "可能是 CF 风控、验证码或账号安全确认，请稍后再试。"
-            ) from exc
+            LOGGER.warning(
+                "Codeforces HTTP submit retry still got 403 for %s, trying browser fallback: %s",
+                problem.cf_id,
+                exc,
+            )
+            self._reset_session()
+            try:
+                self._submit_via_browser(problem, submission)
+                LOGGER.info("Codeforces browser fallback submitted %s", problem.cf_id)
+                return
+            except Exception as browser_exc:
+                raise RuntimeError(
+                    "Codeforces 返回 403 Forbidden，已刷新登录态重试仍失败；"
+                    "浏览器兜底提交也失败："
+                    f"{_friendly_cf_error(str(browser_exc))}"
+                ) from browser_exc
 
     def _submit(self, problem: CFProblem, submission: CodeSubmission) -> None:
         self._ensure_logged_in()
@@ -235,6 +258,74 @@ class CodeforcesRemoteJudge:
         error = _extract_cf_error(response_text)
         if error:
             raise RuntimeError(f"Codeforces 拒绝提交：{error}")
+        LOGGER.info("Codeforces HTTP submit form posted cf_id=%s language_id=%s", problem.cf_id, language_id)
+
+    def _submit_via_browser(self, problem: CFProblem, submission: CodeSubmission) -> None:
+        try:
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+            from playwright.sync_api import sync_playwright
+        except ImportError as exc:
+            raise RuntimeError("Playwright 未安装，无法使用浏览器兜底提交。") from exc
+
+        submit_path = f"/problemset/submit/{problem.contest_id}/{problem.index}"
+        login_url = _absolute_url("/enter?back=%2F")
+        submit_url = _absolute_url(submit_path)
+
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=_BROWSER_USER_AGENT,
+                locale="en-US",
+                extra_http_headers={
+                    "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+                },
+            )
+            try:
+                page = context.new_page()
+                page.goto(login_url, wait_until="domcontentloaded", timeout=self.http_timeout_seconds * 1000)
+                _wait_quiet(page, PlaywrightTimeoutError)
+                if not _looks_logged_in(page.content(), self.handle):
+                    _browser_login(page, self.username, self.password, self.handle, PlaywrightTimeoutError)
+
+                page.goto(submit_url, wait_until="domcontentloaded", timeout=self.http_timeout_seconds * 1000)
+                _wait_quiet(page, PlaywrightTimeoutError)
+                page_html = page.content()
+                block_reason = _diagnose_cf_block(page_html)
+                if block_reason:
+                    raise RuntimeError(block_reason)
+
+                form = _find_submit_form(_parse_forms(page_html))
+                language_id = self.forced_language_id or _choose_language_id(form, submission.language)
+                if not language_id:
+                    raise RuntimeError(
+                        "无法从 Codeforces 提交表单识别语言，请设置 CF_SUBMIT_LANGUAGE_ID 后重试。"
+                    )
+
+                _set_if_present(page, 'input[name="submittedProblemIndex"]', problem.index)
+                _set_if_present(page, 'input[name="submittedProblemCode"]', problem.cf_id)
+                _select_if_present(page, 'select[name="programTypeId"]', language_id)
+                if not _set_if_present(page, 'textarea[name="source"]', submission.source):
+                    if not _set_if_present(page, 'textarea#sourceCodeTextarea', submission.source):
+                        raise RuntimeError("提交页没有找到源码输入框。")
+
+                clicked = _click_submit(page, PlaywrightTimeoutError)
+                if not clicked:
+                    raise RuntimeError("提交页没有找到提交按钮。")
+
+                _wait_quiet(page, PlaywrightTimeoutError)
+                submitted_html = page.content()
+                error = _extract_cf_error(submitted_html) or _diagnose_cf_block(submitted_html)
+                if error:
+                    raise RuntimeError(f"Codeforces 拒绝提交：{error}")
+                LOGGER.info(
+                    "Codeforces browser submit clicked cf_id=%s language_id=%s current_url=%s",
+                    problem.cf_id,
+                    language_id,
+                    page.url,
+                )
+            finally:
+                context.close()
+                browser.close()
 
     def _ensure_logged_in(self) -> None:
         if self._logged_in:
@@ -272,7 +363,8 @@ class CodeforcesRemoteJudge:
     def _latest_matching_submission_id(self, problem: CFProblem) -> int:
         try:
             submissions = self._status.fetch_recent(count=20)
-        except (OSError, urllib.error.URLError, RuntimeError):
+        except (OSError, urllib.error.URLError, RuntimeError) as exc:
+            LOGGER.warning("Codeforces latest submission probe failed before submit cf_id=%s: %s", problem.cf_id, exc)
             return 0
         ids = [
             int(submission.get("id") or 0)
@@ -291,11 +383,20 @@ class CodeforcesRemoteJudge:
                 last_seen = match
                 verdict = str(match.get("verdict") or "")
                 if verdict and verdict != "TESTING":
-                    return _result_from_submission(match)
+                    result = _result_from_submission(match)
+                    LOGGER.info(
+                        "Codeforces submit verdict cf_id=%s submission_id=%s verdict=%s",
+                        problem.cf_id,
+                        result.submission_id,
+                        result.verdict,
+                    )
+                    return result
             time.sleep(self.poll_interval_seconds)
 
         if last_seen is not None:
+            LOGGER.warning("Codeforces submit poll timeout cf_id=%s last_seen=%s", problem.cf_id, last_seen.get("id"))
             return _pending_result(last_seen, "提交已发出，但轮询超时，暂未拿到最终结果。")
+        LOGGER.warning("Codeforces submit poll timeout cf_id=%s no matching submission found", problem.cf_id)
         return RemoteJudgeResult(False, "PENDING", "提交已发出，但轮询超时，未在最近提交中找到记录。")
 
     def _get(self, path_or_url: str) -> str:
@@ -416,6 +517,154 @@ def _extract_cf_error(page_html: str) -> str:
 def _strip_tags(fragment: str) -> str:
     text = re.sub(r"<[^>]+>", " ", fragment)
     return re.sub(r"\s+", " ", html.unescape(text)).strip()
+
+
+def _friendly_cf_error(message: str) -> str:
+    text = _strip_tags(message) if "<" in message else re.sub(r"\s+", " ", message).strip()
+    lower = text.lower()
+    if any(token in lower for token in ("captcha", "recaptcha", "enter the characters", "verify you are human")):
+        return "Codeforces 要求验证码/人机验证，需要手动登录账号处理。"
+    if any(token in lower for token in ("cloudflare", "attention required", "checking your browser")):
+        return "Codeforces 返回访问保护页，可能触发了 Cloudflare/风控。"
+    if any(token in lower for token in ("technical maintenance", "temporarily unavailable", "can't be reached")):
+        return "Codeforces 正在维护或暂时不可用。"
+    if any(token in lower for token in ("access denied", "forbidden", "403")):
+        return "Codeforces 仍然拒绝提交，可能是风控、验证码、维护或账号安全确认。"
+    if not text:
+        return "Codeforces 页面没有返回可读错误。"
+    return text[:220]
+
+
+def _diagnose_cf_block(page_html: str) -> str:
+    lower = page_html.lower()
+    if "cf-error" in lower or "cloudflare" in lower or "attention required" in lower:
+        return "Codeforces 返回访问保护页，可能触发了 Cloudflare/风控。"
+    if "captcha" in lower or "recaptcha" in lower or "enter the characters" in lower:
+        return "Codeforces 要求验证码/人机验证。"
+    if "technical maintenance" in lower or "temporarily unavailable" in lower or "can't be reached" in lower:
+        return "Codeforces 正在维护或暂时不可用。"
+    if "access denied" in lower or "403 forbidden" in lower:
+        return "Codeforces 返回 403 Forbidden。"
+    if "security" in lower and ("verification" in lower or "confirm" in lower):
+        return "Codeforces 要求账号安全确认。"
+    return ""
+
+
+def _wait_quiet(page, timeout_error_class) -> None:
+    try:
+        page.wait_for_load_state("networkidle", timeout=8000)
+    except timeout_error_class:
+        return
+
+
+def _browser_login(page, username: str, password: str, handle: str, timeout_error_class) -> None:
+    content = page.content()
+    block_reason = _diagnose_cf_block(content)
+    if block_reason:
+        raise RuntimeError(block_reason)
+
+    if page.locator('input[name="handleOrEmail"]').count() <= 0:
+        raise RuntimeError("Codeforces 登录页没有找到账号输入框。")
+    if page.locator('input[name="password"]').count() <= 0:
+        raise RuntimeError("Codeforces 登录页没有找到密码输入框。")
+
+    page.fill('input[name="handleOrEmail"]', username)
+    page.fill('input[name="password"]', password)
+    remember = page.locator('input[name="remember"]').first
+    if remember.count() > 0:
+        try:
+            remember.check()
+        except Exception:
+            pass
+
+    submit = page.locator('input[type="submit"], button[type="submit"]').first
+    if submit.count() <= 0:
+        raise RuntimeError("Codeforces 登录页没有找到登录按钮。")
+    try:
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=15000):
+            submit.click()
+    except timeout_error_class:
+        pass
+    _wait_quiet(page, timeout_error_class)
+
+    content = page.content()
+    if _looks_logged_in(content, handle):
+        return
+    error = _extract_cf_error(content) or _diagnose_cf_block(content)
+    suffix = f"：{error}" if error else "，可能需要验证码、二次验证或账号安全确认。"
+    raise RuntimeError("Codeforces 浏览器登录失败" + suffix)
+
+
+def _set_if_present(page, selector: str, value: str) -> bool:
+    if page.locator(selector).count() <= 0:
+        return False
+    page.eval_on_selector(
+        selector,
+        """
+        (el, value) => {
+            el.value = value;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        """,
+        value,
+    )
+    return True
+
+
+def _select_if_present(page, selector: str, value: str) -> bool:
+    if page.locator(selector).count() <= 0:
+        return False
+    page.select_option(selector, value)
+    return True
+
+
+def _click_submit(page, timeout_error_class) -> bool:
+    if page.locator('textarea[name="source"]').count() > 0:
+        clicked = False
+        try:
+            with page.expect_navigation(wait_until="domcontentloaded", timeout=15000):
+                clicked = bool(page.eval_on_selector(
+                    'textarea[name="source"]',
+                    """
+                    (el) => {
+                        const form = el.form;
+                        if (!form) return false;
+                        const button = form.querySelector('input[type="submit"], button[type="submit"], input.submit');
+                        if (button) {
+                            button.click();
+                        } else if (form.requestSubmit) {
+                            form.requestSubmit();
+                        } else {
+                            form.submit();
+                        }
+                        return true;
+                    }
+                    """,
+                ))
+        except timeout_error_class:
+            clicked = True
+        if clicked:
+            return True
+
+    selectors = [
+        'form input[type="submit"]',
+        'form button[type="submit"]',
+        'input.submit',
+        'button:has-text("Submit")',
+        'input[value="Submit"]',
+    ]
+    for selector in selectors:
+        locator = page.locator(selector).first
+        if locator.count() <= 0:
+            continue
+        try:
+            with page.expect_navigation(wait_until="domcontentloaded", timeout=15000):
+                locator.click()
+        except timeout_error_class:
+            pass
+        return True
+    return False
 
 
 def _same_problem(submission: dict, problem: CFProblem) -> bool:

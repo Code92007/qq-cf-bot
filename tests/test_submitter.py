@@ -6,8 +6,10 @@ from qq_cf_bot.submitter import (
     CodeforcesRemoteJudge,
     _browser_headers,
     _choose_language_id,
+    _diagnose_cf_block,
     _extract_program_source,
     _extract_submission_ids,
+    _friendly_cf_error,
     _parse_forms,
 )
 
@@ -89,6 +91,51 @@ class SubmitterTest(unittest.TestCase):
         self.assertTrue(result.accepted)
         self.assertEqual(len(calls), 2)
         self.assertEqual(len(resets), 1)
+
+    def test_submit_uses_browser_fallback_after_repeated_forbidden(self):
+        judge = CodeforcesRemoteJudge("tourist", "secret", "tourist")
+        problem = CFProblem(1, "A", "Theatre Square", 1000)
+        submission = CodeSubmission(language="cpp", source="int main(){return 0;}")
+        calls = []
+        resets = []
+        browser_calls = []
+
+        judge._latest_matching_submission_id = lambda _problem: 0
+
+        def fake_submit(_problem, _submission):
+            calls.append(1)
+            raise CodeforcesForbiddenError("403")
+
+        judge._submit = fake_submit
+        judge._reset_session = lambda: resets.append(1)
+        judge._submit_via_browser = lambda _problem, _submission: browser_calls.append(1)
+        judge._poll_result = lambda _problem, _before_id: RemoteJudgeResult(True, "OK", "Accepted")
+
+        result = judge.judge(problem, submission)
+
+        self.assertTrue(result.accepted)
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(resets), 2)
+        self.assertEqual(len(browser_calls), 1)
+
+    def test_browser_fallback_failure_keeps_readable_reason(self):
+        judge = CodeforcesRemoteJudge("tourist", "secret", "tourist")
+        problem = CFProblem(1, "A", "Theatre Square", 1000)
+        submission = CodeSubmission(language="cpp", source="int main(){return 0;}")
+
+        judge._latest_matching_submission_id = lambda _problem: 0
+        judge._submit = lambda _problem, _submission: (_ for _ in ()).throw(CodeforcesForbiddenError("403"))
+        judge._reset_session = lambda: None
+        judge._submit_via_browser = lambda _problem, _submission: (_ for _ in ()).throw(RuntimeError("Captcha needed"))
+
+        with self.assertRaisesRegex(RuntimeError, "浏览器兜底提交也失败"):
+            judge.judge(problem, submission)
+
+    def test_cf_block_diagnostics(self):
+        self.assertIn("人机验证", _diagnose_cf_block("<html>captcha required</html>"))
+        self.assertIn("维护", _diagnose_cf_block("technical maintenance"))
+        self.assertIn("风控", _diagnose_cf_block("<html>Cloudflare attention required</html>"))
+        self.assertIn("人机验证", _friendly_cf_error("Captcha needed"))
 
 
 if __name__ == "__main__":

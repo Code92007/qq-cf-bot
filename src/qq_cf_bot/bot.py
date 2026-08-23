@@ -766,7 +766,13 @@ class CodeforcesPushBot:
             try:
                 self._process_code_submission(job)
             except Exception as exc:
-                LOGGER.exception("failed to process remote code submission")
+                LOGGER.exception(
+                    "failed to process remote code submission group=%s user=%s cf_id=%s language=%s",
+                    job.group_id,
+                    job.user_id,
+                    job.problem.cf_id,
+                    job.submission.language,
+                )
                 safe_error = redact_sensitive_text(str(exc))
                 if len(safe_error) > 160:
                     safe_error = safe_error[:160].rstrip() + "..."
@@ -775,14 +781,38 @@ class CodeforcesPushBot:
                 self._code_queue.task_done()
 
     def _process_code_submission(self, job: _QueuedCodeSubmission) -> None:
+        LOGGER.info(
+            "remote code submit worker start group=%s user=%s cf_id=%s language=%s ranked=%s source_chars=%s",
+            job.group_id,
+            job.user_id,
+            job.problem.cf_id,
+            job.submission.language,
+            job.ranked,
+            len(job.submission.source),
+        )
         active = self.store.get_active_problem(job.group_id)
         if active is None or active.problem.cf_id != job.problem.cf_id:
+            LOGGER.info(
+                "remote code submit cancelled because active problem changed group=%s user=%s cf_id=%s",
+                job.group_id,
+                job.user_id,
+                job.problem.cf_id,
+            )
             self.onebot.send_group_text(job.group_id, f"@{job.sender_name} 当前题目已变化，本次提交取消。")
             return
 
         self._wait_for_submit_interval(job.group_id)
         self.store.set_meta_float("cf_last_submit_at", time.time())
         result = self.remote_judge.judge(job.problem, job.submission)
+        LOGGER.info(
+            "remote code submit worker result group=%s user=%s cf_id=%s verdict=%s accepted=%s submission_id=%s",
+            job.group_id,
+            job.user_id,
+            job.problem.cf_id,
+            result.verdict,
+            result.accepted,
+            result.submission_id,
+        )
         self._record_remote_result(job, result)
         if result.accepted:
             self._settle_accepted_code(job, result)
