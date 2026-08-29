@@ -195,15 +195,25 @@ class CodeforcesPushBot:
                 event.sender_name,
             )
 
+        started_at = time.monotonic()
         if command is not None and command.name == "help":
-            self.handle_help(event)
-            LOGGER.info(
-                "bot command finished group=%s user=%s message_id=%s command=%s elapsed=0.00s",
-                event.group_id,
-                event.user_id,
-                event.message_id,
-                command_name,
-            )
+            try:
+                self.handle_help(event)
+            except Exception:
+                LOGGER.exception(
+                    "failed to handle command %s in group %s",
+                    command_name,
+                    event.group_id,
+                )
+            finally:
+                LOGGER.info(
+                    "bot command finished group=%s user=%s message_id=%s command=%s elapsed=%.2fs",
+                    event.group_id,
+                    event.user_id,
+                    event.message_id,
+                    command_name,
+                    time.monotonic() - started_at,
+                )
             return
 
         lock = self._group_lock(event.group_id)
@@ -215,10 +225,9 @@ class CodeforcesPushBot:
                 event.message_id,
                 command_name,
             )
-            self.onebot.send_group_text(event.group_id, f"@{event.sender_name} 上一个操作还在处理中，稍等一下。")
+            self._send_group_text_best_effort(event.group_id, f"@{event.sender_name} 上一个操作还在处理中，稍等一下。")
             return
 
-        started_at = time.monotonic()
         try:
             if direct_code:
                 self.handle_submitcode(event, extract_plain_text(event.message))
@@ -248,7 +257,7 @@ class CodeforcesPushBot:
                 command_name,
                 event.group_id,
             )
-            self.onebot.send_group_text(event.group_id, "操作失败了：题库、中文题面、图片渲染或判题服务暂时不可用。")
+            self._send_group_text_best_effort(event.group_id, "操作失败了：题库、中文题面、图片渲染或判题服务暂时不可用。")
         finally:
             LOGGER.info(
                 "bot command finished group=%s user=%s message_id=%s command=%s elapsed=%.2fs",
@@ -259,6 +268,12 @@ class CodeforcesPushBot:
                 time.monotonic() - started_at,
             )
             lock.release()
+
+    def _send_group_text_best_effort(self, group_id: int, text: str) -> None:
+        try:
+            self.onebot.send_group_text(group_id, text)
+        except Exception:
+            LOGGER.exception("failed to send group text group=%s", group_id)
 
     def handle_new(self, event: GroupMessage, arg: str = "") -> None:
         if self.store.get_active_problem(event.group_id) is not None:

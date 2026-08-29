@@ -1,6 +1,8 @@
 import tempfile
+import urllib.error
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from qq_cf_bot.onebot import OneBotClient, _message_id_from_result
 
@@ -79,6 +81,25 @@ class OneBotClientTest(unittest.TestCase):
         self.assertEqual(_message_id_from_result({"messageId": 124}), 124)
         self.assertIsNone(_message_id_from_result({"data": {}}))
 
+    def test_post_retries_transient_connection_failure(self):
+        client = OneBotClient("http://napcat:3000")
+        response = _FakeUrlopenResponse('{"status":"ok","data":{}}')
+        urlopen = Mock(side_effect=[urllib.error.URLError(ConnectionRefusedError(111, "refused")), response])
+
+        with patch("qq_cf_bot.onebot.urllib.request.urlopen", urlopen), patch("qq_cf_bot.onebot.time.sleep"):
+            result = client._post("/send_group_msg", {"group_id": 1, "message": []})
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(urlopen.call_count, 2)
+
+    def test_post_error_mentions_onebot_url(self):
+        client = OneBotClient("http://napcat:3000")
+        urlopen = Mock(side_effect=urllib.error.URLError(ConnectionRefusedError(111, "refused")))
+
+        with patch("qq_cf_bot.onebot.urllib.request.urlopen", urlopen), patch("qq_cf_bot.onebot.time.sleep"):
+            with self.assertRaisesRegex(RuntimeError, r"http://napcat:3000/send_group_msg"):
+                client._post("/send_group_msg", {"group_id": 1, "message": []})
+
 
 class _FakeOneBotClient(OneBotClient):
     def __init__(self) -> None:
@@ -99,6 +120,20 @@ class _PrivateMessageFailsClient(_FakeOneBotClient):
         if path == "/send_private_msg":
             raise RuntimeError("private chat is unavailable")
         return super()._post(path, payload)
+
+
+class _FakeUrlopenResponse:
+    def __init__(self, body: str) -> None:
+        self.body = body.encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self) -> bytes:
+        return self.body
 
 
 if __name__ == "__main__":

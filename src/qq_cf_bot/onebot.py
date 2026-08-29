@@ -2,10 +2,17 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
+
+
+LOGGER = logging.getLogger(__name__)
+_POST_MAX_ATTEMPTS = 3
+_POST_RETRY_DELAYS_SECONDS = (0.4, 1.2)
 
 
 class OneBotClient:
@@ -161,12 +168,7 @@ class OneBotClient:
         if self.access_token:
             headers["Authorization"] = f"Bearer {self.access_token}"
         request = urllib.request.Request(self.base_url + path, data=data, headers=headers, method="POST")
-        try:
-            with urllib.request.urlopen(request, timeout=20) as response:
-                body = response.read().decode("utf-8")
-        except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"OneBot API returned HTTP {exc.code}: {body}") from exc
+        body = self._open_with_retries(request, path)
 
         if not body:
             return {}
@@ -181,6 +183,33 @@ class OneBotClient:
             return image.resolve().as_uri()
         data = base64.b64encode(image.read_bytes()).decode("ascii")
         return f"base64://{data}"
+
+    def _open_with_retries(self, request: urllib.request.Request, path: str) -> str:
+        last_exc: Optional[BaseException] = None
+        for attempt in range(1, _POST_MAX_ATTEMPTS + 1):
+            try:
+                with urllib.request.urlopen(request, timeout=20) as response:
+                    return response.read().decode("utf-8")
+            except urllib.error.HTTPError as exc:
+                body = exc.read().decode("utf-8", errors="replace")
+                raise RuntimeError(
+                    f"OneBot API returned HTTP {exc.code} for {self.base_url}{path}: {body}"
+                ) from exc
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                last_exc = exc
+                if attempt >= _POST_MAX_ATTEMPTS:
+                    break
+                LOGGER.warning(
+                    "OneBot API request failed, retrying attempt=%s/%s url=%s%s error=%s",
+                    attempt,
+                    _POST_MAX_ATTEMPTS,
+                    self.base_url,
+                    path,
+                    exc,
+                )
+                time.sleep(_POST_RETRY_DELAYS_SECONDS[attempt - 1])
+
+        raise RuntimeError(f"OneBot API request failed for {self.base_url}{path}: {last_exc}") from last_exc
 
 
 def _message_id_from_result(result: dict) -> Optional[int]:
