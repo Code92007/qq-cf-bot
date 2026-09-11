@@ -166,6 +166,19 @@ class SubmitterTest(unittest.TestCase):
             self.assertIn("已验证", message)
             self.assertTrue(judge._has_browser_session())
 
+    def test_running_service_reloads_cookie_file_created_by_login_check(self):
+        with TemporaryDirectory() as tmp:
+            judge = CodeforcesRemoteJudge("tourist", "secret", "tourist", session_dir=Path(tmp))
+            judge._cookie_path.write_text(
+                "# Netscape HTTP Cookie File\n"
+                ".codeforces.com\tTRUE\t/\tTRUE\t2147483647\tJSESSIONID\tpersisted\n",
+                encoding="ascii",
+            )
+
+            judge._reload_http_cookies_if_changed()
+
+            self.assertEqual([cookie.value for cookie in judge._cookie_jar], ["persisted"])
+
     def test_old_submission_is_not_matched_when_initial_probe_failed(self):
         problem = CFProblem(1, "A", "Theatre Square", 1000)
         submissions = [

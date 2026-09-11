@@ -141,6 +141,7 @@ class CodeforcesRemoteJudge:
         self._browser_profile_dir = self.session_dir / "browser-profile" if self.session_dir is not None else None
         self._browser_ready_path = self.session_dir / "browser-session-ready" if self.session_dir is not None else None
         self._cookie_jar = self._new_cookie_jar(load=True)
+        self._cookie_loaded_mtime = self._cookie_mtime()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookie_jar))
         self._logged_in = False
         self._last_error = ""
@@ -462,6 +463,7 @@ class CodeforcesRemoteJudge:
     def _ensure_logged_in(self) -> None:
         if self._logged_in:
             return
+        self._reload_http_cookies_if_changed()
         login_page = self._get("/enter?back=%2F")
         if _looks_logged_in(login_page, self.handle):
             self._logged_in = True
@@ -493,6 +495,7 @@ class CodeforcesRemoteJudge:
         self._logged_in = False
         if self._cookie_path is not None:
             self._cookie_path.unlink(missing_ok=True)
+        self._cookie_loaded_mtime = 0.0
 
     def _new_cookie_jar(self, *, load: bool) -> CookieJar:
         if self._cookie_path is None:
@@ -512,8 +515,26 @@ class CodeforcesRemoteJudge:
         try:
             self._cookie_jar.save(ignore_discard=True, ignore_expires=True)
             self._cookie_path.chmod(0o600)
+            self._cookie_loaded_mtime = self._cookie_mtime()
         except OSError as exc:
             LOGGER.warning("Codeforces HTTP cookies could not be saved: %s", exc)
+
+    def _reload_http_cookies_if_changed(self) -> None:
+        modified_at = self._cookie_mtime()
+        if not modified_at or modified_at <= self._cookie_loaded_mtime:
+            return
+        self._cookie_jar = self._new_cookie_jar(load=True)
+        self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookie_jar))
+        self._cookie_loaded_mtime = modified_at
+        LOGGER.info("Codeforces HTTP session reloaded from persistent storage")
+
+    def _cookie_mtime(self) -> float:
+        if self._cookie_path is None:
+            return 0.0
+        try:
+            return self._cookie_path.stat().st_mtime
+        except OSError:
+            return 0.0
 
     def _has_browser_session(self) -> bool:
         return bool(self._browser_ready_path is not None and self._browser_ready_path.exists())
