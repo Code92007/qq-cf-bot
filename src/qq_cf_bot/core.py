@@ -32,8 +32,9 @@ from .selector import ProblemSelector
 from .solution_bank import SolutionBank
 from .solution_generator import LLMSolutionGenerator
 from .storage import SentProblemStore
-from .submitter import CodeforcesRemoteJudge, CodeforcesSubmissionError
+from .submitter import CodeforcesRemoteJudge, RemoteSubmissionError
 from .translator import OpenAIStatementTranslator
+from .vjudge_submitter import VJudgeRemoteJudge
 
 
 LOGGER = logging.getLogger(__name__)
@@ -91,7 +92,7 @@ class ChallengeService:
             enabled=config.judge_enabled,
             providers=config.judge_providers,
         )
-        self.remote_judge = CodeforcesRemoteJudge(
+        self.codeforces_remote_judge = CodeforcesRemoteJudge(
             username=config.cf_username,
             password=config.cf_password,
             handle=config.cf_handle,
@@ -102,6 +103,27 @@ class ChallengeService:
             base_urls=config.cf_base_urls,
             session_dir=config.db_path.parent / "codeforces-session",
         )
+        self.vjudge_remote_judge = VJudgeRemoteJudge(
+            username=config.vjudge_username,
+            password=config.vjudge_password,
+            cookie_header=config.vjudge_cookie,
+            forced_language_id=config.vjudge_language_id,
+            http_timeout_seconds=config.cf_submit_http_timeout_seconds,
+            poll_interval_seconds=config.cf_submit_poll_interval_seconds,
+            poll_timeout_seconds=config.cf_submit_poll_timeout_seconds,
+            base_url=config.vjudge_base_url,
+            session_dir=config.db_path.parent / "vjudge-session",
+        )
+        if config.code_submit_provider == "vjudge":
+            self.remote_judge = self.vjudge_remote_judge
+        elif config.code_submit_provider == "codeforces":
+            self.remote_judge = self.codeforces_remote_judge
+        else:
+            self.remote_judge = (
+                self.vjudge_remote_judge
+                if self.vjudge_remote_judge.configured
+                else self.codeforces_remote_judge
+            )
         solution_generator = LLMSolutionGenerator(
             api_url=config.judge_api_url,
             api_key=config.judge_api_key,
@@ -115,7 +137,7 @@ class ChallengeService:
         self.solution_bank = SolutionBank(
             store=self.store,
             luogu=self.luogu,
-            remote_judge=self.remote_judge,
+            remote_judge=self.codeforces_remote_judge,
             solution_generator=solution_generator,
             enabled=config.solution_bank_enabled,
             min_refs=config.solution_bank_min_refs,
@@ -314,8 +336,8 @@ class ChallengeService:
             raise ChallengeError("problem_changed", "当前题目已经变化，本次提交已取消。", 409)
         if not submission.source.strip():
             raise ChallengeError("empty_code", "请先粘贴代码。")
-        if not self.config.cf_submit_enabled or not self.remote_judge.configured:
-            raise ChallengeError("code_judge_unavailable", "Codeforces 远端判题尚未配置。", 503)
+        if not self.config.code_submit_enabled or not self.remote_judge.configured:
+            raise ChallengeError("code_judge_unavailable", "远端代码判题尚未配置。", 503)
 
         with self._submit_lock:
             active = self._require_same_active(actor.scope_id, active.problem.cf_id)
@@ -327,7 +349,7 @@ class ChallengeService:
             active = self._require_same_active(actor.scope_id, active.problem.cf_id)
             try:
                 result = self.remote_judge.judge(active.problem, submission)
-            except CodeforcesSubmissionError as exc:
+            except RemoteSubmissionError as exc:
                 raise ChallengeError("code_submit_failed", str(exc), 502) from exc
             self.store.set_meta_float("cf_last_submit_at", self.remote_judge.last_submit_at or time.time())
 

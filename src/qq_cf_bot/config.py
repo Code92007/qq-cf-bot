@@ -165,6 +165,7 @@ class Config:
     translate_providers: Tuple[LLMProviderConfig, ...]
     translate_timeout_seconds: int
     translate_max_chars: int
+    code_submit_provider: str
     cf_submit_enabled: bool
     cf_username: str
     cf_password: str
@@ -176,6 +177,16 @@ class Config:
     cf_submit_poll_timeout_seconds: int
     cf_submit_http_timeout_seconds: int
     cf_auto_submit_direct_code: bool
+    vjudge_username: str
+    vjudge_password: str
+    vjudge_cookie: str
+    vjudge_language_id: str
+    vjudge_base_url: str
+
+    @property
+    def code_submit_enabled(self) -> bool:
+        return self.cf_submit_enabled
+
     @classmethod
     def from_env(cls) -> "Config":
         root = Path(os.getenv("BOT_DATA_DIR", "data"))
@@ -201,9 +212,27 @@ class Config:
         cf_username = os.getenv("CF_USERNAME", "").strip()
         cf_password = os.getenv("CF_PASSWORD", "")
         cf_handle = (os.getenv("CF_HANDLE") or cf_username).strip()
-        cf_submit_enabled = _auto_bool_env("CF_SUBMIT_ENABLED")
+        vjudge_username = os.getenv("VJUDGE_USERNAME", "").strip()
+        vjudge_password = os.getenv("VJUDGE_PASSWORD", "")
+        vjudge_cookie = os.getenv("VJUDGE_COOKIE", "").strip()
+        code_submit_provider = os.getenv("CODE_SUBMIT_PROVIDER", "auto").strip().lower()
+        if code_submit_provider not in {"auto", "codeforces", "vjudge"}:
+            raise ValueError("CODE_SUBMIT_PROVIDER must be auto, codeforces, or vjudge")
+        enabled_env_name = (
+            "CODE_SUBMIT_ENABLED"
+            if os.getenv("CODE_SUBMIT_ENABLED") is not None
+            else "CF_SUBMIT_ENABLED"
+        )
+        cf_submit_enabled = _auto_bool_env(enabled_env_name)
         if cf_submit_enabled is None:
-            cf_submit_enabled = bool(cf_username and cf_password and cf_handle)
+            codeforces_configured = bool(cf_username and cf_password and cf_handle)
+            vjudge_configured = bool(vjudge_cookie or (vjudge_username and vjudge_password))
+            if code_submit_provider == "codeforces":
+                cf_submit_enabled = codeforces_configured
+            elif code_submit_provider == "vjudge":
+                cf_submit_enabled = vjudge_configured
+            else:
+                cf_submit_enabled = vjudge_configured or codeforces_configured
 
         return cls(
             host=os.getenv("BOT_HOST", "127.0.0.1"),
@@ -268,6 +297,7 @@ class Config:
             ),
             translate_timeout_seconds=_int_env("TRANSLATE_TIMEOUT_SECONDS", 60),
             translate_max_chars=_int_env("TRANSLATE_MAX_CHARS", 60_000),
+            code_submit_provider=code_submit_provider,
             cf_submit_enabled=cf_submit_enabled,
             cf_username=cf_username,
             cf_password=cf_password,
@@ -279,4 +309,9 @@ class Config:
             cf_submit_poll_timeout_seconds=_int_env("CF_SUBMIT_POLL_TIMEOUT_SECONDS", 180),
             cf_submit_http_timeout_seconds=_int_env("CF_SUBMIT_HTTP_TIMEOUT_SECONDS", 30),
             cf_auto_submit_direct_code=_bool_env("CF_AUTO_SUBMIT_DIRECT_CODE", False),
+            vjudge_username=vjudge_username,
+            vjudge_password=vjudge_password,
+            vjudge_cookie=vjudge_cookie,
+            vjudge_language_id=os.getenv("VJUDGE_LANGUAGE_ID", "").strip(),
+            vjudge_base_url=os.getenv("VJUDGE_BASE_URL", "https://vjudge.net").strip().rstrip("/"),
         )

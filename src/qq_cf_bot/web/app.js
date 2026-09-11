@@ -187,7 +187,7 @@ function renderCapabilities(capabilities) {
   el("oralAvailability").textContent = oralReady ? "AI 判定服务在线" : "AI 判定服务未配置";
   el("oralAvailability").classList.toggle("unavailable", !oralReady);
   el("oralForm").querySelector("button[type=submit]").disabled = !oralReady;
-  el("codeAvailability").textContent = codeStatus?.message || (codeReady ? "Codeforces 提交账号已配置" : "Codeforces 远端判题未配置");
+  el("codeAvailability").textContent = codeStatus?.message || (codeReady ? "远端提交账号已配置" : "远端代码判题未配置");
   el("codeAvailability").classList.toggle("unavailable", !codeReady || codeStatus?.state === "degraded");
   el("codeForm").querySelector("button[type=submit]").disabled = !codeReady;
 }

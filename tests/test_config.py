@@ -35,6 +35,39 @@ class ConfigTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "CF_SUBMIT_ENABLED"):
                 Config.from_env()
 
+    def test_vjudge_credentials_enable_auto_provider(self):
+        with patch.dict(
+            os.environ,
+            {"VJUDGE_USERNAME": "solver", "VJUDGE_PASSWORD": "secret"},
+            clear=True,
+        ):
+            config = Config.from_env()
+
+        self.assertTrue(config.code_submit_enabled)
+        self.assertEqual(config.code_submit_provider, "auto")
+        self.assertEqual(config.vjudge_username, "solver")
+
+    def test_vjudge_provider_can_be_selected_explicitly(self):
+        with patch.dict(
+            os.environ,
+            {
+                "CODE_SUBMIT_PROVIDER": "vjudge",
+                "CODE_SUBMIT_ENABLED": "true",
+                "VJUDGE_COOKIE": "JSESSIONID=session",
+            },
+            clear=True,
+        ):
+            config = Config.from_env()
+
+        self.assertTrue(config.code_submit_enabled)
+        self.assertEqual(config.code_submit_provider, "vjudge")
+        self.assertEqual(config.vjudge_cookie, "JSESSIONID=session")
+
+    def test_code_submit_rejects_unknown_provider(self):
+        with patch.dict(os.environ, {"CODE_SUBMIT_PROVIDER": "unknown"}, clear=True):
+            with self.assertRaisesRegex(ValueError, "CODE_SUBMIT_PROVIDER"):
+                Config.from_env()
+
     def test_llm_provider_queue_from_json(self):
         providers = [
             {

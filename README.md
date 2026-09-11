@@ -1,6 +1,6 @@
 # CF Bot：QQ + Web Codeforces 训练场
 
-同一套抽题、中文题面、做法审核、Codeforces 远端判题和 Rating 系统，同时支持 OneBot v11 QQ 群机器人与网站。QQ 和 Web 是两个接入层，共用 `ChallengeService` 业务服务和 SQLite 数据；移除任一接入层不会影响另一端。
+同一套抽题、中文题面、远端代码判题、做法审核和 Rating 系统，同时支持 OneBot v11 QQ 群机器人与网站。QQ 和 Web 是两个接入层，共用 `ChallengeService` 业务服务和 SQLite 数据；移除任一接入层不会影响另一端。代码判题载具可选择 VJudge 或 Codeforces 直提。
 
 网站入口直接由机器人进程提供，默认是 `http://127.0.0.1:8088/`；OneBot 反向上报地址仍是 `/onebot`，健康检查仍是 `/health`。
 
@@ -71,7 +71,7 @@ QQ / OneBot adapter ─┐
 Web UI + JSON API ───┘                 └─ Codeforces / 洛谷 / LLM
 ```
 
-网站账号拥有独立的题目作用域，站内榜单使用单独的共享作用域；QQ 数据仍按群号隔离。两个入口共用同一个 Codeforces 专用提交账号和全局提交间隔，避免并发提交触发平台风控。
+网站账号拥有独立的题目作用域，站内榜单使用单独的共享作用域；QQ 数据仍按群号隔离。两个入口共用同一个远端判题账号和全局提交间隔，避免并发提交触发平台风控。
 
 `scripts/deploy.sh` 会先执行 Tailscale preflight，再执行 `docker compose up -d --build`。如果你不需要 Tailscale，把 `.env` 里的 `TAILSCALE_REQUIRED=false` 留着即可。
 
@@ -157,7 +157,14 @@ python -m qq_cf_bot
 | `CF_RECENT_SELECTION_POOL_SIZE` | `500` | 推题时优先从较新 contestId 的候选池中随机，数值越大越分散 |
 | `GIVEUP_MIN_SECONDS` | `120` | 新题发布后至少等待多少秒才能 `/giveup` |
 | `FALLBACK_STATEMENT_SOURCE` | `codeforces` | 洛谷中文题面失败时，回退到 Codeforces 官方英文题面 |
-| `CF_SUBMIT_ENABLED` | `auto` | 是否开启 `/submitcode` 远端提交；`auto` 表示账号密码齐全时自动开启，`false` 强制关闭 |
+| `CODE_SUBMIT_PROVIDER` | `auto` | 远端代码判题载具：`vjudge`、`codeforces` 或 `auto`；`auto` 优先选已配置的 VJudge |
+| `CODE_SUBMIT_ENABLED` | `auto` | 是否开启 `/submitcode` 远端提交；`auto` 表示所选载具凭据齐全时自动开启 |
+| `VJUDGE_USERNAME` | 空 | VJudge 登录用户名；只放服务器 `.env` |
+| `VJUDGE_PASSWORD` | 空 | VJudge 登录密码；只放服务器 `.env`，不要提交到 GitHub |
+| `VJUDGE_COOKIE` | 空 | 可选，账号密码登录遇到 Turnstile 时，填写浏览器登录后的完整 `Cookie` 请求头 |
+| `VJUDGE_LANGUAGE_ID` | 空 | 可选，强制使用 VJudge 提交页的语言 ID；默认从当前题提交配置自动识别 |
+| `VJUDGE_BASE_URL` | `https://vjudge.net` | VJudge 服务地址 |
+| `CF_SUBMIT_ENABLED` | `auto` | 旧版兼容开关；未设置 `CODE_SUBMIT_ENABLED` 时仍生效 |
 | `CF_USERNAME` | 空 | Codeforces 登录账号或邮箱 |
 | `CF_PASSWORD` | 空 | Codeforces 密码，只放在服务器 `.env`，不要提交到 GitHub |
 | `CF_HANDLE` | `CF_USERNAME` | Codeforces handle，用于轮询提交记录 |
@@ -212,7 +219,34 @@ python -m qq_cf_bot
 | `SMTP_USERNAME` / `SMTP_PASSWORD` | 空 | SMTP 登录用户名和授权码 |
 | `SMTP_FROM` | `SMTP_USERNAME` | 邮件发件人 |
 
-## `/submitcode` 用法
+## 远端代码判题与 `/submitcode`
+
+服务器无法稳定访问 Codeforces 提交页时，推荐使用 VJudge 载具：
+
+```dotenv
+CODE_SUBMIT_PROVIDER=vjudge
+CODE_SUBMIT_ENABLED=true
+VJUDGE_USERNAME=你的_VJudge_用户名
+VJUDGE_PASSWORD=你的_VJudge_密码
+VJUDGE_COOKIE=
+```
+
+这里使用的是 VJudge 练习题提交接口和默认远端账号（`method=0`），题号仍为 `CodeForces-{contestId}{index}`。不需要在 VJudge 绑定 `toolist`，原来的 `CF_USERNAME`、`CF_PASSWORD` 可以保留，切换回 `CODE_SUBMIT_PROVIDER=codeforces` 时继续使用。
+
+修改服务器 `.env` 后执行：
+
+```bash
+chmod 600 .env
+docker compose up -d --build qq-cf-bot
+docker compose exec -T qq-cf-bot python -m qq_cf_bot.check_submit
+```
+
+如果自检提示 VJudge 要求人机验证：
+
+1. 在自己的浏览器登录 [VJudge](https://vjudge.net/)。
+2. 打开开发者工具的 Network，刷新任意 VJudge 页面，选择发往 `vjudge.net` 的请求。
+3. 从 Request Headers 复制完整 `Cookie` 值，填入服务器 `.env` 的 `VJUDGE_COOKIE`，建议写成 `VJUDGE_COOKIE='JSESSIONID=...; ...'`。Cookie 与密码同等敏感，不要发到聊天或提交进 Git。
+4. 再执行上面的重建和自检命令。登录会话还会持久化到 `data/vjudge-session/http-cookies.txt`。
 
 推荐使用代码块：
 
@@ -243,7 +277,7 @@ int main() { return 0; }
 - `/submitcode` 只提交当前群的当前题。
 - 提交队列是全局单线程，默认至少间隔 180 秒。
 - 语言会按代码风格自动识别，主要支持 C++、C、Java、Python；识别不出时按 `CF_SUBMIT_DEFAULT_LANGUAGE`。
-- Codeforces 可能触发验证码、二次验证或账号安全确认，此时远端提交会失败，需要先手动登录账号处理。
+- VJudge 或 Codeforces 可能触发验证码、二次验证或账号安全确认，此时远端提交会给出对应的登录/Cookie 提示。
 - 不要在正在进行的正式比赛中使用该机器人提交代码。
 
 Docker 部署后先运行一次无提交登录自检：
@@ -252,7 +286,7 @@ Docker 部署后先运行一次无提交登录自检：
 docker compose exec -T qq-cf-bot python -m qq_cf_bot.check_submit
 ```
 
-自检会验证 Codeforces 登录，并把 HTTP Cookie 与持久浏览器资料保存在 `data/codeforces-session/`。后续容器重建会复用这个会话，不会为每次代码提交重新登录；自检不会向 Codeforces 提交代码。
+自检只验证当前所选载具的登录，不提交代码。VJudge 会话保存在 `data/vjudge-session/`；Codeforces 直提的 HTTP Cookie 与持久浏览器资料仍保存在 `data/codeforces-session/`。后续容器重建会复用这些会话。
 
 ## `/new` 和 `/share`
 

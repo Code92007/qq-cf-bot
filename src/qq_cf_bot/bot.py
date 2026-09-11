@@ -85,7 +85,7 @@ class CodeforcesPushBot:
         )
         self._code_queue: "queue.Queue[_QueuedCodeSubmission]" = queue.Queue()
         self._code_worker_started = False
-        if config.cf_submit_enabled:
+        if config.code_submit_enabled:
             self._start_code_worker()
         self._locks: Dict[int, threading.Lock] = {}
         self._locks_lock = threading.Lock()
@@ -364,12 +364,12 @@ class CodeforcesPushBot:
             self.onebot.send_group_text(event.group_id, "当前没有题目，用 /new 刷一道。")
             return
         if not self.remote_judge.configured:
-            self.onebot.send_group_text(event.group_id, "CF 提交账号未配置完整，至少需要 CF_USERNAME 和 CF_PASSWORD。")
+            self.onebot.send_group_text(event.group_id, "远端代码判题账号未配置完整，请检查当前提交载具的账号或 Cookie。")
             return
-        if not self.config.cf_submit_enabled:
+        if not self.config.code_submit_enabled:
             self.onebot.send_group_text(
                 event.group_id,
-                "CF 远端提交被 CF_SUBMIT_ENABLED=false 关闭，改成 true 或 auto 后可用。",
+                "远端代码提交被 CODE_SUBMIT_ENABLED=false 关闭，改成 true 或 auto 后可用。",
             )
             return
 

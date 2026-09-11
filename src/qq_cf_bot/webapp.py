@@ -234,7 +234,7 @@ class WebApplication:
             "leaderboard": self._leaderboard(),
             "capabilities": {
                 "oralJudge": self.service.judge.configured,
-                "codeJudge": self.config.cf_submit_enabled and self.service.remote_judge.configured,
+                "codeJudge": self.config.code_submit_enabled and self.service.remote_judge.configured,
                 "codeJudgeStatus": self.service.remote_judge.availability,
                 "registration": self.config.web_registration_enabled,
             },

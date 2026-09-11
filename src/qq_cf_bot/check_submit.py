@@ -4,7 +4,7 @@ import logging
 
 from .config import Config
 from .core import ChallengeService
-from .submitter import CodeforcesSubmissionError
+from .submitter import RemoteSubmissionError
 
 
 def main() -> None:
@@ -13,7 +13,7 @@ def main() -> None:
     service = ChallengeService(config)
     try:
         message = service.remote_judge.verify_login()
-    except CodeforcesSubmissionError as exc:
+    except RemoteSubmissionError as exc:
         print(f"FAILED: {exc}")
         raise SystemExit(1) from exc
     print(f"OK: {message}")

@@ -65,7 +65,7 @@ class ChallengeServiceTest(unittest.TestCase):
     def test_failed_remote_submit_keeps_problem_and_does_not_start_cooldown(self):
         with tempfile.TemporaryDirectory() as tmp:
             service = ChallengeService.__new__(ChallengeService)
-            service.config = SimpleNamespace(cf_submit_enabled=True, cf_submit_min_interval_seconds=180)
+            service.config = SimpleNamespace(code_submit_enabled=True, cf_submit_min_interval_seconds=180)
             service.store = SentProblemStore(Path(tmp) / "bot.sqlite3")
             service.remote_judge = _FailingRemoteJudge()
             service._submit_lock = threading.Lock()

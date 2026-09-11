@@ -112,7 +112,11 @@ class CodeforcesForbiddenError(RuntimeError):
     """Codeforces rejected the request before normal form handling."""
 
 
-class CodeforcesSubmissionError(RuntimeError):
+class RemoteSubmissionError(RuntimeError):
+    """A configured remote judge could not complete the submission workflow."""
+
+
+class CodeforcesSubmissionError(RemoteSubmissionError):
     """All configured Codeforces submission transports failed."""
 
 
@@ -153,6 +157,10 @@ class CodeforcesRemoteJudge:
             timeout_seconds=http_timeout_seconds,
             base_urls=self.base_urls,
         )
+
+    @property
+    def provider(self) -> str:
+        return "codeforces"
 
     @property
     def configured(self) -> bool:
