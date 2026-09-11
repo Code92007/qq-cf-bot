@@ -55,7 +55,7 @@ curl http://127.0.0.1:8088/health
 ## 部署到 cf-bot.wannafly.cn
 
 1. 将 `cf-bot.wannafly.cn` 的 DNS A/AAAA 记录指向服务器。
-2. 在 `.env` 中设置 `WEB_ENABLED=true`、`WEB_COOKIE_SECURE=true`，并保留已有 QQ 与判题配置。
+2. 在 `.env` 中设置 `WEB_ENABLED=true`、`WEB_COOKIE_SECURE=true`、`BOT_PUBLISH_HOST=127.0.0.1`，并保留已有 QQ 与判题配置。
 3. 执行 `./scripts/deploy.sh qq-cf-bot`。
 4. 申请 TLS 证书后，参考 `deploy/nginx/cf-bot.wannafly.cn.conf.example` 配置 Nginx。
 
@@ -139,6 +139,7 @@ python -m qq_cf_bot
 | `ONEBOT_SELF_ID` | 空 | 可选，机器人自己的 QQ 号；为空时自动调用 OneBot `get_login_info` 获取，用于先私聊自己再合并转发题面 |
 | `BOT_HOST` | `127.0.0.1` | 机器人监听地址；Docker 中为 `0.0.0.0` |
 | `BOT_PORT` | `8088` | 机器人监听端口 |
+| `BOT_PUBLISH_HOST` | `0.0.0.0` | Docker 发布端口绑定地址；只经本机 Nginx 反代时设为 `127.0.0.1` |
 | `WEB_ENABLED` | `true` | 是否同时提供网站与 JSON API |
 | `WEB_REGISTRATION_ENABLED` | `true` | 是否允许网站创建新账号 |
 | `WEB_COOKIE_SECURE` | `false` | HTTPS 生产部署必须设为 `true` |
