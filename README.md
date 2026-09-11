@@ -57,9 +57,11 @@ curl http://127.0.0.1:8088/health
 1. 将 `cf-bot.wannafly.cn` 的 DNS A/AAAA 记录指向服务器。
 2. 在 `.env` 中设置 `WEB_ENABLED=true`、`WEB_COOKIE_SECURE=true`、`BOT_PUBLISH_HOST=127.0.0.1`，并保留已有 QQ 与判题配置。
 3. 执行 `./scripts/deploy.sh qq-cf-bot`。
-4. 申请 TLS 证书后，参考 `deploy/nginx/cf-bot.wannafly.cn.conf.example` 配置 Nginx。
+4. 已使用 Caddy 的服务器把 `deploy/Caddyfile.cf-bot` 追加到 `/etc/caddy/Caddyfile` 并 reload；否则可参考 `deploy/nginx/cf-bot.wannafly.cn.conf.example` 配置 Nginx。
 
 反向代理只需转发到 `http://127.0.0.1:8088`。网站与 `/onebot` 共用端口，因此原 NapCat 上报 URL 无需修改。
+
+`oj-train-wall.wannafly.cn` 所在服务器可直接复用现有 Caddy：两个站点分别反代到 `127.0.0.1:8017` 和 `127.0.0.1:8088`，Caddy 会按域名自动申请和续期 HTTPS 证书。
 
 ## 架构
 
