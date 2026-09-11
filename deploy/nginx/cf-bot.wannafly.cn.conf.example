@@ -1,0 +1,38 @@
+limit_req_zone $binary_remote_addr zone=cf_bot_auth:10m rate=10r/m;
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name cf-bot.wannafly.cn;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name cf-bot.wannafly.cn;
+
+    ssl_certificate /etc/letsencrypt/live/cf-bot.wannafly.cn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cf-bot.wannafly.cn/privkey.pem;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    client_max_body_size 300k;
+
+    location ~ ^/api/auth/(login|register)$ {
+        limit_req zone=cf_bot_auth burst=5 nodelay;
+        proxy_pass http://127.0.0.1:8088;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8088;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 240s;
+    }
+}

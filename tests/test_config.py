@@ -61,6 +61,9 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(config.recent_selection_pool_size, 500)
         self.assertEqual(config.giveup_min_seconds, 120)
         self.assertIn("https://m1.codeforces.com", config.cf_base_urls)
+        self.assertTrue(config.web_enabled)
+        self.assertTrue(config.web_registration_enabled)
+        self.assertFalse(config.web_cookie_secure)
 
     def test_onebot_event_token_is_optional(self):
         with patch.dict(os.environ, {"ONEBOT_EVENT_ACCESS_TOKEN": "event-secret"}, clear=True):

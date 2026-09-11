@@ -22,20 +22,25 @@ class OneBotEventServer:
         on_group_message: Callable[[GroupMessage], None],
         *,
         access_token: str = "",
+        web_app: Any = None,
     ) -> None:
         self.host = host
         self.port = port
         self.on_group_message = on_group_message
         self.access_token = access_token
+        self.web_app = web_app
 
     def serve_forever(self) -> None:
         callback = self.on_group_message
         access_token = self.access_token
+        web_app = self.web_app
 
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self) -> None:
                 parsed_path = urlsplit(self.path)
                 if parsed_path.path != "/onebot":
+                    if web_app is not None and web_app.handle_post(self, parsed_path.path):
+                        return
                     self.send_error(404)
                     return
                 if not _is_authorized(self.headers, parsed_path.query, access_token):
@@ -58,8 +63,11 @@ class OneBotEventServer:
                 self._json_response({"status": "ok"})
 
             def do_GET(self) -> None:
-                if self.path == "/health":
+                parsed_path = urlsplit(self.path)
+                if parsed_path.path == "/health":
                     self._json_response({"status": "ok"})
+                elif web_app is not None and web_app.handle_get(self, parsed_path.path):
+                    return
                 else:
                     self.send_error(404)
 
@@ -75,7 +83,7 @@ class OneBotEventServer:
                 self.wfile.write(data)
 
         server = ThreadingHTTPServer((self.host, self.port), Handler)
-        LOGGER.info("listening on http://%s:%s/onebot", self.host, self.port)
+        LOGGER.info("listening on http://%s:%s (OneBot: /onebot, Web: /)", self.host, self.port)
         server.serve_forever()
 
 

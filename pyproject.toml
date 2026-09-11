@@ -17,3 +17,6 @@ qq-cf-bot = "qq_cf_bot.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+qq_cf_bot = ["web/*"]

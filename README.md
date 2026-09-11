@@ -1,8 +1,20 @@
-# QQ Codeforces 题目推送机器人
+# CF Bot：QQ + Web Codeforces 训练场
 
-基于 OneBot v11 的 QQ 群机器人。核心目标是群里发送 `/new` 后推送一题不重复的 Codeforces 题目，题面使用洛谷 CF 中文镜像渲染成图片；代码提交使用绑定的 Codeforces 练习账号远端提交，最终结果以 Codeforces verdict 为准。
+同一套抽题、中文题面、做法审核、Codeforces 远端判题和 Rating 系统，同时支持 OneBot v11 QQ 群机器人与网站。QQ 和 Web 是两个接入层，共用 `ChallengeService` 业务服务和 SQLite 数据；移除任一接入层不会影响另一端。
+
+网站入口直接由机器人进程提供，默认是 `http://127.0.0.1:8088/`；OneBot 反向上报地址仍是 `/onebot`，健康检查仍是 `/health`。
 
 ## 功能
+
+### 网站
+
+- 本地账号注册、登录和安全会话。
+- 每个用户独立抽题、去重和难度区间，不会抢占其他人的当前题。
+- 题目进行中隐藏题号、标题、实际 Rating 和标签，通过或放弃后揭晓。
+- 支持口头做法审核与 C++、C、Java、Python 代码提交。
+- 网站用户共享站内榜单；QQ 群继续使用各群自己的榜单。
+
+### QQ 群
 
 - `/new`：按本群默认难度推送一道题，默认 `1900-2600`。
 - `/new 2100 2400`：临时按 `2100-2400` 推一道题，不修改群默认配置。
@@ -37,6 +49,27 @@ cp .env.example .env
 ```bash
 curl http://127.0.0.1:8088/health
 ```
+
+浏览器打开 `http://服务器地址:8088/` 即可使用网站。公网部署建议只让 Nginx/Caddy 暴露 80/443，应用的 8088 端口保持在本机或内网。
+
+## 部署到 cf-bot.wannafly.cn
+
+1. 将 `cf-bot.wannafly.cn` 的 DNS A/AAAA 记录指向服务器。
+2. 在 `.env` 中设置 `WEB_ENABLED=true`、`WEB_COOKIE_SECURE=true`，并保留已有 QQ 与判题配置。
+3. 执行 `./scripts/deploy.sh qq-cf-bot`。
+4. 申请 TLS 证书后，参考 `deploy/nginx/cf-bot.wannafly.cn.conf.example` 配置 Nginx。
+
+反向代理只需转发到 `http://127.0.0.1:8088`。网站与 `/onebot` 共用端口，因此原 NapCat 上报 URL 无需修改。
+
+## 架构
+
+```text
+QQ / OneBot adapter ─┐
+                     ├─ ChallengeService ─ 抽题 / 判题 / Rating ─ SQLite
+Web UI + JSON API ───┘                 └─ Codeforces / 洛谷 / LLM
+```
+
+网站账号拥有独立的题目作用域，站内榜单使用单独的共享作用域；QQ 数据仍按群号隔离。两个入口共用同一个 Codeforces 专用提交账号和全局提交间隔，避免并发提交触发平台风控。
 
 `scripts/deploy.sh` 会先执行 Tailscale preflight，再执行 `docker compose up -d --build`。如果你不需要 Tailscale，把 `.env` 里的 `TAILSCALE_REQUIRED=false` 留着即可。
 
@@ -106,6 +139,11 @@ python -m qq_cf_bot
 | `ONEBOT_SELF_ID` | 空 | 可选，机器人自己的 QQ 号；为空时自动调用 OneBot `get_login_info` 获取，用于先私聊自己再合并转发题面 |
 | `BOT_HOST` | `127.0.0.1` | 机器人监听地址；Docker 中为 `0.0.0.0` |
 | `BOT_PORT` | `8088` | 机器人监听端口 |
+| `WEB_ENABLED` | `true` | 是否同时提供网站与 JSON API |
+| `WEB_REGISTRATION_ENABLED` | `true` | 是否允许网站创建新账号 |
+| `WEB_COOKIE_SECURE` | `false` | HTTPS 生产部署必须设为 `true` |
+| `WEB_SESSION_HOURS` | `720` | 网站登录会话有效小时数 |
+| `WEB_MAX_BODY_BYTES` | `256000` | 网站 JSON 请求体上限 |
 | `BOT_ALLOWED_GROUPS` | 空 | 允许使用的群号，逗号分隔；空表示所有群 |
 | `BOT_DATA_DIR` | `data` | SQLite、题库缓存和图片输出目录 |
 | `CF_MIN_RATING` | `1900` | 默认最低题目 rating |

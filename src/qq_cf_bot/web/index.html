@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>CF Bot</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="authView" class="auth-view">
+    <header class="auth-brand">
+      <span class="brand-mark">CF</span>
+      <h1>CF Bot</h1>
+      <p>每日训练场</p>
+    </header>
+
+    <div class="auth-panel">
+      <div class="auth-tabs" role="tablist" aria-label="账号">
+        <button id="loginTab" class="auth-tab active" type="button" role="tab" aria-selected="true">登录</button>
+        <button id="registerTab" class="auth-tab" type="button" role="tab" aria-selected="false">注册</button>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <label>用户名<input name="username" autocomplete="username" minlength="3" maxlength="24" required></label>
+        <label>密码<input name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></label>
+        <button class="primary wide" type="submit">登录</button>
+      </form>
+
+      <form id="registerForm" class="auth-form hidden">
+        <label>用户名<input name="username" autocomplete="username" pattern="[A-Za-z0-9_-]{3,24}" minlength="3" maxlength="24" required></label>
+        <label>显示名<input name="displayName" autocomplete="nickname" maxlength="32" required></label>
+        <label>密码<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
+        <button class="primary wide" type="submit">创建账号</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="appView" class="app-view hidden">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="CF Bot 首页">
+        <span class="brand-mark small">CF</span>
+        <strong>CF Bot</strong>
+      </a>
+      <div class="topbar-actions">
+        <div class="user-chip">
+          <span id="userInitial" class="avatar">U</span>
+          <span id="displayName">User</span>
+        </div>
+        <button id="logoutBtn" class="quiet" type="button">退出</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="challenge-column">
+        <div class="challenge-toolbar">
+          <div>
+            <p class="eyebrow">CURRENT CHALLENGE</p>
+            <h1 id="challengeTitle">训练台</h1>
+          </div>
+          <form id="newChallengeForm" class="range-form">
+            <label><span>最低</span><select id="minRating" name="minRating" aria-label="最低难度"></select></label>
+            <span class="range-dash">至</span>
+            <label><span>最高</span><select id="maxRating" name="maxRating" aria-label="最高难度"></select></label>
+            <button id="newChallengeBtn" class="primary" type="submit">抽取题目</button>
+          </form>
+        </div>
+
+        <section id="emptyState" class="empty-state">
+          <span class="empty-index">01</span>
+          <h2>等待抽题</h2>
+          <p id="emptyRange">1900 - 2600</p>
+        </section>
+
+        <article id="problemView" class="problem-view hidden">
+          <div class="problem-head">
+            <div>
+              <span class="live-dot"></span>
+              <span>进行中</span>
+            </div>
+            <button id="giveUpBtn" class="danger-quiet" type="button">放弃题目</button>
+          </div>
+          <div id="descriptionSection" class="statement-section"></div>
+          <div id="inputSection" class="statement-section"></div>
+          <div id="outputSection" class="statement-section"></div>
+          <div id="samplesSection" class="statement-section"></div>
+          <div id="hintSection" class="statement-section"></div>
+
+          <section class="submission-zone">
+            <div class="submission-tabs" role="tablist" aria-label="提交方式">
+              <button id="oralTab" class="submission-tab active" type="button" role="tab" aria-selected="true">提交做法</button>
+              <button id="codeTab" class="submission-tab" type="button" role="tab" aria-selected="false">提交代码</button>
+            </div>
+
+            <form id="oralForm" class="submission-form">
+              <label class="sr-only" for="solutionText">做法说明</label>
+              <textarea id="solutionText" rows="8" maxlength="20000" placeholder="核心算法、关键状态、复杂度与边界处理" required></textarea>
+              <div class="submit-row">
+                <span id="oralAvailability" class="service-status"></span>
+                <button class="primary" type="submit">提交判定</button>
+              </div>
+            </form>
+
+            <form id="codeForm" class="submission-form hidden">
+              <div class="editor-toolbar">
+                <label>语言
+                  <select id="codeLanguage">
+                    <option value="cpp">C++ 20</option>
+                    <option value="c">C 17</option>
+                    <option value="java">Java</option>
+                    <option value="py">Python 3</option>
+                  </select>
+                </label>
+              </div>
+              <label class="sr-only" for="sourceCode">源代码</label>
+              <textarea id="sourceCode" class="code-editor" rows="18" maxlength="128000" spellcheck="false" placeholder="#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    return 0;
+}" required></textarea>
+              <div class="submit-row">
+                <span id="codeAvailability" class="service-status"></span>
+                <button class="primary" type="submit">提交到 CF</button>
+              </div>
+            </form>
+          </section>
+        </article>
+      </section>
+
+      <aside class="side-column">
+        <section class="stat-strip" aria-label="个人数据">
+          <div><span>Rating</span><strong id="myRating">1500</strong></div>
+          <div><span>已通过</span><strong id="mySolved">0</strong></div>
+          <div><span>最高题</span><strong id="myHighest">-</strong></div>
+        </section>
+
+        <section class="leaderboard-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">SITE RANKING</p>
+              <h2>排行榜</h2>
+            </div>
+            <span id="leaderboardCount">0 人</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>排名</th><th>用户</th><th>Rating</th><th>通过</th></tr></thead>
+              <tbody id="leaderboardBody"></tbody>
+            </table>
+          </div>
+          <p id="leaderboardEmpty" class="muted center">暂无通过记录</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="resultDialog" class="result-dialog">
+    <div class="result-accent" id="resultAccent"></div>
+    <p id="resultLabel" class="eyebrow"></p>
+    <h2 id="resultTitle"></h2>
+    <p id="resultMessage"></p>
+    <dl id="problemReveal" class="reveal-list"></dl>
+    <div id="resultLinks" class="result-links"></div>
+    <form method="dialog"><button class="primary wide" type="submit">返回训练台</button></form>
+  </dialog>
+
+  <div id="busyLayer" class="busy-layer hidden" aria-live="polite">
+    <div class="spinner"></div>
+    <strong id="busyText">处理中</strong>
+  </div>
+</body>
+</html>

@@ -589,8 +589,88 @@ class SentProblemStore:
         )
         return stats
 
+    def create_web_user(self, username: str, display_name: str, password_hash: str) -> dict:
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            try:
+                cursor = conn.execute(
+                    """
+                    insert into web_users (username, display_name, password_hash, created_at)
+                    values (?, ?, ?, ?)
+                    """,
+                    (username, display_name, password_hash, now),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise ValueError("username already exists") from exc
+            user_id = int(cursor.lastrowid)
+        return {
+            "id": user_id,
+            "username": username,
+            "display_name": display_name,
+            "password_hash": password_hash,
+            "created_at": now,
+        }
+
+    def get_web_user_by_username(self, username: str) -> Optional[dict]:
+        with self._connect() as conn:
+            row = conn.execute(
+                "select id, username, display_name, password_hash, created_at from web_users where username = ?",
+                (username,),
+            ).fetchone()
+        return _web_user_row(row)
+
+    def get_web_user(self, user_id: int) -> Optional[dict]:
+        with self._connect() as conn:
+            row = conn.execute(
+                "select id, username, display_name, password_hash, created_at from web_users where id = ?",
+                (user_id,),
+            ).fetchone()
+        return _web_user_row(row)
+
+    def create_web_session(self, token_hash: str, user_id: int, csrf_token: str, expires_at: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                "delete from web_sessions where user_id = ? or expires_at <= ?",
+                (user_id, now),
+            )
+            conn.execute(
+                """
+                insert into web_sessions (token_hash, user_id, csrf_token, created_at, expires_at)
+                values (?, ?, ?, ?, ?)
+                """,
+                (token_hash, user_id, csrf_token, now, expires_at),
+            )
+
+    def get_web_session(self, token_hash: str) -> Optional[dict]:
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                select s.user_id, s.csrf_token, s.expires_at, u.username, u.display_name
+                from web_sessions s
+                join web_users u on u.id = s.user_id
+                where s.token_hash = ? and s.expires_at > ?
+                """,
+                (token_hash, now),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "user_id": int(row[0]),
+            "csrf_token": str(row[1]),
+            "expires_at": str(row[2]),
+            "username": str(row[3]),
+            "display_name": str(row[4]),
+        }
+
+    def delete_web_session(self, token_hash: str) -> None:
+        with self._connect() as conn:
+            conn.execute("delete from web_sessions where token_hash = ?", (token_hash,))
+
     def _init(self) -> None:
         with self._connect() as conn:
+            conn.execute("pragma journal_mode = wal")
             conn.execute(
                 """
                 create table if not exists sent_problems (
@@ -765,15 +845,54 @@ class SentProblemStore:
                 )
                 """
             )
+            conn.execute(
+                """
+                create table if not exists web_users (
+                    id integer primary key autoincrement,
+                    username text not null unique collate nocase,
+                    display_name text not null,
+                    password_hash text not null,
+                    created_at text not null
+                )
+                """
+            )
+            conn.execute(
+                """
+                create table if not exists web_sessions (
+                    token_hash text primary key,
+                    user_id integer not null,
+                    csrf_token text not null,
+                    created_at text not null,
+                    expires_at text not null,
+                    foreign key (user_id) references web_users(id) on delete cascade
+                )
+                """
+            )
+            conn.execute("create index if not exists idx_web_sessions_user on web_sessions(user_id)")
 
     def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=30)
+        conn.execute("pragma busy_timeout = 30000")
+        conn.execute("pragma foreign_keys = on")
+        return conn
 
 
 def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
     columns = {str(row[1]) for row in conn.execute(f"pragma table_info({table})").fetchall()}
     if column not in columns:
         conn.execute(ddl)
+
+
+def _web_user_row(row) -> Optional[dict]:
+    if row is None:
+        return None
+    return {
+        "id": int(row[0]),
+        "username": str(row[1]),
+        "display_name": str(row[2]),
+        "password_hash": str(row[3]),
+        "created_at": str(row[4]),
+    }
 
 
 def _solved_ratings_for_user(conn: sqlite3.Connection, group_id: int, user_id: int) -> Tuple[int, ...]:

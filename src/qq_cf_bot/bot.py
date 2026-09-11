@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import queue
-import hashlib
 import html
 import re
 import threading
@@ -12,24 +11,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Set, Tuple
 
-from .cf_statement import CodeforcesStatementClient
-from .codeforces import CodeforcesClient
 from .config import Config
-from .judge import SolutionJudge
-from .luogu import LuoguClient
+from .core import ChallengeActor, ChallengeService
 from .message import extract_plain_text, looks_like_code_submission, parse_code_submission, parse_command
 from .models import ActiveProblem, CFProblem, CodeSubmission, GroupMessage, PreparedProblem, ProblemStatement, RatingRange, RemoteJudgeResult
 from .onebot import OneBotClient
 from .rank_renderer import RanklistRenderer
-from .rating import accepted_rating_update, leaderboard_rating
 from .renderer import StatementRenderer
-from .selector import ProblemSelector
 from .security import redact_sensitive_text
-from .solution_bank import SolutionBank
-from .solution_generator import LLMSolutionGenerator
-from .storage import SentProblemStore
-from .submitter import CodeforcesRemoteJudge
-from .translator import OpenAIStatementTranslator
 
 
 LOGGER = logging.getLogger(__name__)
@@ -69,15 +58,18 @@ class _QueuedCodeSubmission:
 class CodeforcesPushBot:
     def __init__(self, config: Config) -> None:
         self.config = config
-        self.cf = CodeforcesClient(config.cache_path, config.cf_cache_ttl_seconds, base_urls=config.cf_base_urls)
-        self.luogu = LuoguClient()
-        self.cf_statement = CodeforcesStatementClient(config.cf_base_urls)
-        self.store = SentProblemStore(config.db_path, config.dedup_scope)
-        self.selector = ProblemSelector(
-            config.min_rating,
-            config.max_rating,
-            recent_pool_size=config.recent_selection_pool_size,
-        )
+        self.challenge_service = ChallengeService(config)
+        # These aliases preserve the existing adapter surface while the shared
+        # service owns all domain dependencies.
+        self.cf = self.challenge_service.cf
+        self.luogu = self.challenge_service.luogu
+        self.cf_statement = self.challenge_service.cf_statement
+        self.store = self.challenge_service.store
+        self.selector = self.challenge_service.selector
+        self.judge = self.challenge_service.judge
+        self.remote_judge = self.challenge_service.remote_judge
+        self.solution_bank = self.challenge_service.solution_bank
+        self.translator = self.challenge_service.translator
         self.renderer = StatementRenderer(
             config.asset_dir,
             width=config.render_width,
@@ -85,65 +77,11 @@ class CodeforcesPushBot:
             max_slice_height=config.render_max_slice_height,
         )
         self.rank_renderer = RanklistRenderer(config.asset_dir, width=config.render_width)
-        self.judge = SolutionJudge(
-            api_url=config.judge_api_url,
-            api_key=config.judge_api_key,
-            model=config.judge_model,
-            wire_api=config.judge_wire_api,
-            timeout_seconds=config.judge_timeout_seconds,
-            max_statement_chars=config.judge_statement_max_chars,
-            max_solution_context_chars=config.judge_solution_context_max_chars,
-            enabled=config.judge_enabled,
-            providers=config.judge_providers,
-        )
         self.onebot = OneBotClient(
             config.onebot_http_url,
             config.onebot_access_token,
             config.onebot_image_mode,
             config.onebot_self_id,
-        )
-        self.remote_judge = CodeforcesRemoteJudge(
-            username=config.cf_username,
-            password=config.cf_password,
-            handle=config.cf_handle,
-            forced_language_id=config.cf_submit_language_id,
-            http_timeout_seconds=config.cf_submit_http_timeout_seconds,
-            poll_interval_seconds=config.cf_submit_poll_interval_seconds,
-            poll_timeout_seconds=config.cf_submit_poll_timeout_seconds,
-            base_urls=config.cf_base_urls,
-        )
-        self.solution_generator = LLMSolutionGenerator(
-            api_url=config.judge_api_url,
-            api_key=config.judge_api_key,
-            model=config.judge_model,
-            wire_api=config.judge_wire_api,
-            timeout_seconds=config.judge_timeout_seconds,
-            enabled=config.solution_bank_generate_llm and config.judge_enabled,
-            max_statement_chars=config.judge_statement_max_chars,
-            providers=config.judge_providers,
-        )
-        self.solution_bank = SolutionBank(
-            store=self.store,
-            luogu=self.luogu,
-            remote_judge=self.remote_judge,
-            solution_generator=self.solution_generator,
-            enabled=config.solution_bank_enabled,
-            min_refs=config.solution_bank_min_refs,
-            max_refs=config.solution_bank_max_refs,
-            max_ref_chars=config.solution_bank_max_ref_chars,
-            fetch_luogu=config.solution_bank_fetch_luogu,
-            fetch_cf_editorial=config.solution_bank_fetch_cf_editorial,
-            fetch_cf_ac_code=config.solution_bank_fetch_cf_ac_code,
-        )
-        self.translator = OpenAIStatementTranslator(
-            api_url=config.translate_api_url,
-            api_key=config.translate_api_key,
-            model=config.translate_model,
-            wire_api=config.translate_wire_api,
-            timeout_seconds=config.translate_timeout_seconds,
-            max_chars=config.translate_max_chars,
-            enabled=config.translate_enabled,
-            providers=config.translate_providers,
         )
         self._code_queue: "queue.Queue[_QueuedCodeSubmission]" = queue.Queue()
         self._code_worker_started = False
@@ -275,6 +213,22 @@ class CodeforcesPushBot:
         except Exception:
             LOGGER.exception("failed to send group text group=%s", group_id)
 
+    def _challenge_core(self) -> ChallengeService:
+        service = getattr(self, "challenge_service", None)
+        if service is not None:
+            return service
+        # A few adapter-level tests construct the bot without its network
+        # dependencies. Build the same service facade from their fakes.
+        service = ChallengeService.__new__(ChallengeService)
+        service.config = self.config
+        service.store = self.store
+        service.judge = self.judge
+        service.solution_bank = self.solution_bank
+        service.remote_judge = getattr(self, "remote_judge", None)
+        service._submit_lock = threading.Lock()
+        self.challenge_service = service
+        return service
+
     def handle_new(self, event: GroupMessage, arg: str = "") -> None:
         if self.store.get_active_problem(event.group_id) is not None:
             self.onebot.send_group_text(event.group_id, f"@{event.sender_name} 上一道题还没做完哦~")
@@ -360,79 +314,28 @@ class CodeforcesPushBot:
             len(submission),
         )
 
-        solution_references = self.solution_bank.ensure(active.problem, active.statement)
-        LOGGER.info(
-            "oral submit references ready group=%s cf_id=%s refs=%s elapsed=%.2fs",
-            event.group_id,
-            active.problem.cf_id,
-            len(solution_references),
-            time.monotonic() - started_at,
-        )
-        solution_context = self.solution_bank.context_for_prompt(
-            solution_references,
-            self.config.judge_solution_context_max_chars,
-        )
-        history = self.store.list_submission_history(event.group_id, active.problem.cf_id)
-        result = self.judge.judge(
-            active.problem,
-            active.statement,
+        outcome = self._challenge_core().submit_solution(
+            ChallengeActor(
+                scope_id=event.group_id,
+                leaderboard_id=event.group_id,
+                user_id=event.user_id,
+                display_name=event.sender_name,
+            ),
             submission,
-            solution_references=solution_references,
-            solution_context=solution_context,
-            submission_history=history,
         )
         LOGGER.info(
-            "oral submit first judge done group=%s cf_id=%s accepted=%s elapsed=%.2fs",
+            "oral submit judged group=%s cf_id=%s accepted=%s elapsed=%.2fs",
             event.group_id,
             active.problem.cf_id,
-            result.accepted,
-            time.monotonic() - started_at,
-        )
-        if result.accepted and solution_references:
-            try:
-                result = self.judge.second_judge(
-                    active.problem,
-                    active.statement,
-                    submission,
-                    first_result=result,
-                    solution_references=solution_references,
-                    solution_context=solution_context,
-                    submission_history=history,
-                )
-                LOGGER.info(
-                    "oral submit second judge done group=%s cf_id=%s accepted=%s elapsed=%.2fs",
-                    event.group_id,
-                    active.problem.cf_id,
-                    result.accepted,
-                    time.monotonic() - started_at,
-                )
-            except Exception as exc:
-                LOGGER.warning("second judge failed for %s, keeping first result: %s", active.problem.cf_id, exc)
-        self.store.record_submission(
-            event.group_id,
-            event.user_id,
-            event.sender_name,
-            active.problem,
-            submission,
-            result.accepted,
-            result.reason,
-            ranked=active.ranked,
-        )
-        LOGGER.info(
-            "oral submit recorded group=%s user=%s cf_id=%s accepted=%s elapsed=%.2fs",
-            event.group_id,
-            event.user_id,
-            active.problem.cf_id,
-            result.accepted,
+            outcome.accepted,
             time.monotonic() - started_at,
         )
 
-        if not result.accepted:
-            self.onebot.send_group_text(event.group_id, f"@{event.sender_name} {result.reason}")
+        if not outcome.accepted:
+            self.onebot.send_group_text(event.group_id, f"@{event.sender_name} {outcome.reason}")
             return
 
         if not active.ranked:
-            self.store.clear_active_problem(event.group_id)
             self.onebot.send_group_text(
                 event.group_id,
                 (
@@ -442,32 +345,16 @@ class CodeforcesPushBot:
             )
             return
 
-        old_stat = self.store.get_user_stat(
-            event.group_id,
-            event.user_id,
-            event.sender_name,
-            self.config.initial_rating,
-        )
-        new_rating = accepted_rating_update(
-            old_stat.rating,
-            active.problem.rating,
-            self.config.rating_k_factor,
-        )
-        new_stat = self.store.mark_solved(
-            event.group_id,
-            event.user_id,
-            event.sender_name,
-            new_rating,
-            self.config.initial_rating,
-        )
-        self.store.clear_active_problem(event.group_id)
+        new_stat = outcome.stat
+        if new_stat is None:
+            raise RuntimeError("accepted ranked submission was not settled")
         self.onebot.send_group_text(
             event.group_id,
             (
                 f"恭喜@{event.sender_name} 拿下本题 first blood! "
                 f"本题信息：\n{self._problem_summary(active.problem, active.statement)}\n"
                 f"通过数：{new_stat.solved_count}，榜单 Rating："
-                f"{leaderboard_rating(new_stat.solved_ratings, new_stat.rating):.2f}"
+                f"{outcome.leaderboard_rating:.2f}"
             ),
         )
 
@@ -537,59 +424,29 @@ class CodeforcesPushBot:
         return PushResult(problem=prepared.problem, image_count=len(prepared.images))
 
     def _prepare_problem_bundle(self, group_id: int, rating_range: RatingRange) -> PreparedProblem:
-        sent_ids = self.store.sent_ids(group_id)
-        problems = self.cf.fetch_problems()
-        attempted = 0
-        last_error: Optional[Exception] = None
-
-        for problem in self.selector.shuffled_candidates(
-            problems,
-            sent_ids,
-            rating_range.min_rating,
-            rating_range.max_rating,
-        ):
-            if attempted >= self.config.max_selection_attempts:
-                break
-            attempted += 1
-            try:
-                statement = self._fetch_renderable_statement(problem)
-                images = self.renderer.render(problem, statement, reveal_metadata=False)
-            except Exception as exc:
-                last_error = exc
-                LOGGER.warning("skip %s because statement rendering failed: %s", problem.cf_id, exc)
-                continue
-
-            return PreparedProblem(
-                problem=problem,
-                statement=statement,
-                images=images,
-                rating_range=rating_range,
-                created_at=datetime.now(timezone.utc).isoformat(),
-            )
-
-        if last_error is not None:
-            raise RuntimeError(f"no renderable unsent problem found after {attempted} attempts") from last_error
-        raise RuntimeError(
-            f"no unsent Codeforces problem remains in rating range {rating_range.min_rating}-{rating_range.max_rating}"
+        return self.challenge_service.prepare_problem(
+            group_id,
+            rating_range,
+            asset_builder=lambda problem, statement: self.renderer.render(
+                problem,
+                statement,
+                reveal_metadata=False,
+            ),
         )
 
     def _prepare_specific_problem(self, problem: CFProblem) -> PreparedProblem:
-        statement = self._fetch_renderable_statement(problem)
-        images = self.renderer.render(problem, statement, reveal_metadata=False)
-        rating = problem.rating if problem.rating > 0 else 0
-        return PreparedProblem(
-            problem=problem,
-            statement=statement,
-            images=images,
-            rating_range=RatingRange(rating, rating),
-            created_at=datetime.now(timezone.utc).isoformat(),
+        return self.challenge_service.prepare_specific_problem(
+            problem,
+            asset_builder=lambda selected, statement: self.renderer.render(
+                selected,
+                statement,
+                reveal_metadata=False,
+            ),
         )
 
     def _publish_prepared_problem(self, group_id: int, prepared: PreparedProblem, intro_text: str, ranked: bool) -> None:
         self._send_statement_images(group_id, prepared.images, intro_text=intro_text)
-        if ranked:
-            self.store.mark_sent(group_id, prepared.problem)
-        self.store.set_active_problem(group_id, prepared.problem, prepared.statement, prepared.images, ranked=ranked)
+        self.challenge_service.activate_problem(group_id, prepared, ranked=ranked)
 
     def _claim_prefetched_problem(self, group_id: int, rating_range: RatingRange) -> Optional[PreparedProblem]:
         if not self.config.prefetch_enabled:
@@ -634,68 +491,13 @@ class CodeforcesPushBot:
                 self._prefetch_inflight.discard(key)
 
     def _fetch_renderable_statement(self, problem: CFProblem) -> ProblemStatement:
-        cached = self.store.get_cached_statement(problem.cf_id, require_translated=self.translator.configured)
-        if cached is not None:
-            if self.translator.configured and _needs_statement_translation(cached):
-                try:
-                    return self._translate_and_cache_if_needed(problem, cached, source="cached")
-                except Exception as exc:
-                    LOGGER.warning("cached statement translation failed for %s: %s", problem.cf_id, exc)
-                    raise
-            if self.translator.configured and _needs_statement_translation(cached):
-                raise RuntimeError(f"cached statement for {problem.cf_id} is still untranslated")
-            return cached
-        cached_untranslated = self.store.get_cached_statement(problem.cf_id) if self.translator.configured else None
-
-        try:
-            statement = self.luogu.fetch_statement(problem)
-            return self._translate_and_cache_if_needed(problem, statement, source="luogu")
-        except Exception as luogu_error:
-            if self.config.fallback_statement_source != "codeforces":
-                raise
-            LOGGER.warning("Luogu statement failed for %s, falling back to Codeforces: %s", problem.cf_id, luogu_error)
-
-        statement = cached_untranslated or self.cf_statement.fetch_statement(problem)
-        return self._translate_and_cache_if_needed(problem, statement, source="codeforces")
+        return self.challenge_service.fetch_statement(problem)
 
     def _find_problem_by_id(self, contest_id: int, index: str) -> CFProblem:
-        normalized_index = index.upper()
-        try:
-            for problem in self.cf.fetch_problems():
-                if problem.contest_id == contest_id and problem.index.upper() == normalized_index:
-                    return problem
-        except Exception as exc:
-            LOGGER.warning("failed to load Codeforces problemset while sharing %s%s: %s", contest_id, index, exc)
-        return CFProblem(contest_id=contest_id, index=normalized_index, name=f"{contest_id}{normalized_index}", rating=0)
+        return self.challenge_service.find_problem(contest_id, index)
 
     def _translate_and_cache_if_needed(self, problem: CFProblem, statement: ProblemStatement, source: str) -> ProblemStatement:
-        from dataclasses import replace
-
-        if not self.translator.configured:
-            self.store.cache_statement(problem, statement, source=source, translated=not _needs_statement_translation(statement))
-            return statement
-
-        try:
-            if _needs_body_translation(statement):
-                translated = self.translator.translate_statement(statement)
-                translated_ok = not _needs_statement_translation(translated)
-                self.store.cache_statement(problem, translated, source=f"{source}_llm_translate", translated=translated_ok)
-                if not translated_ok:
-                    raise RuntimeError(f"translated statement for {problem.cf_id} still contains untranslated English")
-                return translated
-            if _needs_title_translation(statement.title):
-                translated = replace(statement, title=self.translator.translate_title(statement.title or problem.name))
-                translated_ok = not _needs_statement_translation(translated)
-                self.store.cache_statement(problem, translated, source=f"{source}_llm_title_translate", translated=translated_ok)
-                return translated
-        except Exception as exc:
-            LOGGER.warning("statement translation failed for %s from %s: %s", problem.cf_id, source, exc)
-            if _needs_body_translation(statement):
-                self.store.cache_statement(problem, statement, source=source, translated=False)
-                raise
-
-        self.store.cache_statement(problem, statement, source=source, translated=not _needs_statement_translation(statement))
-        return statement
+        return self.challenge_service._translate_and_cache_if_needed(problem, statement, source)
 
     def _refresh_active_statement_if_needed(self, group_id: int, active: ActiveProblem) -> ActiveProblem:
         if not (self.translator.configured and _needs_statement_translation(active.statement)):
@@ -805,20 +607,19 @@ class CodeforcesPushBot:
             job.ranked,
             len(job.submission.source),
         )
-        active = self.store.get_active_problem(job.group_id)
-        if active is None or active.problem.cf_id != job.problem.cf_id:
-            LOGGER.info(
-                "remote code submit cancelled because active problem changed group=%s user=%s cf_id=%s",
-                job.group_id,
-                job.user_id,
-                job.problem.cf_id,
-            )
-            self.onebot.send_group_text(job.group_id, f"@{job.sender_name} 当前题目已变化，本次提交取消。")
-            return
-
-        self._wait_for_submit_interval(job.group_id)
-        self.store.set_meta_float("cf_last_submit_at", time.time())
-        result = self.remote_judge.judge(job.problem, job.submission)
+        outcome = self.challenge_service.submit_code(
+            ChallengeActor(
+                scope_id=job.group_id,
+                leaderboard_id=job.group_id,
+                user_id=job.user_id,
+                display_name=job.sender_name,
+            ),
+            job.submission,
+            expected_cf_id=job.problem.cf_id,
+        )
+        result = outcome.remote_result
+        if result is None:
+            raise RuntimeError("remote judge returned no result")
         LOGGER.info(
             "remote code submit worker result group=%s user=%s cf_id=%s verdict=%s accepted=%s submission_id=%s",
             job.group_id,
@@ -828,87 +629,40 @@ class CodeforcesPushBot:
             result.accepted,
             result.submission_id,
         )
-        self._record_remote_result(job, result)
-        if result.accepted:
-            self._settle_accepted_code(job, result)
+        if not outcome.accepted:
+            self.onebot.send_group_text(job.group_id, self._remote_result_text(job.sender_name, result))
             return
-        self.onebot.send_group_text(job.group_id, self._remote_result_text(job.sender_name, result))
 
-    def _wait_for_submit_interval(self, group_id: int) -> None:
-        interval = max(0, self.config.cf_submit_min_interval_seconds)
-        if interval <= 0:
-            return
-        last_submit_at = self.store.get_meta_float("cf_last_submit_at", 0.0)
-        wait_seconds = int(max(0.0, last_submit_at + interval - time.time()))
-        if wait_seconds <= 0:
-            return
-        LOGGER.info("delaying Codeforces submit for %s seconds", wait_seconds)
-        time.sleep(wait_seconds)
-
-    def _record_remote_result(self, job: _QueuedCodeSubmission, result: RemoteJudgeResult) -> None:
-        source_hash = hashlib.sha256(job.submission.source.encode("utf-8")).hexdigest()
-        self.store.record_code_submission(
-            job.group_id,
-            job.user_id,
-            job.sender_name,
-            job.problem,
-            job.submission.language,
-            source_hash,
-            len(job.submission.source),
-            result,
-            ranked=job.ranked,
-        )
-
-    def _settle_accepted_code(self, job: _QueuedCodeSubmission, result: RemoteJudgeResult) -> None:
-        active = self.store.get_active_problem(job.group_id)
-        if active is None or active.problem.cf_id != job.problem.cf_id:
+        if not outcome.settled:
             self.onebot.send_group_text(
                 job.group_id,
-                self._remote_result_text(job.sender_name, result) + "\n题目已变化，不结算榜单。",
+                self._remote_result_text(job.sender_name, result, reveal_details=True)
+                + "\n题目已变化，不结算榜单。",
             )
             return
 
-        if not active.ranked:
-            self.store.clear_active_problem(job.group_id)
+        if not outcome.active.ranked:
             self.onebot.send_group_text(
                 job.group_id,
                 (
                     self._remote_result_text(job.sender_name, result, reveal_details=True)
                     + "\n"
                     + f"恭喜@{job.sender_name} 通过这道分享题！本题不计入榜单。\n"
-                    + f"本题信息：\n{self._problem_summary(job.problem, active.statement)}"
+                    + f"本题信息：\n{self._problem_summary(job.problem, outcome.active.statement)}"
                 ),
             )
             return
 
-        old_stat = self.store.get_user_stat(
-            job.group_id,
-            job.user_id,
-            job.sender_name,
-            self.config.initial_rating,
-        )
-        new_rating = accepted_rating_update(
-            old_stat.rating,
-            job.problem.rating,
-            self.config.rating_k_factor,
-        )
-        new_stat = self.store.mark_solved(
-            job.group_id,
-            job.user_id,
-            job.sender_name,
-            new_rating,
-            self.config.initial_rating,
-        )
-        self.store.clear_active_problem(job.group_id)
+        if outcome.stat is None or outcome.leaderboard_rating is None:
+            raise RuntimeError("accepted ranked code submission was not settled")
         self.onebot.send_group_text(
             job.group_id,
             (
                 self._remote_result_text(job.sender_name, result, reveal_details=True)
                 + "\n"
                 + f"恭喜@{job.sender_name} 拿下本题 first blood! "
-                + f"本题信息：\n{self._problem_summary(job.problem, active.statement)}\n"
-                + f"通过数：{new_stat.solved_count}，榜单 Rating："
-                + f"{leaderboard_rating(new_stat.solved_ratings, new_stat.rating):.2f}"
+                + f"本题信息：\n{self._problem_summary(job.problem, outcome.active.statement)}\n"
+                + f"通过数：{outcome.stat.solved_count}，榜单 Rating：{outcome.leaderboard_rating:.2f}"
             ),
         )
 

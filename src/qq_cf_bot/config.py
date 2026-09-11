@@ -111,6 +111,11 @@ def _llm_providers_env(
 class Config:
     host: str
     port: int
+    web_enabled: bool
+    web_registration_enabled: bool
+    web_cookie_secure: bool
+    web_session_hours: int
+    web_max_body_bytes: int
     onebot_http_url: str
     onebot_access_token: str
     onebot_event_access_token: str
@@ -171,7 +176,6 @@ class Config:
     cf_submit_poll_timeout_seconds: int
     cf_submit_http_timeout_seconds: int
     cf_auto_submit_direct_code: bool
-
     @classmethod
     def from_env(cls) -> "Config":
         root = Path(os.getenv("BOT_DATA_DIR", "data"))
@@ -204,6 +208,11 @@ class Config:
         return cls(
             host=os.getenv("BOT_HOST", "127.0.0.1"),
             port=_int_env("BOT_PORT", 8088),
+            web_enabled=_bool_env("WEB_ENABLED", True),
+            web_registration_enabled=_bool_env("WEB_REGISTRATION_ENABLED", True),
+            web_cookie_secure=_bool_env("WEB_COOKIE_SECURE", False),
+            web_session_hours=_int_env("WEB_SESSION_HOURS", 30 * 24),
+            web_max_body_bytes=_int_env("WEB_MAX_BODY_BYTES", 256_000),
             onebot_http_url=os.getenv("ONEBOT_HTTP_URL", "http://127.0.0.1:3000").rstrip("/"),
             onebot_access_token=os.getenv("ONEBOT_ACCESS_TOKEN", ""),
             onebot_event_access_token=os.getenv("ONEBOT_EVENT_ACCESS_TOKEN", ""),
