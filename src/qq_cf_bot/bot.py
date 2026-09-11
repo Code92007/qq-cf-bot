@@ -363,14 +363,14 @@ class CodeforcesPushBot:
         if active is None:
             self.onebot.send_group_text(event.group_id, "当前没有题目，用 /new 刷一道。")
             return
-        if not self.remote_judge.configured:
-            self.onebot.send_group_text(event.group_id, "远端代码判题账号未配置完整，请检查当前提交载具的账号或 Cookie。")
-            return
         if not self.config.code_submit_enabled:
             self.onebot.send_group_text(
                 event.group_id,
-                "远端代码提交被 CODE_SUBMIT_ENABLED=false 关闭，改成 true 或 auto 后可用。",
+                "代码判定被 CODE_SUBMIT_ENABLED=false 关闭，改成 true 或 auto 后可用。",
             )
+            return
+        if not self.challenge_service.code_judge_available:
+            self.onebot.send_group_text(event.group_id, self.challenge_service.code_judge_availability["message"])
             return
 
         parsed = parse_code_submission(raw_submission, default_language=self.config.cf_submit_default_language)
@@ -395,7 +395,7 @@ class CodeforcesPushBot:
             self.onebot.send_group_text(
                 event.group_id,
                 (
-                    f"@{event.sender_name} CF 远端提交队列较忙。"
+                    f"@{event.sender_name} 代码判定队列较忙。"
                     f"语言 {parsed.language}，当前队列约 {position} 个。"
                 ),
             )
@@ -667,7 +667,7 @@ class CodeforcesPushBot:
         )
 
     def _remote_result_text(self, sender_name: str, result: RemoteJudgeResult, reveal_details: bool = False) -> str:
-        parts = [f"@{sender_name} CF verdict：{result.message}"]
+        parts = [f"@{sender_name} 代码判定：{result.message}"]
         if reveal_details and result.submission_id:
             parts.append(f"提交 ID：{result.submission_id}")
         if result.time_ms is not None:

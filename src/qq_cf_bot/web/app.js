@@ -140,7 +140,7 @@ async function submitOral(event) {
 
 async function submitCode(event) {
   event.preventDefault();
-  setBusy(true, "正在等待 Codeforces 判题");
+  setBusy(true, "正在进行代码判定");
   try {
     const result = await api("/api/challenges/code", {
       method: "POST", body: { language: el("codeLanguage").value, source: el("sourceCode").value }
@@ -153,7 +153,7 @@ async function submitCode(event) {
     showResult({
       accepted: false,
       label: "SUBMISSION FAILED",
-      title: "代码未送达 Codeforces",
+      title: "代码判定未完成",
       message: error.message
     });
   }
@@ -187,7 +187,7 @@ function renderCapabilities(capabilities) {
   el("oralAvailability").textContent = oralReady ? "AI 判定服务在线" : "AI 判定服务未配置";
   el("oralAvailability").classList.toggle("unavailable", !oralReady);
   el("oralForm").querySelector("button[type=submit]").disabled = !oralReady;
-  el("codeAvailability").textContent = codeStatus?.message || (codeReady ? "远端提交账号已配置" : "远端代码判题未配置");
+  el("codeAvailability").textContent = codeStatus?.message || (codeReady ? "代码判定服务已配置" : "代码判定服务未配置");
   el("codeAvailability").classList.toggle("unavailable", !codeReady || codeStatus?.state === "degraded");
   el("codeForm").querySelector("button[type=submit]").disabled = !codeReady;
 }

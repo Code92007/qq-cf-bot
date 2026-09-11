@@ -20,6 +20,17 @@ class ConfigTest(unittest.TestCase):
 
         self.assertFalse(config.cf_submit_enabled)
 
+    def test_code_submit_auto_enables_with_llm_fallback_only(self):
+        with patch.dict(
+            os.environ,
+            {"JUDGE_API_KEY": "key", "JUDGE_MODEL": "model"},
+            clear=True,
+        ):
+            config = Config.from_env()
+
+        self.assertTrue(config.code_submit_enabled)
+        self.assertTrue(config.code_submit_llm_fallback)
+
     def test_cf_submit_false_forces_disabled_even_with_account(self):
         with patch.dict(
             os.environ,
@@ -97,6 +108,8 @@ class ConfigTest(unittest.TestCase):
         self.assertTrue(config.web_enabled)
         self.assertTrue(config.web_registration_enabled)
         self.assertFalse(config.web_cookie_secure)
+        self.assertTrue(config.code_submit_llm_fallback)
+        self.assertEqual(config.judge_code_max_chars, 100_000)
 
     def test_onebot_event_token_is_optional(self):
         with patch.dict(os.environ, {"ONEBOT_EVENT_ACCESS_TOKEN": "event-secret"}, clear=True):

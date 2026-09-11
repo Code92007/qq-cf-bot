@@ -89,6 +89,7 @@ class ChallengeService:
             timeout_seconds=config.judge_timeout_seconds,
             max_statement_chars=config.judge_statement_max_chars,
             max_solution_context_chars=config.judge_solution_context_max_chars,
+            max_code_chars=config.judge_code_max_chars,
             enabled=config.judge_enabled,
             providers=config.judge_providers,
         )
@@ -158,6 +159,33 @@ class ChallengeService:
             providers=config.translate_providers,
         )
         self._submit_lock = threading.Lock()
+
+    @property
+    def code_llm_fallback_configured(self) -> bool:
+        return bool(self.config.code_submit_llm_fallback and self.judge.configured)
+
+    @property
+    def code_judge_available(self) -> bool:
+        return bool(
+            self.config.code_submit_enabled
+            and (self.remote_judge.configured or self.code_llm_fallback_configured)
+        )
+
+    @property
+    def code_judge_availability(self) -> dict:
+        if not self.config.code_submit_enabled:
+            return {"state": "disabled", "message": "代码判定已被 CODE_SUBMIT_ENABLED 关闭"}
+        if self.remote_judge.configured:
+            status = dict(self.remote_judge.availability)
+            if self.code_llm_fallback_configured:
+                status["message"] = str(status.get("message") or "远端判题已配置") + "；异常时使用大模型静态审核兜底"
+            return status
+        if self.code_llm_fallback_configured:
+            return {
+                "state": "ready",
+                "message": "远端判题未配置；当前使用大模型静态审核（非官方运行结果）",
+            }
+        return dict(self.remote_judge.availability)
 
     def get_active_problem(self, scope_id: int) -> Optional[ActiveProblem]:
         return self.store.get_active_problem(scope_id)
@@ -336,22 +364,49 @@ class ChallengeService:
             raise ChallengeError("problem_changed", "当前题目已经变化，本次提交已取消。", 409)
         if not submission.source.strip():
             raise ChallengeError("empty_code", "请先粘贴代码。")
-        if not self.config.code_submit_enabled or not self.remote_judge.configured:
-            raise ChallengeError("code_judge_unavailable", "远端代码判题尚未配置。", 503)
+        if not self.config.code_submit_enabled:
+            raise ChallengeError("code_judge_unavailable", "代码判定服务已关闭。", 503)
 
-        with self._submit_lock:
-            active = self._require_same_active(actor.scope_id, active.problem.cf_id)
-            interval = max(0, self.config.cf_submit_min_interval_seconds)
-            last_submit_at = self.store.get_meta_float("cf_last_submit_at", 0.0)
-            wait_seconds = max(0.0, last_submit_at + interval - time.time())
-            if wait_seconds:
-                time.sleep(wait_seconds)
-            active = self._require_same_active(actor.scope_id, active.problem.cf_id)
+        fallback_configured = self.code_llm_fallback_configured
+        if not self.remote_judge.configured and not fallback_configured:
+            raise ChallengeError("code_judge_unavailable", "远端代码判题和大模型兜底均未配置。", 503)
+
+        result: Optional[RemoteJudgeResult] = None
+        remote_error: Optional[RemoteSubmissionError] = None
+        if self.remote_judge.configured:
+            with self._submit_lock:
+                active = self._require_same_active(actor.scope_id, active.problem.cf_id)
+                interval = max(0, self.config.cf_submit_min_interval_seconds)
+                last_submit_at = self.store.get_meta_float("cf_last_submit_at", 0.0)
+                wait_seconds = max(0.0, last_submit_at + interval - time.time())
+                if wait_seconds:
+                    time.sleep(wait_seconds)
+                active = self._require_same_active(actor.scope_id, active.problem.cf_id)
+                try:
+                    result = self.remote_judge.judge(active.problem, submission)
+                except RemoteSubmissionError as exc:
+                    remote_error = exc
+                remote_submit_at = self.remote_judge.last_submit_at
+                if remote_submit_at:
+                    self.store.set_meta_float("cf_last_submit_at", remote_submit_at)
+
+        needs_fallback = result is None or _remote_verdict_is_pending(result.verdict)
+        if needs_fallback and fallback_configured:
+            remote_context = str(remote_error) if remote_error is not None else (result.message if result else "远端载具未配置")
             try:
-                result = self.remote_judge.judge(active.problem, submission)
-            except RemoteSubmissionError as exc:
-                raise ChallengeError("code_submit_failed", str(exc), 502) from exc
-            self.store.set_meta_float("cf_last_submit_at", self.remote_judge.last_submit_at or time.time())
+                result = self._judge_code_with_llm(active, submission, remote_context, result)
+            except Exception as exc:
+                LOGGER.warning("LLM code fallback failed for %s: %s", active.problem.cf_id, exc)
+                if result is not None:
+                    result = replace(result, message=result.message + "；大模型兜底也暂时不可用。")
+                else:
+                    message = str(remote_error) if remote_error is not None else "远端代码判题不可用。"
+                    raise ChallengeError("code_submit_failed", message + "；大模型兜底也暂时不可用。", 502) from exc
+        elif remote_error is not None:
+            raise ChallengeError("code_submit_failed", str(remote_error), 502) from remote_error
+
+        if result is None:
+            raise ChallengeError("code_submit_failed", "代码判定未返回结果。", 502)
 
         self._ensure_problem_for_leaderboard(actor, active)
         source_hash = hashlib.sha256(submission.source.encode("utf-8")).hexdigest()
@@ -383,6 +438,47 @@ class ChallengeService:
                 settled=False,
             )
         return replace(self._settle_accepted(actor, active, result.message), remote_result=result)
+
+    def _judge_code_with_llm(
+        self,
+        active: ActiveProblem,
+        submission: CodeSubmission,
+        remote_context: str,
+        remote_result: Optional[RemoteJudgeResult],
+    ) -> RemoteJudgeResult:
+        references = self.solution_bank.ensure(active.problem, active.statement)
+        solution_context = self.solution_bank.context_for_prompt(
+            references,
+            self.config.judge_solution_context_max_chars,
+        )
+        decision = self.judge.judge_code(
+            active.problem,
+            active.statement,
+            submission,
+            solution_references=references,
+            solution_context=solution_context,
+        )
+        context = re.sub(r"\s+", " ", remote_context).strip()
+        if len(context) > 240:
+            context = context[:240].rstrip() + "..."
+        if decision.accepted:
+            message = "大模型静态审核通过（兜底判定，非 Codeforces/VJudge 运行结果）"
+            verdict = "LLM_ACCEPTED"
+        else:
+            message = f"大模型静态审核未通过（兜底判定，非官方运行结果）：{decision.reason}"
+            verdict = "LLM_REJECTED"
+        if context:
+            message += f"；远端状态：{context}"
+        return RemoteJudgeResult(
+            accepted=decision.accepted,
+            verdict=verdict,
+            message=message,
+            submission_id=remote_result.submission_id if remote_result else None,
+            passed_tests=remote_result.passed_tests if remote_result else None,
+            time_ms=remote_result.time_ms if remote_result else None,
+            memory_bytes=remote_result.memory_bytes if remote_result else None,
+            url=remote_result.url if remote_result else "",
+        )
 
     def get_user_stat(self, actor: ChallengeActor) -> UserStat:
         return self.store.get_user_stat(
@@ -501,6 +597,10 @@ class ChallengeService:
             stat=stat,
             leaderboard_rating=leaderboard_rating(stat.solved_ratings, stat.rating),
         )
+
+
+def _remote_verdict_is_pending(verdict: str) -> bool:
+    return verdict.strip().upper() in {"", "PENDING", "RUNNING", "SUBMITTED", "TESTING", "QUEUE", "QUEUING"}
 
 
 def _needs_title_translation(title: str) -> bool:

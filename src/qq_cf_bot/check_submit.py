@@ -11,6 +11,9 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     config = Config.from_env()
     service = ChallengeService(config)
+    if not service.remote_judge.configured and service.code_judge_available:
+        print("OK: 远端提交载具未配置，代码提交将使用大模型静态审核兜底")
+        return
     try:
         message = service.remote_judge.verify_login()
     except RemoteSubmissionError as exc:

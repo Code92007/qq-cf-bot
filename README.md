@@ -158,7 +158,8 @@ python -m qq_cf_bot
 | `GIVEUP_MIN_SECONDS` | `120` | 新题发布后至少等待多少秒才能 `/giveup` |
 | `FALLBACK_STATEMENT_SOURCE` | `codeforces` | 洛谷中文题面失败时，回退到 Codeforces 官方英文题面 |
 | `CODE_SUBMIT_PROVIDER` | `auto` | 远端代码判题载具：`vjudge`、`codeforces` 或 `auto`；`auto` 优先选已配置的 VJudge |
-| `CODE_SUBMIT_ENABLED` | `auto` | 是否开启 `/submitcode` 远端提交；`auto` 表示所选载具凭据齐全时自动开启 |
+| `CODE_SUBMIT_ENABLED` | `auto` | 是否开启 `/submitcode` 代码判定；`auto` 表示远端载具或模型兜底至少一项配置完整时自动开启 |
+| `CODE_SUBMIT_LLM_FALLBACK` | `true` | 远端未配置、提交失败或 verdict 轮询超时时，使用 `JUDGE_*` 模型静态审核源码 |
 | `VJUDGE_USERNAME` | 空 | VJudge 登录用户名；只放服务器 `.env` |
 | `VJUDGE_PASSWORD` | 空 | VJudge 登录密码；只放服务器 `.env`，不要提交到 GitHub |
 | `VJUDGE_COOKIE` | 空 | 可选，账号密码登录遇到 Turnstile 时，填写浏览器登录后的完整 `Cookie` 请求头 |
@@ -182,6 +183,7 @@ python -m qq_cf_bot
 | `JUDGE_PROVIDERS` | 空 | 可选 JSON provider 队列；为空时使用 `JUDGE_API_*` 单 provider |
 | `JUDGE_STATEMENT_MAX_CHARS` | `12000` | 单次判题传给模型的题面最大字符数 |
 | `JUDGE_SOLUTION_CONTEXT_MAX_CHARS` | `10000` | 单次判题传给模型的题解库上下文最大字符数 |
+| `JUDGE_CODE_MAX_CHARS` | `100000` | 代码兜底静态审核时传给模型的源码最大字符数 |
 | `TAILSCALE_REQUIRED` | `false` | `true` 时 `scripts/deploy.sh` 会强制检查 Tailscale 已启动并已登录 |
 | `TAILSCALE_AUTHKEY` | 空 | 可选，服务器自动 `tailscale up` 用的一次性 auth key；不要提交到 Git |
 | `TAILSCALE_HOSTNAME` | `qq-cf-bot` | 服务器加入 tailnet 时显示的设备名 |
@@ -226,12 +228,15 @@ python -m qq_cf_bot
 ```dotenv
 CODE_SUBMIT_PROVIDER=vjudge
 CODE_SUBMIT_ENABLED=true
+CODE_SUBMIT_LLM_FALLBACK=true
 VJUDGE_USERNAME=你的_VJudge_用户名
 VJUDGE_PASSWORD=你的_VJudge_密码
 VJUDGE_COOKIE=
 ```
 
 这里使用的是 VJudge 练习题提交接口和默认远端账号（`method=0`），题号仍为 `CodeForces-{contestId}{index}`。不需要在 VJudge 绑定 `toolist`，原来的 `CF_USERNAME`、`CF_PASSWORD` 可以保留，切换回 `CODE_SUBMIT_PROVIDER=codeforces` 时继续使用。
+
+开启 `CODE_SUBMIT_LLM_FALLBACK` 后，远端载具未配置、请求失败或最终结果一直处于 `PENDING` 时，会改用 `JUDGE_*` 模型静态审核源码。只要远端已经返回 WA、CE、TLE 等终态 verdict，就不会调用模型改判。兜底结果固定标记为 `LLM_ACCEPTED` 或 `LLM_REJECTED`；前者会按现有规则结算题目和 Rating，但它不是实际运行结果，不能等同于 Codeforces AC。若不希望模型结果影响榜单，请把该变量设为 `false`。
 
 修改服务器 `.env` 后执行：
 
@@ -278,6 +283,7 @@ int main() { return 0; }
 - 提交队列是全局单线程，默认至少间隔 180 秒。
 - 语言会按代码风格自动识别，主要支持 C++、C、Java、Python；识别不出时按 `CF_SUBMIT_DEFAULT_LANGUAGE`。
 - VJudge 或 Codeforces 可能触发验证码、二次验证或账号安全确认，此时远端提交会给出对应的登录/Cookie 提示。
+- 大模型兜底只做静态审核，可能漏掉隐藏边界或运行时问题；页面和 QQ 消息会明确显示其非官方性质。
 - 不要在正在进行的正式比赛中使用该机器人提交代码。
 
 Docker 部署后先运行一次无提交登录自检：
@@ -286,7 +292,7 @@ Docker 部署后先运行一次无提交登录自检：
 docker compose exec -T qq-cf-bot python -m qq_cf_bot.check_submit
 ```
 
-自检只验证当前所选载具的登录，不提交代码。VJudge 会话保存在 `data/vjudge-session/`；Codeforces 直提的 HTTP Cookie 与持久浏览器资料仍保存在 `data/codeforces-session/`。后续容器重建会复用这些会话。
+有远端载具时，自检只验证当前所选载具的登录，不提交代码；仅配置模型兜底时，自检会确认兜底配置完整。VJudge 会话保存在 `data/vjudge-session/`；Codeforces 直提的 HTTP Cookie 与持久浏览器资料仍保存在 `data/codeforces-session/`。后续容器重建会复用这些会话。
 
 ## `/new` 和 `/share`
 

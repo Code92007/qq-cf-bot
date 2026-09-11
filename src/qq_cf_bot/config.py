@@ -148,6 +148,7 @@ class Config:
     judge_timeout_seconds: int
     judge_statement_max_chars: int
     judge_solution_context_max_chars: int
+    judge_code_max_chars: int
     solution_bank_enabled: bool
     solution_bank_min_refs: int
     solution_bank_max_refs: int
@@ -167,6 +168,7 @@ class Config:
     translate_max_chars: int
     code_submit_provider: str
     cf_submit_enabled: bool
+    code_submit_llm_fallback: bool
     cf_username: str
     cf_password: str
     cf_handle: str
@@ -195,6 +197,8 @@ class Config:
         judge_model = os.getenv("JUDGE_MODEL", "")
         judge_wire_api = _wire_api_env("JUDGE_WIRE_API", infer_wire_api(judge_api_url))
         judge_providers = _llm_providers_env("JUDGE", judge_api_url, judge_api_key, judge_model, judge_wire_api)
+        judge_enabled = _bool_env("JUDGE_ENABLED", True)
+        code_submit_llm_fallback = _bool_env("CODE_SUBMIT_LLM_FALLBACK", True)
         dedup_scope = os.getenv("BOT_DEDUP_SCOPE", "group").strip().lower()
         if dedup_scope not in {"group", "global"}:
             raise ValueError("BOT_DEDUP_SCOPE must be either 'group' or 'global'")
@@ -227,12 +231,17 @@ class Config:
         if cf_submit_enabled is None:
             codeforces_configured = bool(cf_username and cf_password and cf_handle)
             vjudge_configured = bool(vjudge_cookie or (vjudge_username and vjudge_password))
+            llm_fallback_configured = bool(
+                code_submit_llm_fallback
+                and judge_enabled
+                and any(provider.api_url and provider.api_key and provider.model for provider in judge_providers)
+            )
             if code_submit_provider == "codeforces":
-                cf_submit_enabled = codeforces_configured
+                cf_submit_enabled = codeforces_configured or llm_fallback_configured
             elif code_submit_provider == "vjudge":
-                cf_submit_enabled = vjudge_configured
+                cf_submit_enabled = vjudge_configured or llm_fallback_configured
             else:
-                cf_submit_enabled = vjudge_configured or codeforces_configured
+                cf_submit_enabled = vjudge_configured or codeforces_configured or llm_fallback_configured
 
         return cls(
             host=os.getenv("BOT_HOST", "127.0.0.1"),
@@ -270,10 +279,11 @@ class Config:
             judge_model=judge_model,
             judge_wire_api=judge_wire_api,
             judge_providers=judge_providers,
-            judge_enabled=_bool_env("JUDGE_ENABLED", True),
+            judge_enabled=judge_enabled,
             judge_timeout_seconds=_int_env("JUDGE_TIMEOUT_SECONDS", 60),
             judge_statement_max_chars=_int_env("JUDGE_STATEMENT_MAX_CHARS", 12_000),
             judge_solution_context_max_chars=_int_env("JUDGE_SOLUTION_CONTEXT_MAX_CHARS", 10_000),
+            judge_code_max_chars=_int_env("JUDGE_CODE_MAX_CHARS", 100_000),
             solution_bank_enabled=_bool_env("SOLUTION_BANK_ENABLED", True),
             solution_bank_min_refs=_int_env("SOLUTION_BANK_MIN_REFS", 1),
             solution_bank_max_refs=_int_env("SOLUTION_BANK_MAX_REFS", 4),
@@ -299,6 +309,7 @@ class Config:
             translate_max_chars=_int_env("TRANSLATE_MAX_CHARS", 60_000),
             code_submit_provider=code_submit_provider,
             cf_submit_enabled=cf_submit_enabled,
+            code_submit_llm_fallback=code_submit_llm_fallback,
             cf_username=cf_username,
             cf_password=cf_password,
             cf_handle=cf_handle,

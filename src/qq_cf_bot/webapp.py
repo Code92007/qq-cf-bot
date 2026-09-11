@@ -204,6 +204,9 @@ class WebApplication:
             payload["solvedCount"] = outcome.stat.solved_count
         if outcome.remote_result is not None:
             result = outcome.remote_result
+            if result.verdict.startswith("LLM_"):
+                payload["label"] = "LLM FALLBACK"
+                payload["title"] = "静态审核通过" if result.accepted else "静态审核未通过"
             payload["verdict"] = {
                 "code": result.verdict,
                 "message": result.message,
@@ -234,8 +237,8 @@ class WebApplication:
             "leaderboard": self._leaderboard(),
             "capabilities": {
                 "oralJudge": self.service.judge.configured,
-                "codeJudge": self.config.code_submit_enabled and self.service.remote_judge.configured,
-                "codeJudgeStatus": self.service.remote_judge.availability,
+                "codeJudge": self.service.code_judge_available,
+                "codeJudgeStatus": self.service.code_judge_availability,
                 "registration": self.config.web_registration_enabled,
             },
         }

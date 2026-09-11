@@ -1,7 +1,7 @@
 import unittest
 
 from qq_cf_bot.judge import SolutionJudge
-from qq_cf_bot.models import CFProblem, ProblemStatement, SolutionReference
+from qq_cf_bot.models import CFProblem, CodeSubmission, ProblemStatement, SolutionReference
 
 
 class JudgeSecurityTest(unittest.TestCase):
@@ -66,12 +66,60 @@ class JudgeSecurityTest(unittest.TestCase):
         self.assertNotIn("来源：", prompt)
         self.assertIn("可以用动态规划", prompt)
 
+    def test_code_judge_uses_source_without_exposing_problem_metadata(self):
+        judge = SolutionJudge(
+            api_url="http://llm.internal",
+            api_key="key",
+            model="model",
+            timeout_seconds=60,
+            max_statement_chars=1000,
+            max_solution_context_chars=1000,
+        )
+        client = RecordingClient('{"accepted": true, "reason": "通过"}')
+        judge.client = client
+
+        result = judge.judge_code(
+            problem=_problem(),
+            statement=_statement(),
+            submission=CodeSubmission("cpp", "int main() { return 0; }"),
+            solution_references=[
+                SolutionReference(
+                    cf_id="1A",
+                    source="codeforces_editorial",
+                    title="CF1A editorial",
+                    author="Codeforces",
+                    url="https://codeforces.com/blog/entry/1",
+                    content="内容：检查所有边界。",
+                    content_hash="hash",
+                )
+            ],
+            solution_context="链接：https://codeforces.com/blog/entry/1\n内容：检查所有边界。",
+        )
+
+        self.assertTrue(result.accepted)
+        self.assertEqual(result.reason, "通过")
+        self.assertIn("int main()", client.user_prompt)
+        self.assertNotIn("CF1A", client.user_prompt)
+        self.assertNotIn("codeforces.com", client.user_prompt)
+
 
 class FailingClient:
     configured = True
 
     def complete_json(self, system_prompt, user_prompt):
         raise AssertionError("model should not be called")
+
+
+class RecordingClient:
+    configured = True
+
+    def __init__(self, response):
+        self.response = response
+        self.user_prompt = ""
+
+    def complete_json(self, system_prompt, user_prompt):
+        self.user_prompt = user_prompt
+        return self.response
 
 
 def _problem():
