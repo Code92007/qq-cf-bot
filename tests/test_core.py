@@ -4,9 +4,10 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from qq_cf_bot.core import ChallengeActor, ChallengeService
-from qq_cf_bot.models import CFProblem, JudgeResult, ProblemStatement
+from qq_cf_bot.core import ChallengeActor, ChallengeError, ChallengeService
+from qq_cf_bot.models import CFProblem, CodeSubmission, JudgeResult, ProblemStatement
 from qq_cf_bot.storage import SentProblemStore
+from qq_cf_bot.submitter import CodeforcesSubmissionError
 
 
 class _AcceptingJudge:
@@ -22,6 +23,14 @@ class _EmptySolutionBank:
 
     def context_for_prompt(self, references, max_chars):
         return ""
+
+
+class _FailingRemoteJudge:
+    configured = True
+    last_submit_at = 0.0
+
+    def judge(self, *args, **kwargs):
+        raise CodeforcesSubmissionError("Codeforces 登录验证失败。")
 
 
 class ChallengeServiceTest(unittest.TestCase):
@@ -52,6 +61,27 @@ class ChallengeServiceTest(unittest.TestCase):
             self.assertEqual(outcome.stat.solved_count, 1)
             self.assertEqual(service.store.list_group_stats(-1)[0].display_name, "Alice")
             self.assertEqual(service.store.list_group_stats(-1)[0].solved_ratings, (1000,))
+
+    def test_failed_remote_submit_keeps_problem_and_does_not_start_cooldown(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            service = ChallengeService.__new__(ChallengeService)
+            service.config = SimpleNamespace(cf_submit_enabled=True, cf_submit_min_interval_seconds=180)
+            service.store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            service.remote_judge = _FailingRemoteJudge()
+            service._submit_lock = threading.Lock()
+
+            problem = CFProblem(1, "A", "Theatre Square", 1000)
+            statement = ProblemStatement("CF1A", "剧院广场", "题面", "输入", "输出", [])
+            service.store.set_active_problem(1, problem, statement, [], ranked=True)
+            actor = ChallengeActor(scope_id=1, leaderboard_id=1, user_id=1, display_name="Alice")
+
+            with self.assertRaises(ChallengeError) as caught:
+                service.submit_code(actor, CodeSubmission("cpp", "int main(){}"))
+
+            self.assertEqual(caught.exception.code, "code_submit_failed")
+            self.assertEqual(caught.exception.status, 502)
+            self.assertIsNotNone(service.store.get_active_problem(1))
+            self.assertEqual(service.store.get_meta_float("cf_last_submit_at", 0.0), 0.0)
 
 
 if __name__ == "__main__":

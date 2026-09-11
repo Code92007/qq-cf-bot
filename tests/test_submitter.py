@@ -1,12 +1,16 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from qq_cf_bot.models import CFProblem, CodeSubmission, RemoteJudgeResult
 from qq_cf_bot.submitter import (
     CodeforcesForbiddenError,
     CodeforcesRemoteJudge,
+    CodeforcesSubmissionError,
     _browser_headers,
     _choose_language_id,
     _diagnose_cf_block,
+    _find_new_matching_submission,
     _extract_program_source,
     _extract_submission_ids,
     _friendly_cf_error,
@@ -63,20 +67,20 @@ class SubmitterTest(unittest.TestCase):
         self.assertEqual(headers["Referer"], "https://codeforces.com/problemset/submit/1/A")
         self.assertEqual(headers["Content-Type"], "application/x-www-form-urlencoded")
 
-    def test_submit_retries_once_after_forbidden(self):
+    def test_submit_falls_back_to_browser_after_forbidden(self):
         judge = CodeforcesRemoteJudge("tourist", "secret", "tourist")
         problem = CFProblem(1, "A", "Theatre Square", 1000)
         submission = CodeSubmission(language="cpp", source="int main(){return 0;}")
         calls = []
         resets = []
+        browser_calls = []
 
         def fake_latest(_problem):
             return 0
 
         def fake_submit(_problem, _submission):
             calls.append(1)
-            if len(calls) == 1:
-                raise CodeforcesForbiddenError("403")
+            raise CodeforcesForbiddenError("403")
 
         def fake_poll(_problem, _before_id):
             return RemoteJudgeResult(True, "OK", "Accepted")
@@ -84,13 +88,15 @@ class SubmitterTest(unittest.TestCase):
         judge._latest_matching_submission_id = fake_latest
         judge._submit = fake_submit
         judge._reset_session = lambda: resets.append(1)
-        judge._poll_result = fake_poll
+        judge._submit_via_browser = lambda _problem, _submission: browser_calls.append(1)
+        judge._poll_result = lambda _problem, _before_id, submitted_after=0: fake_poll(_problem, _before_id)
 
         result = judge.judge(problem, submission)
 
         self.assertTrue(result.accepted)
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(calls), 1)
         self.assertEqual(len(resets), 1)
+        self.assertEqual(len(browser_calls), 1)
 
     def test_submit_uses_browser_fallback_after_repeated_forbidden(self):
         judge = CodeforcesRemoteJudge("tourist", "secret", "tourist")
@@ -109,13 +115,13 @@ class SubmitterTest(unittest.TestCase):
         judge._submit = fake_submit
         judge._reset_session = lambda: resets.append(1)
         judge._submit_via_browser = lambda _problem, _submission: browser_calls.append(1)
-        judge._poll_result = lambda _problem, _before_id: RemoteJudgeResult(True, "OK", "Accepted")
+        judge._poll_result = lambda _problem, _before_id, submitted_after=0: RemoteJudgeResult(True, "OK", "Accepted")
 
         result = judge.judge(problem, submission)
 
         self.assertTrue(result.accepted)
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(len(resets), 2)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(resets), 1)
         self.assertEqual(len(browser_calls), 1)
 
     def test_browser_fallback_failure_keeps_readable_reason(self):
@@ -128,8 +134,56 @@ class SubmitterTest(unittest.TestCase):
         judge._reset_session = lambda: None
         judge._submit_via_browser = lambda _problem, _submission: (_ for _ in ()).throw(RuntimeError("Captcha needed"))
 
-        with self.assertRaisesRegex(RuntimeError, "浏览器兜底提交也失败"):
+        with self.assertRaisesRegex(CodeforcesSubmissionError, "持久浏览器通道失败"):
             judge.judge(problem, submission)
+
+    def test_persistent_browser_session_is_preferred_after_restart(self):
+        with TemporaryDirectory() as tmp:
+            session_dir = Path(tmp)
+            judge = CodeforcesRemoteJudge("tourist", "secret", "tourist", session_dir=session_dir)
+            judge._set_browser_session_ready(True)
+            calls = []
+            judge._submit_via_browser = lambda _problem, _submission: calls.append("browser")
+            judge._submit = lambda _problem, _submission: calls.append("http")
+
+            judge._submit_with_retry(
+                CFProblem(1, "A", "Theatre Square", 1000),
+                CodeSubmission(language="cpp", source="int main(){}"),
+            )
+
+            self.assertEqual(calls, ["browser"])
+            self.assertIn("已缓存登录会话", judge.availability["message"])
+
+    def test_verify_login_falls_back_to_browser_and_marks_ready(self):
+        with TemporaryDirectory() as tmp:
+            judge = CodeforcesRemoteJudge("tourist", "secret", "tourist", session_dir=Path(tmp))
+            judge._ensure_logged_in = lambda: (_ for _ in ()).throw(CodeforcesForbiddenError("403"))
+            judge._reset_session = lambda: None
+            judge._verify_browser_login = lambda: judge._set_browser_session_ready(True)
+
+            message = judge.verify_login()
+
+            self.assertIn("已验证", message)
+            self.assertTrue(judge._has_browser_session())
+
+    def test_old_submission_is_not_matched_when_initial_probe_failed(self):
+        problem = CFProblem(1, "A", "Theatre Square", 1000)
+        submissions = [
+            {
+                "id": 100,
+                "creationTimeSeconds": 1000,
+                "problem": {"contestId": 1, "index": "A"},
+            },
+            {
+                "id": 101,
+                "creationTimeSeconds": 2000,
+                "problem": {"contestId": 1, "index": "A"},
+            },
+        ]
+
+        match = _find_new_matching_submission(submissions, problem, 0, submitted_after=1500)
+
+        self.assertEqual(match["id"], 101)
 
     def test_cf_block_diagnostics(self):
         self.assertIn("人机验证", _diagnose_cf_block("<html>captcha required</html>"))

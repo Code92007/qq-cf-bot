@@ -65,6 +65,7 @@ class WebApplicationTest(unittest.TestCase):
         self.assertEqual(register.status, 201)
         self.assertTrue(register.json()["state"]["authenticated"])
         self.assertEqual(register.json()["state"]["user"]["displayName"], "Alice")
+        self.assertEqual(register.json()["state"]["capabilities"]["codeJudgeStatus"]["state"], "disabled")
         cookie = register.header("Set-Cookie").split(";", 1)[0]
 
         state = _Handler(cookie=cookie)

@@ -11,7 +11,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from html.parser import HTMLParser
-from http.cookiejar import CookieJar
+from http.cookiejar import CookieJar, LoadError, MozillaCookieJar
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from .cf_mirrors import normalize_codeforces_base_urls
@@ -111,6 +112,10 @@ class CodeforcesForbiddenError(RuntimeError):
     """Codeforces rejected the request before normal form handling."""
 
 
+class CodeforcesSubmissionError(RuntimeError):
+    """All configured Codeforces submission transports failed."""
+
+
 class CodeforcesRemoteJudge:
     def __init__(
         self,
@@ -122,6 +127,7 @@ class CodeforcesRemoteJudge:
         poll_interval_seconds: int = 8,
         poll_timeout_seconds: int = 180,
         base_urls: Iterable[str] | str | None = None,
+        session_dir: Optional[Path] = None,
     ) -> None:
         self.username = username
         self.password = password
@@ -130,9 +136,16 @@ class CodeforcesRemoteJudge:
         self.http_timeout_seconds = http_timeout_seconds
         self.poll_interval_seconds = poll_interval_seconds
         self.poll_timeout_seconds = poll_timeout_seconds
-        self._cookie_jar = CookieJar()
+        self.session_dir = Path(session_dir) if session_dir is not None else None
+        self._cookie_path = self.session_dir / "http-cookies.txt" if self.session_dir is not None else None
+        self._browser_profile_dir = self.session_dir / "browser-profile" if self.session_dir is not None else None
+        self._browser_ready_path = self.session_dir / "browser-session-ready" if self.session_dir is not None else None
+        self._cookie_jar = self._new_cookie_jar(load=True)
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookie_jar))
         self._logged_in = False
+        self._last_error = ""
+        self._last_success_at = 0.0
+        self._last_submit_at = 0.0
         self.base_urls = normalize_codeforces_base_urls(base_urls)
         self._status = CodeforcesStatusClient(
             self.handle,
@@ -143,6 +156,55 @@ class CodeforcesRemoteJudge:
     @property
     def configured(self) -> bool:
         return bool(self.username and self.password and self.handle)
+
+    @property
+    def availability(self) -> dict:
+        if not self.configured:
+            return {"state": "disabled", "message": "Codeforces 提交账号未配置"}
+        if self._last_error:
+            return {"state": "degraded", "message": f"最近一次提交失败：{self._last_error}"}
+        if self._last_success_at:
+            return {"state": "ready", "message": f"Codeforces 账号 {self.handle} 已验证"}
+        if self._has_browser_session():
+            return {"state": "configured", "message": f"Codeforces 账号 {self.handle} 已缓存登录会话"}
+        return {"state": "configured", "message": f"Codeforces 账号 {self.handle} 已配置，提交时验证登录"}
+
+    @property
+    def last_submit_at(self) -> float:
+        return self._last_submit_at
+
+    def verify_login(self) -> str:
+        if not self.configured:
+            raise CodeforcesSubmissionError("Codeforces 提交账号未配置。")
+        try:
+            if self._has_browser_session():
+                self._verify_browser_login()
+            else:
+                try:
+                    self._ensure_logged_in()
+                except Exception as http_exc:
+                    LOGGER.warning(
+                        "Codeforces HTTP login verification failed, trying persistent browser: %s",
+                        _friendly_cf_error(str(http_exc)),
+                    )
+                    self._reset_session()
+                    try:
+                        self._verify_browser_login()
+                    except Exception as browser_exc:
+                        raise CodeforcesSubmissionError(
+                            "HTTP 登录验证失败："
+                            f"{_friendly_cf_error(str(http_exc))}；持久浏览器登录验证失败："
+                            f"{_friendly_cf_error(str(browser_exc))}"
+                        ) from browser_exc
+        except CodeforcesSubmissionError as exc:
+            self._last_error = _friendly_cf_error(str(exc))
+            raise
+        except Exception as exc:
+            self._last_error = _friendly_cf_error(str(exc))
+            raise CodeforcesSubmissionError(self._last_error) from exc
+        self._last_error = ""
+        self._last_success_at = time.time()
+        return str(self.availability["message"])
 
     def judge(self, problem: CFProblem, submission: CodeSubmission) -> RemoteJudgeResult:
         if not self.configured:
@@ -156,10 +218,26 @@ class CodeforcesRemoteJudge:
             submission.language,
             len(submission.source),
         )
-        before_id = self._latest_matching_submission_id(problem)
-        LOGGER.info("Codeforces latest matching submission before submit cf_id=%s before_id=%s", problem.cf_id, before_id)
-        self._submit_with_retry(problem, submission)
-        return self._poll_result(problem, before_id)
+        try:
+            before_id = self._latest_matching_submission_id(problem)
+            submitted_after = max(0, int(time.time()) - 5)
+            LOGGER.info(
+                "Codeforces latest matching submission before submit cf_id=%s before_id=%s",
+                problem.cf_id,
+                before_id,
+            )
+            self._submit_with_retry(problem, submission)
+            self._last_submit_at = time.time()
+            result = self._poll_result(problem, before_id, submitted_after=submitted_after)
+        except CodeforcesSubmissionError as exc:
+            self._last_error = _friendly_cf_error(str(exc))
+            raise
+        except Exception as exc:
+            self._last_error = _friendly_cf_error(str(exc))
+            raise CodeforcesSubmissionError(self._last_error) from exc
+        self._last_error = ""
+        self._last_success_at = time.time()
+        return result
 
     def fetch_accepted_code_references(
         self,
@@ -203,31 +281,47 @@ class CodeforcesRemoteJudge:
         return references
 
     def _submit_with_retry(self, problem: CFProblem, submission: CodeSubmission) -> None:
-        try:
-            self._submit(problem, submission)
-            return
-        except CodeforcesForbiddenError as exc:
-            LOGGER.warning("Codeforces HTTP submit got 403 for %s, resetting session and retrying: %s", problem.cf_id, exc)
-            self._reset_session()
+        if self._has_browser_session():
+            try:
+                self._submit_via_browser(problem, submission)
+                LOGGER.info("Codeforces persistent browser session submitted %s", problem.cf_id)
+                return
+            except Exception as browser_exc:
+                LOGGER.warning(
+                    "Codeforces persistent browser submit failed for %s, trying HTTP: %s",
+                    problem.cf_id,
+                    _friendly_cf_error(str(browser_exc)),
+                )
+                self._set_browser_session_ready(False)
+                self._reset_session()
+                try:
+                    self._submit(problem, submission)
+                    return
+                except Exception as http_exc:
+                    raise CodeforcesSubmissionError(
+                        "持久浏览器通道失败："
+                        f"{_friendly_cf_error(str(browser_exc))}；HTTP 通道失败："
+                        f"{_friendly_cf_error(str(http_exc))}"
+                    ) from http_exc
 
         try:
             self._submit(problem, submission)
             return
-        except CodeforcesForbiddenError as exc:
+        except Exception as exc:
             LOGGER.warning(
-                "Codeforces HTTP submit retry still got 403 for %s, trying browser fallback: %s",
+                "Codeforces HTTP submit failed for %s, trying persistent browser fallback: %s",
                 problem.cf_id,
-                exc,
+                _friendly_cf_error(str(exc)),
             )
             self._reset_session()
             try:
                 self._submit_via_browser(problem, submission)
-                LOGGER.info("Codeforces browser fallback submitted %s", problem.cf_id)
+                LOGGER.info("Codeforces persistent browser fallback submitted %s", problem.cf_id)
                 return
             except Exception as browser_exc:
-                raise RuntimeError(
-                    "Codeforces 返回 403 Forbidden，已刷新登录态重试仍失败；"
-                    "浏览器兜底提交也失败："
+                raise CodeforcesSubmissionError(
+                    "HTTP 通道失败："
+                    f"{_friendly_cf_error(str(exc))}；持久浏览器通道失败："
                     f"{_friendly_cf_error(str(browser_exc))}"
                 ) from browser_exc
 
@@ -272,20 +366,14 @@ class CodeforcesRemoteJudge:
         submit_url = _absolute_url(submit_path)
 
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent=_BROWSER_USER_AGENT,
-                locale="en-US",
-                extra_http_headers={
-                    "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
-                },
-            )
+            context, browser = self._launch_browser_context(playwright)
             try:
-                page = context.new_page()
+                page = context.pages[0] if context.pages else context.new_page()
                 page.goto(login_url, wait_until="domcontentloaded", timeout=self.http_timeout_seconds * 1000)
                 _wait_quiet(page, PlaywrightTimeoutError)
                 if not _looks_logged_in(page.content(), self.handle):
                     _browser_login(page, self.username, self.password, self.handle, PlaywrightTimeoutError)
+                self._set_browser_session_ready(True)
 
                 page.goto(submit_url, wait_until="domcontentloaded", timeout=self.http_timeout_seconds * 1000)
                 _wait_quiet(page, PlaywrightTimeoutError)
@@ -324,8 +412,52 @@ class CodeforcesRemoteJudge:
                     page.url,
                 )
             finally:
-                context.close()
-                browser.close()
+                self._close_browser_context(context, browser)
+
+    def _verify_browser_login(self) -> None:
+        try:
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+            from playwright.sync_api import sync_playwright
+        except ImportError as exc:
+            raise RuntimeError("Playwright 未安装，无法验证浏览器登录。") from exc
+
+        login_url = _absolute_url("/enter?back=%2F")
+        with sync_playwright() as playwright:
+            context, browser = self._launch_browser_context(playwright)
+            try:
+                page = context.pages[0] if context.pages else context.new_page()
+                page.goto(login_url, wait_until="domcontentloaded", timeout=self.http_timeout_seconds * 1000)
+                _wait_quiet(page, PlaywrightTimeoutError)
+                if not _looks_logged_in(page.content(), self.handle):
+                    _browser_login(page, self.username, self.password, self.handle, PlaywrightTimeoutError)
+                self._set_browser_session_ready(True)
+            finally:
+                self._close_browser_context(context, browser)
+
+    def _launch_browser_context(self, playwright):
+        options = {
+            "user_agent": _BROWSER_USER_AGENT,
+            "locale": "en-US",
+            "extra_http_headers": {
+                "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+            },
+        }
+        if self._browser_profile_dir is not None:
+            self._browser_profile_dir.mkdir(parents=True, exist_ok=True)
+            context = playwright.chromium.launch_persistent_context(
+                str(self._browser_profile_dir),
+                headless=True,
+                **options,
+            )
+            return context, None
+        browser = playwright.chromium.launch(headless=True)
+        return browser.new_context(**options), browser
+
+    @staticmethod
+    def _close_browser_context(context, browser) -> None:
+        context.close()
+        if browser is not None:
+            browser.close()
 
     def _ensure_logged_in(self) -> None:
         if self._logged_in:
@@ -356,9 +488,45 @@ class CodeforcesRemoteJudge:
         self._logged_in = True
 
     def _reset_session(self) -> None:
-        self._cookie_jar = CookieJar()
+        self._cookie_jar = self._new_cookie_jar(load=False)
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookie_jar))
         self._logged_in = False
+        if self._cookie_path is not None:
+            self._cookie_path.unlink(missing_ok=True)
+
+    def _new_cookie_jar(self, *, load: bool) -> CookieJar:
+        if self._cookie_path is None:
+            return CookieJar()
+        self._cookie_path.parent.mkdir(parents=True, exist_ok=True)
+        jar = MozillaCookieJar(str(self._cookie_path))
+        if load and self._cookie_path.exists():
+            try:
+                jar.load(ignore_discard=True, ignore_expires=True)
+            except (LoadError, OSError) as exc:
+                LOGGER.warning("Codeforces saved HTTP cookies could not be loaded: %s", exc)
+        return jar
+
+    def _save_http_cookies(self) -> None:
+        if self._cookie_path is None or not isinstance(self._cookie_jar, MozillaCookieJar):
+            return
+        try:
+            self._cookie_jar.save(ignore_discard=True, ignore_expires=True)
+            self._cookie_path.chmod(0o600)
+        except OSError as exc:
+            LOGGER.warning("Codeforces HTTP cookies could not be saved: %s", exc)
+
+    def _has_browser_session(self) -> bool:
+        return bool(self._browser_ready_path is not None and self._browser_ready_path.exists())
+
+    def _set_browser_session_ready(self, ready: bool) -> None:
+        if self._browser_ready_path is None:
+            return
+        if not ready:
+            self._browser_ready_path.unlink(missing_ok=True)
+            return
+        self._browser_ready_path.parent.mkdir(parents=True, exist_ok=True)
+        self._browser_ready_path.write_text("ready\n", encoding="ascii")
+        self._browser_ready_path.chmod(0o600)
 
     def _latest_matching_submission_id(self, problem: CFProblem) -> int:
         try:
@@ -373,12 +541,24 @@ class CodeforcesRemoteJudge:
         ]
         return max(ids, default=0)
 
-    def _poll_result(self, problem: CFProblem, before_id: int) -> RemoteJudgeResult:
+    def _poll_result(self, problem: CFProblem, before_id: int, *, submitted_after: int = 0) -> RemoteJudgeResult:
         deadline = time.time() + self.poll_timeout_seconds
         last_seen: Optional[dict] = None
+        last_poll_error = ""
         while time.time() < deadline:
-            submissions = self._status.fetch_recent(count=20)
-            match = _find_new_matching_submission(submissions, problem, before_id)
+            try:
+                submissions = self._status.fetch_recent(count=50)
+            except Exception as exc:
+                last_poll_error = _friendly_cf_error(str(exc))
+                LOGGER.warning("Codeforces verdict poll failed cf_id=%s error=%s", problem.cf_id, last_poll_error)
+                time.sleep(self.poll_interval_seconds)
+                continue
+            match = _find_new_matching_submission(
+                submissions,
+                problem,
+                before_id,
+                submitted_after=submitted_after,
+            )
             if match is not None:
                 last_seen = match
                 verdict = str(match.get("verdict") or "")
@@ -396,6 +576,13 @@ class CodeforcesRemoteJudge:
         if last_seen is not None:
             LOGGER.warning("Codeforces submit poll timeout cf_id=%s last_seen=%s", problem.cf_id, last_seen.get("id"))
             return _pending_result(last_seen, "提交已发出，但轮询超时，暂未拿到最终结果。")
+        if last_poll_error:
+            LOGGER.warning("Codeforces submit poll timeout cf_id=%s api_error=%s", problem.cf_id, last_poll_error)
+            return RemoteJudgeResult(
+                False,
+                "PENDING",
+                "提交已发出，但 Codeforces 状态接口暂时不可用，请稍后在提交记录中确认。",
+            )
         LOGGER.warning("Codeforces submit poll timeout cf_id=%s no matching submission found", problem.cf_id)
         return RemoteJudgeResult(False, "PENDING", "提交已发出，但轮询超时，未在最近提交中找到记录。")
 
@@ -419,9 +606,12 @@ class CodeforcesRemoteJudge:
     def _open_text(self, request: urllib.request.Request) -> str:
         try:
             with self._opener.open(request, timeout=self.http_timeout_seconds) as response:
-                return response.read().decode("utf-8", errors="replace")
+                text = response.read().decode("utf-8", errors="replace")
+            self._save_http_cookies()
+            return text
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
+            self._save_http_cookies()
             error = _extract_cf_error(body)
             if exc.code == 403:
                 detail = f"：{error}" if error else ""
@@ -672,11 +862,19 @@ def _same_problem(submission: dict, problem: CFProblem) -> bool:
     return int(raw_problem.get("contestId") or 0) == problem.contest_id and str(raw_problem.get("index") or "") == problem.index
 
 
-def _find_new_matching_submission(submissions: Iterable[dict], problem: CFProblem, before_id: int) -> Optional[dict]:
+def _find_new_matching_submission(
+    submissions: Iterable[dict],
+    problem: CFProblem,
+    before_id: int,
+    *,
+    submitted_after: int = 0,
+) -> Optional[dict]:
     matches = [
         submission
         for submission in submissions
-        if int(submission.get("id") or 0) > before_id and _same_problem(submission, problem)
+        if int(submission.get("id") or 0) > before_id
+        and int(submission.get("creationTimeSeconds") or 0) >= submitted_after
+        and _same_problem(submission, problem)
     ]
     if not matches:
         return None

@@ -147,7 +147,16 @@ async function submitCode(event) {
     });
     applyState(result.state);
     showResult(result);
-  } catch (error) { showToast(error.message, true); }
+  } catch (error) {
+    try { applyState(await api("/api/state")); }
+    catch (_) { /* Keep the current view when state refresh also fails. */ }
+    showResult({
+      accepted: false,
+      label: "SUBMISSION FAILED",
+      title: "代码未送达 Codeforces",
+      message: error.message
+    });
+  }
   finally { setBusy(false); }
 }
 
@@ -174,11 +183,12 @@ function render(data) {
 function renderCapabilities(capabilities) {
   const oralReady = capabilities.oralJudge;
   const codeReady = capabilities.codeJudge;
+  const codeStatus = capabilities.codeJudgeStatus;
   el("oralAvailability").textContent = oralReady ? "AI 判定服务在线" : "AI 判定服务未配置";
   el("oralAvailability").classList.toggle("unavailable", !oralReady);
   el("oralForm").querySelector("button[type=submit]").disabled = !oralReady;
-  el("codeAvailability").textContent = codeReady ? "Codeforces 远端判题在线" : "Codeforces 远端判题未配置";
-  el("codeAvailability").classList.toggle("unavailable", !codeReady);
+  el("codeAvailability").textContent = codeStatus?.message || (codeReady ? "Codeforces 提交账号已配置" : "Codeforces 远端判题未配置");
+  el("codeAvailability").classList.toggle("unavailable", !codeReady || codeStatus?.state === "degraded");
   el("codeForm").querySelector("button[type=submit]").disabled = !codeReady;
 }
 
@@ -273,7 +283,7 @@ function showResult(result) {
   const resolved = result.resolved;
   el("resultAccent").classList.toggle("rejected", !accepted);
   el("resultLabel").textContent = result.label || (accepted ? "ACCEPTED" : "REVIEW RESULT");
-  el("resultTitle").textContent = accepted ? "通过" : (resolved ? "本轮结束" : "还需要修改");
+  el("resultTitle").textContent = result.title || (accepted ? "通过" : (resolved ? "本轮结束" : "还需要修改"));
   el("resultMessage").textContent = result.message || "";
   const reveal = el("problemReveal");
   reveal.replaceChildren();

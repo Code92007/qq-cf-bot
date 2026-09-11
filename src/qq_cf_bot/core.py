@@ -32,7 +32,7 @@ from .selector import ProblemSelector
 from .solution_bank import SolutionBank
 from .solution_generator import LLMSolutionGenerator
 from .storage import SentProblemStore
-from .submitter import CodeforcesRemoteJudge
+from .submitter import CodeforcesRemoteJudge, CodeforcesSubmissionError
 from .translator import OpenAIStatementTranslator
 
 
@@ -100,6 +100,7 @@ class ChallengeService:
             poll_interval_seconds=config.cf_submit_poll_interval_seconds,
             poll_timeout_seconds=config.cf_submit_poll_timeout_seconds,
             base_urls=config.cf_base_urls,
+            session_dir=config.db_path.parent / "codeforces-session",
         )
         solution_generator = LLMSolutionGenerator(
             api_url=config.judge_api_url,
@@ -324,8 +325,11 @@ class ChallengeService:
             if wait_seconds:
                 time.sleep(wait_seconds)
             active = self._require_same_active(actor.scope_id, active.problem.cf_id)
-            self.store.set_meta_float("cf_last_submit_at", time.time())
-            result = self.remote_judge.judge(active.problem, submission)
+            try:
+                result = self.remote_judge.judge(active.problem, submission)
+            except CodeforcesSubmissionError as exc:
+                raise ChallengeError("code_submit_failed", str(exc), 502) from exc
+            self.store.set_meta_float("cf_last_submit_at", self.remote_judge.last_submit_at or time.time())
 
         self._ensure_problem_for_leaderboard(actor, active)
         source_hash = hashlib.sha256(submission.source.encode("utf-8")).hexdigest()

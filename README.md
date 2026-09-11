@@ -246,6 +246,14 @@ int main() { return 0; }
 - Codeforces 可能触发验证码、二次验证或账号安全确认，此时远端提交会失败，需要先手动登录账号处理。
 - 不要在正在进行的正式比赛中使用该机器人提交代码。
 
+Docker 部署后先运行一次无提交登录自检：
+
+```bash
+docker compose exec -T qq-cf-bot python -m qq_cf_bot.check_submit
+```
+
+自检会验证 Codeforces 登录，并把 HTTP Cookie 与持久浏览器资料保存在 `data/codeforces-session/`。后续容器重建会复用这个会话，不会为每次代码提交重新登录；自检不会向 Codeforces 提交代码。
+
 ## `/new` 和 `/share`
 
 `/new` 的 rating 参数会做严格校验，只接受单个整数、两个整数、逗号范围或短横线范围。两个端点会先按大小排序，再按 Codeforces 的 100 rating 档规范化：下界向下取整，上界向上取整。例如 `/new 1937 1956` 等价于 `/new 1900 2000`。带额外文本的参数会被拒绝，避免把聊天内容误当成参数。

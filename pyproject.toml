@@ -14,6 +14,7 @@ dependencies = [
 
 [project.scripts]
 qq-cf-bot = "qq_cf_bot.app:main"
+qq-cf-bot-check-submit = "qq_cf_bot.check_submit:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
