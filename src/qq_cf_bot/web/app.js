@@ -1,4 +1,13 @@
-const state = { data: null, csrf: "", busy: false, toastTimer: null, giveupTimer: null };
+const state = {
+  data: null,
+  csrf: "",
+  busy: false,
+  toastTimer: null,
+  giveupTimer: null,
+  acRecords: null,
+  acRecordsPromise: null,
+  activeRecordsTab: "breakdown"
+};
 
 const el = (id) => document.getElementById(id);
 
@@ -21,6 +30,11 @@ function bindEvents() {
   el("oralForm").addEventListener("submit", submitOral);
   el("codeForm").addEventListener("submit", submitCode);
   el("sourceCode").addEventListener("keydown", handleEditorTab);
+  el("ratingDetailBtn").addEventListener("click", () => openAcRecords("breakdown"));
+  el("acHistoryBtn").addEventListener("click", () => openAcRecords("history"));
+  el("ratingBreakdownTab").addEventListener("click", () => switchAcRecordsTab("breakdown"));
+  el("acHistoryTab").addEventListener("click", () => switchAcRecordsTab("history"));
+  el("historySearch").addEventListener("input", renderFilteredHistory);
 }
 
 async function loadState() {
@@ -36,6 +50,8 @@ async function loadState() {
 function showAuth() {
   state.data = null;
   state.csrf = "";
+  state.acRecords = null;
+  if (el("acRecordsDialog").open) el("acRecordsDialog").close();
   el("appView").classList.add("hidden");
   el("authView").classList.remove("hidden");
 }
@@ -43,6 +59,7 @@ function showAuth() {
 function showApp(data) {
   state.data = data;
   state.csrf = data.csrfToken;
+  state.acRecords = null;
   el("authView").classList.add("hidden");
   el("appView").classList.remove("hidden");
   render(data);
@@ -163,6 +180,7 @@ async function submitCode(event) {
 function applyState(data) {
   state.data = data;
   state.csrf = data.csrfToken;
+  state.acRecords = null;
   render(data);
 }
 
@@ -264,6 +282,160 @@ function renderLeaderboard(rows, currentUserId) {
   });
   el("leaderboardCount").textContent = `${rows.length} 人`;
   el("leaderboardEmpty").classList.toggle("hidden", rows.length > 0);
+}
+
+async function openAcRecords(tab) {
+  state.activeRecordsTab = tab;
+  const dialog = el("acRecordsDialog");
+  if (!dialog.open) dialog.showModal();
+  switchAcRecordsTab(tab);
+  if (state.acRecords) {
+    renderAcRecords(state.acRecords);
+    return;
+  }
+
+  setAcRecordsLoading(true);
+  if (!state.acRecordsPromise) state.acRecordsPromise = api("/api/ac-records");
+  try {
+    state.acRecords = await state.acRecordsPromise;
+    renderAcRecords(state.acRecords);
+  } catch (error) {
+    if (dialog.open) dialog.close();
+    showToast(error.message, true);
+  } finally {
+    state.acRecordsPromise = null;
+    setAcRecordsLoading(false);
+  }
+}
+
+function switchAcRecordsTab(tab) {
+  const breakdown = tab === "breakdown";
+  state.activeRecordsTab = breakdown ? "breakdown" : "history";
+  el("ratingBreakdownTab").classList.toggle("active", breakdown);
+  el("ratingBreakdownTab").setAttribute("aria-selected", String(breakdown));
+  el("acHistoryTab").classList.toggle("active", !breakdown);
+  el("acHistoryTab").setAttribute("aria-selected", String(!breakdown));
+  const loading = !el("acRecordsLoading").classList.contains("hidden");
+  el("ratingBreakdownPanel").classList.toggle("hidden", loading || !breakdown);
+  el("acHistoryPanel").classList.toggle("hidden", loading || breakdown);
+  if (!breakdown && !loading) el("historySearch").focus();
+}
+
+function setAcRecordsLoading(loading) {
+  el("acRecordsLoading").classList.toggle("hidden", !loading);
+  switchAcRecordsTab(state.activeRecordsTab);
+}
+
+function renderAcRecords(data) {
+  const breakdown = data.ratingBreakdown || [];
+  el("recordTotal").textContent = data.total || 0;
+  el("recordHighest").textContent = breakdown[0]?.rating || "-";
+  el("recordLevels").textContent = breakdown.length;
+  renderRatingBreakdown(breakdown, data.total || 0);
+  el("historySearch").value = "";
+  renderFilteredHistory();
+}
+
+function renderRatingBreakdown(rows, total) {
+  const body = el("ratingBreakdownBody");
+  body.replaceChildren();
+  const maxCount = Math.max(1, ...rows.map((row) => row.count));
+  rows.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    tr.append(tableCell(index + 1), tableCell(row.rating || "未定级"), tableCell(row.count));
+
+    const shareCell = document.createElement("td");
+    const meter = document.createElement("meter");
+    meter.min = 0;
+    meter.max = maxCount;
+    meter.value = row.count;
+    meter.setAttribute("aria-label", `${row.rating || "未定级"} 难度通过 ${row.count} 题`);
+    const percent = document.createElement("span");
+    percent.textContent = total ? `${Math.round((row.count / total) * 100)}%` : "0%";
+    shareCell.append(meter, percent);
+    tr.append(shareCell);
+    body.append(tr);
+  });
+  el("ratingBreakdownEmpty").classList.toggle("hidden", rows.length > 0);
+}
+
+function renderFilteredHistory() {
+  if (!state.acRecords) return;
+  const query = el("historySearch").value.trim().toLocaleLowerCase();
+  const history = (state.acRecords.history || []).filter((item) => {
+    if (!query) return true;
+    return `${item.cfId} ${item.title} ${item.rating ?? ""}`.toLocaleLowerCase().includes(query);
+  });
+  renderAcHistory(history, Boolean(query));
+}
+
+function renderAcHistory(history, filtered) {
+  const body = el("acHistoryBody");
+  body.replaceChildren();
+  history.forEach((item) => {
+    const tr = document.createElement("tr");
+
+    const problemCell = document.createElement("td");
+    const problemLink = externalLink(`${item.cfId} ${item.title}`, item.codeforcesUrl);
+    problemLink.className = "history-problem";
+    problemCell.append(problemLink);
+
+    const methodCell = document.createElement("td");
+    const method = document.createElement("span");
+    method.className = "method-badge";
+    method.textContent = acceptedMethod(item);
+    methodCell.append(method);
+
+    const actionsCell = document.createElement("td");
+    actionsCell.className = "history-links";
+    actionsCell.append(externalLink("CF", item.codeforcesUrl), externalLink("题解", item.solutionUrl));
+    if (item.submissionUrl) actionsCell.append(externalLink("提交", item.submissionUrl));
+
+    tr.append(
+      problemCell,
+      tableCell(item.rating ?? "-"),
+      methodCell,
+      tableCell(formatAcceptedAt(item.acceptedAt)),
+      actionsCell
+    );
+    body.append(tr);
+  });
+  el("historyResultCount").textContent = `${history.length} 道题`;
+  el("acHistoryEmpty").textContent = filtered ? "没有匹配的 AC 记录" : "暂无计分 AC 记录";
+  el("acHistoryEmpty").classList.toggle("hidden", history.length > 0);
+}
+
+function tableCell(value) {
+  const td = document.createElement("td");
+  td.textContent = value;
+  return td;
+}
+
+function externalLink(label, href) {
+  const link = document.createElement("a");
+  link.href = href;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = label;
+  return link;
+}
+
+function acceptedMethod(item) {
+  if (item.verdict === "LLM_ACCEPTED") return "静态审核";
+  return item.method === "code" ? "代码 AC" : "做法审核";
+}
+
+function formatAcceptedAt(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date);
 }
 
 function startGiveupTimer(initialSeconds) {

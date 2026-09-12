@@ -344,6 +344,85 @@ class SentProblemStore:
                 ),
             )
 
+    def list_user_accepted_problems(self, group_id: int, user_id: int) -> List[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                select
+                    attempts.cf_id,
+                    attempts.accepted_at,
+                    attempts.method,
+                    attempts.verdict,
+                    attempts.submission_url,
+                    attempts.source_order,
+                    attempts.submission_order,
+                    sp.contest_id,
+                    sp.problem_index,
+                    sp.name,
+                    sp.rating,
+                    sc.statement_json
+                from (
+                    select
+                        id as submission_order,
+                        group_id,
+                        user_id,
+                        cf_id,
+                        created_at as accepted_at,
+                        'oral' as method,
+                        'ACCEPTED' as verdict,
+                        '' as submission_url,
+                        0 as source_order
+                    from submissions
+                    where group_id = ? and user_id = ? and accepted = 1 and ranked = 1
+                    union all
+                    select
+                        id as submission_order,
+                        group_id,
+                        user_id,
+                        cf_id,
+                        created_at as accepted_at,
+                        'code' as method,
+                        verdict,
+                        url as submission_url,
+                        1 as source_order
+                    from code_submissions
+                    where group_id = ? and user_id = ? and accepted = 1 and ranked = 1
+                ) attempts
+                join sent_problems sp
+                    on sp.group_id = attempts.group_id and sp.cf_id = attempts.cf_id
+                left join statement_cache sc on sc.cf_id = attempts.cf_id
+                order by
+                    attempts.accepted_at asc,
+                    attempts.source_order asc,
+                    attempts.submission_order asc
+                """,
+                (str(group_id), str(user_id), str(group_id), str(user_id)),
+            ).fetchall()
+
+        accepted_by_problem: Dict[str, dict] = {}
+        for row in rows:
+            cf_id = str(row[0])
+            if cf_id in accepted_by_problem:
+                continue
+            contest_id = int(row[7])
+            problem_index = str(row[8])
+            accepted_by_problem[cf_id] = {
+                "cf_id": cf_id,
+                "title": _cached_statement_title(row[11], str(row[9])),
+                "rating": int(row[10]),
+                "accepted_at": str(row[1]),
+                "method": str(row[2]),
+                "verdict": str(row[3]),
+                "submission_url": str(row[4]),
+                "codeforces_url": f"https://codeforces.com/problemset/problem/{contest_id}/{problem_index}",
+                "solution_url": f"https://www.luogu.com.cn/problem/solution/CF{cf_id}",
+            }
+        return sorted(
+            accepted_by_problem.values(),
+            key=lambda item: (item["accepted_at"], item["cf_id"]),
+            reverse=True,
+        )
+
     def get_rating_range(self, group_id: int, default_min: int, default_max: int) -> RatingRange:
         with self._connect() as conn:
             row = conn.execute(
@@ -771,6 +850,12 @@ class SentProblemStore:
             conn.execute("create index if not exists idx_submissions_group on submissions(group_id, cf_id)")
             conn.execute(
                 """
+                create index if not exists idx_submissions_user_accepted
+                on submissions(group_id, user_id, accepted, ranked, created_at)
+                """
+            )
+            conn.execute(
+                """
                 create table if not exists group_settings (
                     group_id text primary key,
                     min_rating integer not null,
@@ -810,6 +895,12 @@ class SentProblemStore:
                 "alter table code_submissions add column ranked integer not null default 1",
             )
             conn.execute("create index if not exists idx_code_submissions_group on code_submissions(group_id, cf_id)")
+            conn.execute(
+                """
+                create index if not exists idx_code_submissions_user_accepted
+                on code_submissions(group_id, user_id, accepted, ranked, created_at)
+                """
+            )
             conn.execute(
                 """
                 create table if not exists bot_meta (
@@ -893,6 +984,16 @@ def _web_user_row(row) -> Optional[dict]:
         "password_hash": str(row[3]),
         "created_at": str(row[4]),
     }
+
+
+def _cached_statement_title(raw_json: object, fallback: str) -> str:
+    if not raw_json:
+        return fallback
+    try:
+        title = str(json.loads(str(raw_json)).get("title") or "").strip()
+    except (AttributeError, TypeError, ValueError, json.JSONDecodeError):
+        return fallback
+    return title or fallback
 
 
 def _solved_ratings_for_user(conn: sqlite3.Connection, group_id: int, user_id: int) -> Tuple[int, ...]:

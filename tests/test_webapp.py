@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from qq_cf_bot.config import Config
 from qq_cf_bot.core import ChallengeService
+from qq_cf_bot.models import CFProblem
 from qq_cf_bot.webapp import WebApplication, _safe_statement_html
 
 
@@ -102,6 +103,31 @@ class WebApplicationTest(unittest.TestCase):
         self.assertNotIn("onclick", result.lower())
         self.assertNotIn("javascript:", result.lower())
         self.assertIn("安全文本", result)
+
+    def test_ac_records_requires_login_and_returns_breakdown(self):
+        unauthorized = _Handler()
+        self.assertTrue(self.app.handle_get(unauthorized, "/api/ac-records"))
+        self.assertEqual(unauthorized.status, 401)
+
+        register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})
+        self.app.handle_post(register, "/api/auth/register")
+        response = register.json()
+        user_id = response["state"]["user"]["id"]
+        cookie = register.header("Set-Cookie").split(";", 1)[0]
+        easy = CFProblem(1, "A", "Easy", 1200)
+        hard = CFProblem(2, "B", "Hard", 2400)
+        for problem in (easy, hard):
+            self.app.service.store.mark_sent(-1, problem)
+            self.app.service.store.record_submission(-1, user_id, "Alice", problem, "做法", True, "通过")
+
+        records = _Handler(cookie=cookie)
+        self.assertTrue(self.app.handle_get(records, "/api/ac-records"))
+
+        self.assertEqual(records.status, 200)
+        payload = records.json()
+        self.assertEqual(payload["total"], 2)
+        self.assertEqual(payload["ratingBreakdown"], [{"rating": 2400, "count": 1}, {"rating": 1200, "count": 1}])
+        self.assertEqual([item["cfId"] for item in payload["history"]], ["2B", "1A"])
 
 
 if __name__ == "__main__":

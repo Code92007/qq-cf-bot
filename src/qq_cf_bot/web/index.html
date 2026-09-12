@@ -133,8 +133,12 @@ int main() {
 
       <aside class="side-column">
         <section class="stat-strip" aria-label="个人数据">
-          <div><span>Rating</span><strong id="myRating">1500</strong></div>
-          <div><span>已通过</span><strong id="mySolved">0</strong></div>
+          <button id="ratingDetailBtn" class="stat-button" type="button" aria-label="查看 AC 难度明细">
+            <span>Rating</span><strong id="myRating">1500</strong>
+          </button>
+          <button id="acHistoryBtn" class="stat-button" type="button" aria-label="查看 AC 历史">
+            <span>已通过</span><strong id="mySolved">0</strong>
+          </button>
           <div><span>最高题</span><strong id="myHighest">-</strong></div>
         </section>
 
@@ -166,6 +170,59 @@ int main() {
     <dl id="problemReveal" class="reveal-list"></dl>
     <div id="resultLinks" class="result-links"></div>
     <form method="dialog"><button class="primary wide" type="submit">返回训练台</button></form>
+  </dialog>
+
+  <dialog id="acRecordsDialog" class="records-dialog">
+    <header class="records-header">
+      <div>
+        <p class="eyebrow">PERSONAL RECORDS</p>
+        <h2>我的 AC 记录</h2>
+      </div>
+      <form method="dialog">
+        <button class="dialog-close" type="submit" aria-label="关闭" title="关闭">&times;</button>
+      </form>
+    </header>
+
+    <section class="records-summary" aria-label="AC 记录概览">
+      <div><span>题目总数</span><strong id="recordTotal">0</strong></div>
+      <div><span>最高难度</span><strong id="recordHighest">-</strong></div>
+      <div><span>难度档位</span><strong id="recordLevels">0</strong></div>
+    </section>
+
+    <div class="records-tabs" role="tablist" aria-label="AC 记录视图">
+      <button id="ratingBreakdownTab" class="records-tab active" type="button" role="tab" aria-selected="true" aria-controls="ratingBreakdownPanel">难度明细</button>
+      <button id="acHistoryTab" class="records-tab" type="button" role="tab" aria-selected="false" aria-controls="acHistoryPanel">AC 历史</button>
+    </div>
+
+    <div id="acRecordsLoading" class="records-loading hidden" aria-live="polite">
+      <div class="spinner"></div>
+      <span>正在读取记录</span>
+    </div>
+
+    <section id="ratingBreakdownPanel" class="records-panel" role="tabpanel" aria-labelledby="ratingBreakdownTab">
+      <div class="table-wrap">
+        <table class="records-table">
+          <thead><tr><th>排名</th><th>难度</th><th>AC 数</th><th>占比</th></tr></thead>
+          <tbody id="ratingBreakdownBody"></tbody>
+        </table>
+      </div>
+      <p id="ratingBreakdownEmpty" class="muted center">暂无计分 AC 记录</p>
+    </section>
+
+    <section id="acHistoryPanel" class="records-panel hidden" role="tabpanel" aria-labelledby="acHistoryTab">
+      <div class="history-toolbar">
+        <label class="sr-only" for="historySearch">搜索题号、题名或难度</label>
+        <input id="historySearch" type="search" placeholder="搜索题号、题名或难度" autocomplete="off">
+        <span id="historyResultCount">0 道题</span>
+      </div>
+      <div class="table-wrap">
+        <table class="records-table history-table">
+          <thead><tr><th>题目</th><th>难度</th><th>通过方式</th><th>AC 时间</th><th>复盘</th></tr></thead>
+          <tbody id="acHistoryBody"></tbody>
+        </table>
+      </div>
+      <p id="acHistoryEmpty" class="muted center">暂无计分 AC 记录</p>
+    </section>
   </dialog>
 
   <div id="busyLayer" class="busy-layer hidden" aria-live="polite">

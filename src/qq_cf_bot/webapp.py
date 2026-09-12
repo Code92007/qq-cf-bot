@@ -8,6 +8,7 @@ import logging
 import re
 import secrets
 import threading
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 from http.cookies import SimpleCookie
@@ -48,6 +49,10 @@ class WebApplication:
             if path == "/api/state":
                 session = self._require_session(handler)
                 self._json(handler, self._state(session))
+                return True
+            if path == "/api/ac-records":
+                session = self._require_session(handler)
+                self._json(handler, self._ac_records(session))
                 return True
             if path == "/api/leaderboard":
                 self._json(handler, {"leaderboard": self._leaderboard()})
@@ -248,6 +253,34 @@ class WebApplication:
             {**_stat_json(stat), "rank": index}
             for index, stat in enumerate(self.service.list_leaderboard(_WEB_LEADERBOARD_ID)[:50], start=1)
         ]
+
+    def _ac_records(self, session: dict) -> dict:
+        history = self.service.store.list_user_accepted_problems(
+            _WEB_LEADERBOARD_ID,
+            int(session["user_id"]),
+        )
+        rating_counts = Counter(item["rating"] for item in history)
+        return {
+            "total": len(history),
+            "ratingBreakdown": [
+                {"rating": rating, "count": count}
+                for rating, count in sorted(rating_counts.items(), reverse=True)
+            ],
+            "history": [
+                {
+                    "cfId": item["cf_id"],
+                    "title": item["title"],
+                    "rating": item["rating"] or None,
+                    "acceptedAt": item["accepted_at"],
+                    "method": item["method"],
+                    "verdict": item["verdict"],
+                    "submissionUrl": item["submission_url"],
+                    "codeforcesUrl": item["codeforces_url"],
+                    "solutionUrl": item["solution_url"],
+                }
+                for item in history
+            ],
+        }
 
     def _actor(self, session: dict) -> ChallengeActor:
         user_id = int(session["user_id"])

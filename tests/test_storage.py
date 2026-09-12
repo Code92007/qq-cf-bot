@@ -234,6 +234,50 @@ class StorageTest(unittest.TestCase):
             )
             store.record_code_submission(1, 2, "alice", problem, "cpp", "hash", 120, result)
 
+    def test_lists_unique_ranked_accepted_problems_newest_first(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            oral = CFProblem(1, "A", "Theatre Square", 1000)
+            code = CFProblem(2, "B", "Code Problem", 1800)
+            shared = CFProblem(3, "C", "Shared Problem", 2600)
+            for problem in (oral, code, shared):
+                store.mark_sent(1, problem)
+            store.cache_statement(
+                oral,
+                ProblemStatement(
+                    pid="CF1A",
+                    title="剧院广场",
+                    description="desc",
+                    input_format="in",
+                    output_format="out",
+                    samples=[],
+                ),
+                source="test",
+                translated=True,
+            )
+            store.record_submission(1, 2, "alice", oral, "口头做法", True, "通过")
+            store.record_code_submission(
+                1,
+                2,
+                "alice",
+                code,
+                "cpp",
+                "hash",
+                120,
+                RemoteJudgeResult(True, "OK", "Accepted", submission_id=42, url="https://example.com/42"),
+            )
+            store.record_submission(1, 2, "alice", code, "重复记录", True, "通过")
+            store.record_submission(1, 2, "alice", shared, "分享题", True, "通过", ranked=False)
+            store.record_submission(1, 3, "bob", shared, "其他用户", True, "通过")
+
+            history = store.list_user_accepted_problems(1, 2)
+
+            self.assertEqual([item["cf_id"] for item in history], ["2B", "1A"])
+            self.assertEqual(history[0]["method"], "code")
+            self.assertEqual(history[0]["submission_url"], "https://example.com/42")
+            self.assertEqual(history[1]["title"], "剧院广场")
+            self.assertGreaterEqual(history[0]["accepted_at"], history[1]["accepted_at"])
+
     def test_solution_references_roundtrip_and_dedupe(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = SentProblemStore(Path(tmp) / "bot.sqlite3")
