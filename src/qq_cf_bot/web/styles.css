@@ -127,7 +127,9 @@ button { min-height: 40px; border-radius: 4px; padding: 9px 15px; border: 1px so
 
 .problem-view { max-width: 900px; margin: 0 auto; padding-top: 22px; }
 .problem-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.problem-head > div { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
 .live-dot { display: inline-block; width: 8px; aspect-ratio: 1; margin-right: 6px; border-radius: 50%; background: var(--yellow); }
+.challenge-mode { padding: 4px 7px; border: 1px solid #bed0c7; border-radius: 4px; color: var(--green); font-size: 11px; }
 .statement-section { color: #25302b; line-height: 1.75; overflow-wrap: anywhere; }
 .statement-section + .statement-section { margin-top: 30px; }
 .statement-section h2 { margin: 0 0 13px; padding-bottom: 9px; border-bottom: 1px solid var(--line); font-size: 18px; }
@@ -190,6 +192,22 @@ tr.me td { background: #e4f1ea; }
 .reveal-list dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .result-links { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
 .result-links a { padding: 8px 10px; border: 1px solid #bed0c7; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: 700; }
+
+.specific-dialog {
+  width: min(500px, calc(100% - 28px));
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.specific-dialog::backdrop { background: rgba(12, 21, 17, .66); }
+.specific-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 27px 30px 18px; }
+.specific-header h2 { margin: 0; font-size: 26px; line-height: 1.2; }
+.specific-problem-form { display: grid; gap: 17px; padding: 0 30px 30px; }
+.specific-problem-form label { display: grid; gap: 7px; color: #47534e; font-size: 13px; font-weight: 700; }
+.practice-note { margin: 0; padding: 12px 14px; border-left: 3px solid var(--green); background: var(--soft); color: var(--muted); font-size: 12px; line-height: 1.6; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 9px; }
 
 .records-dialog {
   width: min(920px, calc(100% - 28px));
@@ -263,6 +281,10 @@ tr.me td { background: #e4f1ea; }
   .statement-section { font-size: 15px; }
   .user-chip #displayName { display: none; }
   .result-dialog { padding: 24px 20px; }
+  .specific-header { padding: 21px 20px 16px; }
+  .specific-header h2 { font-size: 22px; }
+  .specific-problem-form { padding: 0 20px 22px; }
+  .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .records-dialog { width: calc(100% - 20px); max-height: calc(100vh - 20px); }
   .records-header { padding: 21px 18px 16px; }
   .records-header h2 { font-size: 22px; }

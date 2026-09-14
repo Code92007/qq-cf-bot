@@ -17,7 +17,7 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlsplit
 
 from .config import Config
-from .core import ChallengeActor, ChallengeError, ChallengeService, SubmissionOutcome
+from .core import ChallengeActor, ChallengeError, ChallengeService, SubmissionOutcome, parse_problem_id
 from .models import ActiveProblem, CodeSubmission, ProblemStatement, UserStat
 from .rating import leaderboard_rating
 from .renderer import _markdown_to_html
@@ -97,6 +97,8 @@ class WebApplication:
             try:
                 if path == "/api/challenges":
                     self._new_challenge(handler, session, payload)
+                elif path == "/api/challenges/share":
+                    self._share_challenge(handler, session, payload)
                 elif path == "/api/challenges/giveup":
                     self._give_up(handler, session)
                 elif path == "/api/challenges/oral":
@@ -166,6 +168,17 @@ class WebApplication:
         actor = self._actor(session)
         rating_range = self.service.set_rating_range(actor.scope_id, min_rating, max_rating)
         self.service.issue_problem(actor.scope_id, rating_range)
+        self._json(handler, {"ok": True, "state": self._state(session)})
+
+    def _share_challenge(self, handler, session: dict, payload: dict) -> None:
+        problem_id = str(payload.get("problemId") or "").strip()
+        if len(problem_id) > 200:
+            raise ValueError("题号或链接不能超过 200 个字符。")
+        parsed = parse_problem_id(problem_id)
+        if parsed is None:
+            raise ValueError("请输入正确的 Codeforces 题号或题目链接。")
+        actor = self._actor(session)
+        self.service.issue_specific_problem(actor.scope_id, parsed[0], parsed[1])
         self._json(handler, {"ok": True, "state": self._state(session)})
 
     def _give_up(self, handler, session: dict) -> None:
@@ -460,6 +473,7 @@ def _active_json(active: ActiveProblem, giveup_wait: int) -> dict:
     return {
         "createdAt": active.created_at,
         "giveupWaitSeconds": giveup_wait,
+        "ranked": active.ranked,
         "statement": {
             "description": _safe_statement_html(statement.description, statement.source_url),
             "input": _safe_statement_html(statement.input_format, statement.source_url),

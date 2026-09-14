@@ -66,6 +66,7 @@
             <span class="range-dash">至</span>
             <label><span>最高</span><select id="maxRating" name="maxRating" aria-label="最高难度"></select></label>
             <button id="newChallengeBtn" class="primary" type="submit">抽取题目</button>
+            <button id="specificProblemBtn" class="quiet" type="button">指定题目</button>
           </form>
         </div>
 
@@ -80,6 +81,7 @@
             <div>
               <span class="live-dot"></span>
               <span>进行中</span>
+              <span id="challengeMode" class="challenge-mode hidden">专项练习 · 不计榜单</span>
             </div>
             <button id="giveUpBtn" class="danger-quiet" type="button">放弃题目</button>
           </div>
@@ -223,6 +225,29 @@ int main() {
       </div>
       <p id="acHistoryEmpty" class="muted center">暂无计分 AC 记录</p>
     </section>
+  </dialog>
+
+  <dialog id="specificProblemDialog" class="specific-dialog">
+    <header class="specific-header">
+      <div>
+        <p class="eyebrow">FOCUSED PRACTICE</p>
+        <h2>指定一道题</h2>
+      </div>
+      <form method="dialog">
+        <button class="dialog-close" type="submit" aria-label="关闭" title="关闭">&times;</button>
+      </form>
+    </header>
+    <form id="specificProblemForm" class="specific-problem-form">
+      <label for="specificProblemId">
+        <span>Codeforces 题号</span>
+        <input id="specificProblemId" name="problemId" maxlength="200" autocomplete="off" placeholder="1704F 或 Codeforces 题目链接" required>
+      </label>
+      <p class="practice-note">专项练习 · 不计入 Rating、通过数和 AC 历史</p>
+      <div class="dialog-actions">
+        <button id="cancelSpecificProblemBtn" class="quiet" type="button">取消</button>
+        <button class="primary" type="submit">开始练习</button>
+      </div>
+    </form>
   </dialog>
 
   <div id="busyLayer" class="busy-layer hidden" aria-live="polite">

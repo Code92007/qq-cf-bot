@@ -26,6 +26,9 @@ function bindEvents() {
   el("registerForm").addEventListener("submit", submitRegister);
   el("logoutBtn").addEventListener("click", logout);
   el("newChallengeForm").addEventListener("submit", newChallenge);
+  el("specificProblemBtn").addEventListener("click", openSpecificProblem);
+  el("specificProblemForm").addEventListener("submit", shareChallenge);
+  el("cancelSpecificProblemBtn").addEventListener("click", () => el("specificProblemDialog").close());
   el("giveUpBtn").addEventListener("click", giveUp);
   el("oralForm").addEventListener("submit", submitOral);
   el("codeForm").addEventListener("submit", submitCode);
@@ -52,6 +55,7 @@ function showAuth() {
   state.csrf = "";
   state.acRecords = null;
   if (el("acRecordsDialog").open) el("acRecordsDialog").close();
+  if (el("specificProblemDialog").open) el("specificProblemDialog").close();
   el("appView").classList.add("hidden");
   el("authView").classList.remove("hidden");
 }
@@ -129,6 +133,32 @@ async function newChallenge(event) {
     applyState(result.state);
     el("solutionText").value = "";
     el("sourceCode").value = "";
+  } catch (error) { showToast(error.message, true); }
+  finally { setBusy(false); }
+}
+
+function openSpecificProblem() {
+  if (el("specificProblemBtn").disabled) return;
+  const dialog = el("specificProblemDialog");
+  if (!dialog.open) dialog.showModal();
+  el("specificProblemId").focus();
+}
+
+async function shareChallenge(event) {
+  event.preventDefault();
+  const problemId = el("specificProblemId").value.trim();
+  el("specificProblemDialog").close();
+  setBusy(true, "正在准备指定题面");
+  try {
+    const result = await api("/api/challenges/share", {
+      method: "POST",
+      body: { problemId }
+    });
+    applyState(result.state);
+    el("specificProblemId").value = "";
+    el("solutionText").value = "";
+    el("sourceCode").value = "";
+    switchSubmission("oral");
   } catch (error) { showToast(error.message, true); }
   finally { setBusy(false); }
 }
@@ -216,8 +246,10 @@ function renderProblem(active) {
   el("problemView").classList.toggle("hidden", !active);
   el("challengeTitle").textContent = active ? "当前挑战" : "训练台";
   el("newChallengeBtn").disabled = Boolean(active);
+  el("specificProblemBtn").disabled = Boolean(active);
   el("minRating").disabled = Boolean(active);
   el("maxRating").disabled = Boolean(active);
+  el("challengeMode").classList.toggle("hidden", !active || active.ranked !== false);
   if (!active) return;
 
   renderHtmlSection("descriptionSection", "题目描述", active.statement.description);

@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple
 
 from .cf_statement import CodeforcesStatementClient
 from .codeforces import CodeforcesClient
@@ -278,6 +278,13 @@ class ChallengeService:
             raise ChallengeError("active_problem", "当前挑战还没有结束。", 409)
         prepared = self.prepare_problem(scope_id, rating_range)
         return self.activate_problem(scope_id, prepared, ranked=True)
+
+    def issue_specific_problem(self, scope_id: int, contest_id: int, index: str) -> ActiveProblem:
+        if self.store.get_active_problem(scope_id) is not None:
+            raise ChallengeError("active_problem", "当前挑战还没有结束。", 409)
+        problem = self.find_problem(contest_id, index)
+        prepared = self.prepare_specific_problem(problem)
+        return self.activate_problem(scope_id, prepared, ranked=False)
 
     def giveup_wait_seconds(self, active: ActiveProblem) -> int:
         minimum = max(0, self.config.giveup_min_seconds)
@@ -601,6 +608,37 @@ class ChallengeService:
 
 def _remote_verdict_is_pending(verdict: str) -> bool:
     return verdict.strip().upper() in {"", "PENDING", "RUNNING", "SUBMITTED", "TESTING", "QUEUE", "QUEUING"}
+
+
+def parse_problem_id(value: str) -> Optional[Tuple[int, str]]:
+    text = value.strip()
+    if not text:
+        return None
+
+    problemset_match = re.search(
+        r"codeforces\.com/problemset/problem/(\d+)/([A-Za-z][A-Za-z0-9]*)",
+        text,
+        re.IGNORECASE,
+    )
+    if problemset_match:
+        return int(problemset_match.group(1)), problemset_match.group(2).upper()
+
+    contest_match = re.search(
+        r"codeforces\.com/(?:contest|gym)/(\d+)/problem/([A-Za-z][A-Za-z0-9]*)",
+        text,
+        re.IGNORECASE,
+    )
+    if contest_match:
+        return int(contest_match.group(1)), contest_match.group(2).upper()
+
+    compact = re.sub(r"\s+", "", text)
+    id_match = re.fullmatch(r"(?i)(?:CF)?(\d{1,7})([A-Za-z][A-Za-z0-9]*)", compact)
+    if id_match is None:
+        return None
+    contest_id = int(id_match.group(1))
+    if contest_id <= 0:
+        return None
+    return contest_id, id_match.group(2).upper()
 
 
 def _needs_title_translation(title: str) -> bool:

@@ -129,6 +129,30 @@ class WebApplicationTest(unittest.TestCase):
         self.assertEqual(payload["ratingBreakdown"], [{"rating": 2400, "count": 1}, {"rating": 1200, "count": 1}])
         self.assertEqual([item["cfId"] for item in payload["history"]], ["2B", "1A"])
 
+    def test_share_challenge_accepts_problem_url_and_rejects_invalid_id(self):
+        register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})
+        self.app.handle_post(register, "/api/auth/register")
+        response = register.json()
+        cookie = register.header("Set-Cookie").split(";", 1)[0]
+        csrf = response["state"]["csrfToken"]
+
+        with patch.object(self.app.service, "issue_specific_problem") as issue:
+            share = _Handler(
+                {"problemId": "https://codeforces.com/contest/1704/problem/f"},
+                cookie=cookie,
+                csrf=csrf,
+            )
+            self.assertTrue(self.app.handle_post(share, "/api/challenges/share"))
+
+        self.assertEqual(share.status, 200)
+        scope_id = -(1_000_000_000_000 + response["state"]["user"]["id"])
+        issue.assert_called_once_with(scope_id, 1704, "F")
+
+        invalid = _Handler({"problemId": "1704"}, cookie=cookie, csrf=csrf)
+        self.assertTrue(self.app.handle_post(invalid, "/api/challenges/share"))
+        self.assertEqual(invalid.status, 400)
+        self.assertEqual(invalid.json()["error"], "invalid_request")
+
 
 if __name__ == "__main__":
     unittest.main()

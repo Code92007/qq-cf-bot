@@ -5,7 +5,15 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from qq_cf_bot.core import ChallengeActor, ChallengeError, ChallengeService
-from qq_cf_bot.models import CFProblem, CodeSubmission, JudgeResult, ProblemStatement, RemoteJudgeResult
+from qq_cf_bot.models import (
+    CFProblem,
+    CodeSubmission,
+    JudgeResult,
+    PreparedProblem,
+    ProblemStatement,
+    RatingRange,
+    RemoteJudgeResult,
+)
 from qq_cf_bot.storage import SentProblemStore
 from qq_cf_bot.submitter import CodeforcesSubmissionError
 
@@ -57,6 +65,25 @@ class _CodeFallbackJudge:
 
 
 class ChallengeServiceTest(unittest.TestCase):
+    def test_specific_problem_is_activated_without_ranking_or_dedup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            service = ChallengeService.__new__(ChallengeService)
+            service.store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            problem = CFProblem(1704, "F", "Colouring Game", 2400)
+            statement = ProblemStatement("CF1704F", "染色游戏", "题面", "输入", "输出", [])
+            prepared = PreparedProblem(problem, statement, [], RatingRange(2400, 2400), "now")
+            service.find_problem = lambda contest_id, index: problem
+            service.prepare_specific_problem = lambda selected: prepared
+
+            active = service.issue_specific_problem(123, 1704, "f")
+
+            self.assertEqual(active.problem.cf_id, "1704F")
+            self.assertFalse(active.ranked)
+            self.assertEqual(service.store.sent_ids(123), set())
+            with self.assertRaises(ChallengeError) as caught:
+                service.issue_specific_problem(123, 1704, "F")
+            self.assertEqual(caught.exception.code, "active_problem")
+
     def test_personal_scope_settles_into_shared_leaderboard(self):
         with tempfile.TemporaryDirectory() as tmp:
             service = ChallengeService.__new__(ChallengeService)

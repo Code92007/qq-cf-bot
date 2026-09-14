@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, Iterable, Optional, Set, Tuple
 
 from .config import Config
-from .core import ChallengeActor, ChallengeService
+from .core import ChallengeActor, ChallengeService, parse_problem_id
 from .message import extract_plain_text, looks_like_code_submission, parse_code_submission, parse_command
 from .models import ActiveProblem, CFProblem, CodeSubmission, GroupMessage, PreparedProblem, ProblemStatement, RatingRange, RemoteJudgeResult
 from .onebot import OneBotClient
@@ -721,43 +721,7 @@ def _round_rating_to_nearest_hundred(value: int) -> int:
 
 
 def _parse_problem_id(arg: str) -> Optional[Tuple[int, str]]:
-    text = arg.strip()
-    if not text:
-        return None
-
-    contest_id, index = _parse_problem_url_path(text)
-    if contest_id is not None and index:
-        return contest_id, index.upper()
-
-    compact = re.sub(r"\s+", "", text)
-    id_match = re.fullmatch(r"(?i)(?:CF)?(\d{1,7})([A-Za-z][A-Za-z0-9]*)", compact)
-    if id_match is None:
-        return None
-    contest_id = int(id_match.group(1))
-    index = id_match.group(2).upper()
-    if contest_id <= 0:
-        return None
-    return contest_id, index
-
-
-def _parse_problem_url_path(text: str) -> Tuple[Optional[int], str]:
-    problemset_match = re.search(
-        r"codeforces\.com/problemset/problem/(\d+)/([A-Za-z][A-Za-z0-9]*)",
-        text,
-        re.IGNORECASE,
-    )
-    if problemset_match:
-        return int(problemset_match.group(1)), problemset_match.group(2)
-
-    contest_match = re.search(
-        r"codeforces\.com/(?:contest|gym)/(\d+)/problem/([A-Za-z][A-Za-z0-9]*)",
-        text,
-        re.IGNORECASE,
-    )
-    if contest_match:
-        return int(contest_match.group(1)), contest_match.group(2)
-
-    return None, ""
+    return parse_problem_id(arg)
 
 
 _JUDGE_SETUP_HINT = """还没有配置判题模型，无法审核 /submit。
