@@ -329,14 +329,18 @@ class ChallengeService:
             self.config.judge_solution_context_max_chars,
         )
         history = self.store.list_submission_history(actor.leaderboard_id, active.problem.cf_id)
-        result = self.judge.judge(
-            active.problem,
-            active.statement,
-            submission,
-            solution_references=references,
-            solution_context=solution_context,
-            submission_history=history,
-        )
+        try:
+            result = self.judge.judge(
+                active.problem,
+                active.statement,
+                submission,
+                solution_references=references,
+                solution_context=solution_context,
+                submission_history=history,
+            )
+        except Exception as exc:
+            LOGGER.warning("oral judge failed for %s: %s", active.problem.cf_id, exc)
+            raise ChallengeError("judge_unavailable", "AI 做法判定服务暂时不可用，请稍后重试。", 503) from exc
         if result.accepted and references:
             try:
                 result = self.judge.second_judge(

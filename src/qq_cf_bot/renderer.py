@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import html
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Iterable, List
 from urllib.parse import urlsplit
@@ -11,8 +12,9 @@ from .models import CFProblem, ProblemStatement
 
 
 _RELATIVE_SRC_RE = re.compile(r"""(?P<prefix>\s(?:src|href)=["'])(?P<url>/[^"']+)(?P<suffix>["'])""")
-_MATH_RE = re.compile(r"(?<!\\)(\${1,3})(.+?)(?<!\\)\1", re.DOTALL)
+_MATH_RE = re.compile(r"(?<![\\$])(\${3}|\${2}|\$)(?!\$)(.+?)(?<![\\$])\1(?!\$)", re.DOTALL)
 _LEFTOVER_MATH_RE = re.compile(r"(\${2,3})([^$<>]+?)\1", re.DOTALL)
+_HTML_STATEMENT_RE = re.compile(r"</?(?:a|blockquote|br|code|div|em|img|li|ol|p|pre|span|strong|table|ul)\b", re.I)
 
 
 class StatementRenderer:
@@ -285,6 +287,12 @@ img {{
 
 
 def _markdown_to_html(markdown_text: str, source_url: str = "") -> str:
+    if _HTML_STATEMENT_RE.search(markdown_text):
+        parser = _StatementHTMLRenderer(source_url)
+        parser.feed(markdown_text)
+        parser.close()
+        return parser.result
+
     try:
         import markdown
     except ImportError as exc:
@@ -303,6 +311,86 @@ def _markdown_to_html(markdown_text: str, source_url: str = "") -> str:
     rendered = _render_loose_math_tokens(rendered)
     base_url = _origin(source_url) or "https://www.luogu.com.cn"
     return _RELATIVE_SRC_RE.sub(lambda match: _absolute_attr(match, base_url), rendered)
+
+
+class _StatementHTMLRenderer(HTMLParser):
+    allowed_tags = {
+        "a", "b", "blockquote", "br", "code", "div", "em", "i", "img", "li", "ol", "p",
+        "pre", "span", "strong", "sub", "sup", "table", "tbody", "td", "th", "thead", "tr", "ul",
+    }
+    void_tags = {"br", "img"}
+    suppressed_tags = {"script", "style", "iframe", "object", "embed", "form", "input", "button"}
+
+    def __init__(self, source_url: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: List[str] = []
+        self.suppressed_depth = 0
+        self.literal_depth = 0
+        self.base_url = _origin(source_url) or "https://codeforces.com"
+
+    @property
+    def result(self) -> str:
+        return "".join(self.parts)
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        tag = tag.lower()
+        if tag in self.suppressed_tags:
+            self.suppressed_depth += 1
+            return
+        if self.suppressed_depth or tag not in self.allowed_tags:
+            return
+        if tag in {"pre", "code"}:
+            self.literal_depth += 1
+        clean_attrs = []
+        for name, value in attrs:
+            name = name.lower()
+            value = value or ""
+            if tag in {"a", "img"} and name in {"href", "src"}:
+                if value.startswith("/"):
+                    value = self.base_url + value
+                if urlsplit(value).scheme.lower() in {"http", "https"}:
+                    clean_attrs.append((name, value))
+            elif tag == "img" and name in {"alt", "title"}:
+                clean_attrs.append((name, value))
+            elif tag == "span" and name == "class":
+                classes = " ".join(
+                    part for part in value.split() if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", part)
+                )
+                if classes:
+                    clean_attrs.append(("class", classes))
+            elif tag in {"td", "th"} and name in {"colspan", "rowspan"} and value.isdigit():
+                clean_attrs.append((name, value))
+        attributes = "".join(f' {name}="{html.escape(value, quote=True)}"' for name, value in clean_attrs)
+        self.parts.append(f"<{tag}{attributes}>")
+
+    def handle_startendtag(self, tag: str, attrs) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag.lower() not in self.void_tags:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in self.suppressed_tags:
+            self.suppressed_depth = max(0, self.suppressed_depth - 1)
+            return
+        if self.suppressed_depth or tag not in self.allowed_tags or tag in self.void_tags:
+            return
+        self.parts.append(f"</{tag}>")
+        if tag in {"pre", "code"}:
+            self.literal_depth = max(0, self.literal_depth - 1)
+
+    def handle_data(self, data: str) -> None:
+        if self.suppressed_depth:
+            return
+        if self.literal_depth:
+            self.parts.append(html.escape(data))
+            return
+        normalized = _normalize_statement_markup(data)
+        normalized, math_fragments = _stash_math(normalized)
+        rendered = html.escape(normalized)
+        for token, fragment in math_fragments.items():
+            rendered = rendered.replace(token, fragment)
+        self.parts.append(rendered)
 
 
 def _stash_math(value: str) -> tuple[str, dict[str, str]]:
@@ -392,6 +480,7 @@ def _is_line_standalone_math(match: re.Match) -> bool:
 def normalize_statement_markup(value: str) -> str:
     text = html.unescape(value)
     text = text.replace("＄", "$")
+    text = text.replace("$$$$$$", "$$$").replace("$$$$", "$$")
     text = re.sub(r"\\(?=\${1,3})", "", text)
     text = text.replace(r"\_", "_")
     text = re.sub(r"(?<=\d)\\,(?=\d)", ",", text)

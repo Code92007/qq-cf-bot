@@ -76,7 +76,33 @@ class _FailingTranslator:
         raise RuntimeError("translation service is down")
 
 
+class _FailingJudge:
+    configured = True
+
+    def judge(self, *args, **kwargs):
+        raise RuntimeError("judge service is down")
+
+
 class ChallengeServiceTest(unittest.TestCase):
+    def test_oral_judge_failure_returns_specific_service_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            service = ChallengeService.__new__(ChallengeService)
+            service.config = SimpleNamespace(judge_solution_context_max_chars=1000)
+            service.store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            service.judge = _FailingJudge()
+            service.solution_bank = _EmptySolutionBank()
+            problem = CFProblem(1, "A", "Theatre Square", 1000)
+            statement = ProblemStatement("1A", "剧院广场", "题面", "输入", "输出", [])
+            service.store.set_active_problem(1, problem, statement, [], ranked=True)
+            actor = ChallengeActor(scope_id=1, leaderboard_id=1, user_id=1, display_name="Alice")
+
+            with self.assertRaises(ChallengeError) as caught:
+                service.submit_solution(actor, "直接计算答案。")
+
+            self.assertEqual(caught.exception.code, "judge_unavailable")
+            self.assertEqual(caught.exception.status, 503)
+            self.assertIsNotNone(service.store.get_active_problem(1))
+
     def test_statement_translation_failure_falls_back_to_source_statement(self):
         with tempfile.TemporaryDirectory() as tmp:
             service = ChallengeService.__new__(ChallengeService)

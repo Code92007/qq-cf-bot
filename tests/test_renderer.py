@@ -4,10 +4,33 @@ from pathlib import Path
 from unittest.mock import patch
 
 from qq_cf_bot.models import CFProblem, ProblemStatement
-from qq_cf_bot.renderer import StatementRenderer, _normalize_statement_markup, _render_loose_math_tokens, _stash_math
+from qq_cf_bot.renderer import (
+    StatementRenderer,
+    _markdown_to_html,
+    _normalize_statement_markup,
+    _render_loose_math_tokens,
+    _stash_math,
+)
 
 
 class StatementRendererTest(unittest.TestCase):
+    def test_codeforces_html_keeps_tags_and_renders_math_per_text_node(self):
+        source = (
+            '<div><p><span class="tex-font-style-bf">Hard version.</span></p>'
+            '<p>Let $$$$$$ f(S,x)=\\operatorname{mex}\\{\\lfloor y/x\\rfloor:y\\in S\\} $$$$$$ '
+            'where $$$S$$$ is a set.</p><script>alert(1)</script><p>Next paragraph.</p></div>'
+        )
+
+        rendered = _markdown_to_html(source, "https://codeforces.com/problemset/problem/2262/A2")
+
+        self.assertIn("<p><span", rendered)
+        self.assertIn("f(S,x)=mex", rendered)
+        self.assertIn("⌊y/x⌋", rendered)
+        self.assertIn("<p>Next paragraph.</p>", rendered)
+        self.assertNotIn("&lt;/p&gt;", rendered)
+        self.assertNotIn("$$$$", rendered)
+        self.assertNotIn("alert", rendered)
+
     def test_can_hide_problem_metadata(self):
         problem = CFProblem(28, "D", "Don't fear, DravDe is kind", 2400, ("dp",))
         statement = ProblemStatement(
