@@ -26,10 +26,11 @@ class LuoguClient:
     def fetch_statement(self, problem: CFProblem) -> ProblemStatement:
         url = f"https://www.luogu.com.cn/problem/{problem.luogu_pid}"
         payload = self._fetch_json(url)
-        current_data = payload.get("currentData") or payload.get("data", {}).get("currentData") or {}
-        raw_problem = current_data.get("problem") or payload.get("problem")
+        data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+        current_data = payload.get("currentData") or data.get("currentData") or {}
+        raw_problem = current_data.get("problem") or data.get("problem") or payload.get("problem")
         if not isinstance(raw_problem, dict):
-            raise RuntimeError(f"Luogu response for {problem.luogu_pid} does not contain currentData.problem")
+            raise RuntimeError(f"Luogu response for {problem.luogu_pid} does not contain problem data")
         statement = statement_from_luogu_problem(raw_problem, fallback_title=problem.name, source_url=url)
         if not statement.description and not statement.input_format and not statement.output_format:
             raise RuntimeError(f"Luogu statement for {problem.luogu_pid} is empty")
@@ -79,15 +80,22 @@ def _extract_fe_injection(html: str) -> Optional[dict]:
 
 def statement_from_luogu_problem(raw: dict, fallback_title: str, source_url: str) -> ProblemStatement:
     samples = list(_normalize_samples(raw.get("samples") or ()))
+    nested = raw.get("contenu") or raw.get("content") or {}
+    if not isinstance(nested, dict):
+        nested = {}
     return ProblemStatement(
         pid=str(raw.get("pid") or ""),
-        title=str(raw.get("title") or fallback_title),
-        background=str(raw.get("background") or ""),
-        description=str(raw.get("description") or raw.get("content") or ""),
-        input_format=str(raw.get("inputFormat") or raw.get("input_format") or ""),
-        output_format=str(raw.get("outputFormat") or raw.get("output_format") or ""),
+        title=str(nested.get("name") or raw.get("title") or raw.get("name") or fallback_title),
+        background=str(nested.get("background") or raw.get("background") or ""),
+        description=str(nested.get("description") or raw.get("description") or ""),
+        input_format=str(
+            nested.get("formatI") or raw.get("inputFormat") or raw.get("input_format") or ""
+        ),
+        output_format=str(
+            nested.get("formatO") or raw.get("outputFormat") or raw.get("output_format") or ""
+        ),
         samples=samples,
-        hint=str(raw.get("hint") or ""),
+        hint=str(nested.get("hint") or raw.get("hint") or ""),
         source_url=source_url,
     )
 

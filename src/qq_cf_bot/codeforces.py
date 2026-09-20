@@ -39,6 +39,37 @@ class CodeforcesClient:
                     raise
         return list(_parse_problemset(payload))
 
+    def resolve_problem(self, contest_id: int, index: str) -> Optional[CFProblem]:
+        problems = self.fetch_problems()
+        normalized_index = index.upper()
+        direct = _find_problem(problems, contest_id, normalized_index)
+        if direct is not None:
+            return direct
+
+        # The global problemset only contains the canonical Div. 1 id for
+        # shared Div. 1/Div. 2 problems. Contest standings retain aliases such
+        # as 2263C2, which is published globally as 2262A2.
+        payload = _fetch_json_from_codeforces_variants(
+            f"/api/contest.standings?contestId={contest_id}",
+            self.base_urls,
+            timeout_seconds=20,
+        )
+        contest_problem = _find_problem(_parse_problemset(payload), contest_id, normalized_index)
+        if contest_problem is None:
+            return None
+
+        canonical_candidates = [
+            problem
+            for problem in problems
+            if problem.name == contest_problem.name and problem.rating == contest_problem.rating
+        ]
+        if canonical_candidates:
+            return min(
+                canonical_candidates,
+                key=lambda problem: (abs(problem.contest_id - contest_id), problem.contest_id, problem.index),
+            )
+        return contest_problem
+
     def _fetch_remote(self) -> dict:
         return _fetch_json_from_codeforces_variants("/api/problemset.problems", self.base_urls, timeout_seconds=20)
 
@@ -82,6 +113,14 @@ def _parse_problemset(payload: dict) -> Iterable[CFProblem]:
             rating=int(rating),
             tags=tuple(str(tag) for tag in raw.get("tags") or ()),
         )
+
+
+def _find_problem(problems: Iterable[CFProblem], contest_id: int, index: str) -> Optional[CFProblem]:
+    normalized_index = index.upper()
+    for problem in problems:
+        if problem.contest_id == contest_id and problem.index.upper() == normalized_index:
+            return problem
+    return None
 
 
 class CodeforcesStatusClient:

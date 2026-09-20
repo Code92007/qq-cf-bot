@@ -283,7 +283,13 @@ class ChallengeService:
         if self.store.get_active_problem(scope_id) is not None:
             raise ChallengeError("active_problem", "当前挑战还没有结束。", 409)
         problem = self.find_problem(contest_id, index)
-        prepared = self.prepare_specific_problem(problem)
+        try:
+            prepared = self.prepare_specific_problem(problem)
+        except ChallengeError:
+            raise
+        except Exception as exc:
+            LOGGER.warning("failed to prepare requested problem %s: %s", problem.cf_id, exc)
+            raise ChallengeError("problem_unavailable", "这道题的题面暂时不可用，请稍后重试。", 503) from exc
         return self.activate_problem(scope_id, prepared, ranked=False)
 
     def giveup_wait_seconds(self, active: ActiveProblem) -> int:
@@ -518,14 +524,14 @@ class ChallengeService:
         return self._translate_and_cache_if_needed(problem, statement, source="codeforces")
 
     def find_problem(self, contest_id: int, index: str) -> CFProblem:
-        normalized_index = index.upper()
         try:
-            for problem in self.cf.fetch_problems():
-                if problem.contest_id == contest_id and problem.index.upper() == normalized_index:
-                    return problem
+            problem = self.cf.resolve_problem(contest_id, index)
         except Exception as exc:
             LOGGER.warning("failed to load problemset while finding %s%s: %s", contest_id, index, exc)
-        return CFProblem(contest_id=contest_id, index=normalized_index, name=f"{contest_id}{normalized_index}", rating=0)
+            raise ChallengeError("problem_lookup_unavailable", "Codeforces 题库暂时不可用，请稍后重试。", 503) from exc
+        if problem is None:
+            raise ChallengeError("problem_not_found", "没有找到这个 Codeforces 题目，请检查题号或链接。", 404)
+        return problem
 
     def _translate_and_cache_if_needed(
         self,
@@ -554,10 +560,10 @@ class ChallengeService:
                     translated=not _needs_statement_translation(translated),
                 )
                 return translated
-        except Exception:
-            if _needs_body_translation(statement):
-                self.store.cache_statement(problem, statement, source=source, translated=False)
-            raise
+        except Exception as exc:
+            LOGGER.warning("statement translation failed for %s; using source statement: %s", problem.cf_id, exc)
+            self.store.cache_statement(problem, statement, source=source, translated=False)
+            return statement
 
         self.store.cache_statement(problem, statement, source=source, translated=not _needs_statement_translation(statement))
         return statement

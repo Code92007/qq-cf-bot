@@ -64,7 +64,53 @@ class _CodeFallbackJudge:
         return JudgeResult(self.accepted, "通过" if self.accepted else "边界条件处理错误。")
 
 
+class _FailingTranslator:
+    configured = True
+
+    def translate_statement(self, statement):
+        del statement
+        raise RuntimeError("translation service is down")
+
+    def translate_title(self, title):
+        del title
+        raise RuntimeError("translation service is down")
+
+
 class ChallengeServiceTest(unittest.TestCase):
+    def test_statement_translation_failure_falls_back_to_source_statement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            service = ChallengeService.__new__(ChallengeService)
+            service.store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            service.translator = _FailingTranslator()
+            problem = CFProblem(1, "A", "Theatre Square", 1000)
+            statement = ProblemStatement(
+                "1A",
+                "Theatre Square",
+                (
+                    "You are given a rectangular square in the city center. "
+                    "Find the minimum number of stones needed to cover it completely."
+                ),
+                "Read three positive integers from standard input.",
+                "Print the minimum number of stones.",
+                [],
+            )
+
+            result = service._translate_and_cache_if_needed(problem, statement, source="codeforces")
+
+            self.assertEqual(result, statement)
+            self.assertEqual(service.store.get_cached_statement("1A"), statement)
+            self.assertIsNone(service.store.get_cached_statement("1A", require_translated=True))
+
+    def test_find_problem_rejects_unknown_problem(self):
+        service = ChallengeService.__new__(ChallengeService)
+        service.cf = SimpleNamespace(resolve_problem=lambda contest_id, index: None)
+
+        with self.assertRaises(ChallengeError) as caught:
+            service.find_problem(9999999, "Z")
+
+        self.assertEqual(caught.exception.code, "problem_not_found")
+        self.assertEqual(caught.exception.status, 404)
+
     def test_specific_problem_is_activated_without_ranking_or_dedup(self):
         with tempfile.TemporaryDirectory() as tmp:
             service = ChallengeService.__new__(ChallengeService)
