@@ -12,6 +12,7 @@ class CFProblem:
     name: str
     rating: int
     tags: Tuple[str, ...] = ()
+    is_gym: bool = False
 
     @property
     def cf_id(self) -> str:
@@ -23,6 +24,8 @@ class CFProblem:
 
     @property
     def cf_url(self) -> str:
+        if self.is_gym:
+            return f"https://codeforces.com/gym/{self.contest_id}/problem/{self.index}"
         return f"https://codeforces.com/problemset/problem/{self.contest_id}/{self.index}"
 
     @property
@@ -32,6 +35,16 @@ class CFProblem:
     @property
     def luogu_solution_url(self) -> str:
         return f"https://www.luogu.com.cn/problem/solution/{self.luogu_pid}"
+
+
+@dataclass(frozen=True)
+class CFContest:
+    contest_id: int
+    name: str
+    phase: str
+    duration_seconds: int
+    start_time_seconds: Optional[int] = None
+    is_gym: bool = False
 
 
 @dataclass(frozen=True)

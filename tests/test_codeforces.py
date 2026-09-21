@@ -92,6 +92,33 @@ class CodeforcesClientTest(unittest.TestCase):
         self.assertEqual(problem, expected)
         fetch.assert_not_called()
 
+    def test_fetch_gym_contest_keeps_unrated_problems(self):
+        payload = {
+            "status": "OK",
+            "result": {
+                "contest": {
+                    "id": 105001,
+                    "name": "Example Gym",
+                    "phase": "FINISHED",
+                    "durationSeconds": 18000,
+                },
+                "problems": [
+                    {"contestId": 105001, "index": "A", "name": "Warmup", "tags": ["math"]},
+                    {"contestId": 105001, "index": "B", "name": "Finale", "rating": 2100},
+                ],
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            client = CodeforcesClient(Path(tmp) / "problemset.json")
+            with patch("qq_cf_bot.codeforces._fetch_json_from_codeforces_variants", return_value=payload):
+                contest, problems = client.fetch_contest(105001)
+
+        self.assertTrue(contest.is_gym)
+        self.assertEqual(contest.duration_seconds, 18000)
+        self.assertEqual([problem.cf_id for problem in problems], ["105001A", "105001B"])
+        self.assertEqual([problem.rating for problem in problems], [0, 2100])
+        self.assertEqual(problems[0].cf_url, "https://codeforces.com/gym/105001/problem/A")
+
 
 if __name__ == "__main__":
     unittest.main()

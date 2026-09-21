@@ -184,6 +184,24 @@ class ChallengeServiceTest(unittest.TestCase):
             self.assertEqual(service.store.list_group_stats(-1)[0].display_name, "Alice")
             self.assertEqual(service.store.list_group_stats(-1)[0].solved_ratings, (1000,))
 
+    def test_oral_acceptance_can_leave_problem_active_for_contest_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            service = ChallengeService.__new__(ChallengeService)
+            service.config = SimpleNamespace(judge_solution_context_max_chars=1000)
+            service.store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            service.judge = _AcceptingJudge()
+            service.solution_bank = _EmptySolutionBank()
+            problem = CFProblem(1, "A", "Theatre Square", 1000)
+            statement = ProblemStatement("CF1A", "剧院广场", "题面", "输入", "输出", [])
+            service.store.set_active_problem(1, problem, statement, [], ranked=False)
+            actor = ChallengeActor(scope_id=1, leaderboard_id=-1, user_id=1, display_name="Alice")
+
+            outcome = service.submit_solution(actor, "直接计算答案。", settle=False)
+
+            self.assertTrue(outcome.accepted)
+            self.assertFalse(outcome.settled)
+            self.assertIsNotNone(service.store.get_active_problem(1))
+
     def test_failed_remote_submit_keeps_problem_and_does_not_start_cooldown(self):
         with tempfile.TemporaryDirectory() as tmp:
             service = ChallengeService.__new__(ChallengeService)

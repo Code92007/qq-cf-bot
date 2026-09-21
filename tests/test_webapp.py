@@ -7,8 +7,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from qq_cf_bot.config import Config
-from qq_cf_bot.core import ChallengeService
-from qq_cf_bot.models import CFProblem
+from qq_cf_bot.core import ChallengeService, SubmissionOutcome
+from qq_cf_bot.models import CFContest, CFProblem, PreparedProblem, ProblemStatement, RatingRange
 from qq_cf_bot.webapp import WebApplication, _safe_statement_html
 
 
@@ -152,6 +152,53 @@ class WebApplicationTest(unittest.TestCase):
         self.assertTrue(self.app.handle_post(invalid, "/api/challenges/share"))
         self.assertEqual(invalid.status, 400)
         self.assertEqual(invalid.json()["error"], "invalid_request")
+
+    def test_contest_session_keeps_problem_after_oral_ac_and_records_timeline(self):
+        register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})
+        self.app.handle_post(register, "/api/auth/register")
+        response = register.json()
+        cookie = register.header("Set-Cookie").split(";", 1)[0]
+        csrf = response["state"]["csrfToken"]
+        contest = CFContest(2000, "Codeforces Round 999 (Div. 2)", "FINISHED", 7200)
+        problems = [CFProblem(2000, "A", "First", 800), CFProblem(2000, "B", "Second", 1200)]
+        statement = ProblemStatement("CF2000A", "First", "description", "input", "output", [])
+        prepared = PreparedProblem(problems[0], statement, [], RatingRange(800, 800), "now")
+
+        with (
+            patch.object(self.app.service.cf, "fetch_contest", return_value=(contest, problems)),
+            patch.object(self.app.service, "prepare_specific_problem", return_value=prepared),
+        ):
+            start = _Handler({"category": "div2", "contestId": "2000"}, cookie=cookie, csrf=csrf)
+            self.assertTrue(self.app.handle_post(start, "/api/contest-sessions"))
+
+        self.assertEqual(start.status, 201)
+        started_state = start.json()["state"]
+        self.assertIsNone(started_state["active"])
+        self.assertEqual(started_state["contestSession"]["currentCfId"], "2000A")
+        self.assertEqual(len(started_state["contestSession"]["problems"]), 2)
+        scope_id = -(2_000_000_000_000 + response["state"]["user"]["id"])
+        active = self.app.service.get_active_problem(scope_id)
+
+        with patch.object(
+            self.app.service,
+            "submit_solution",
+            return_value=SubmissionOutcome(active=active, accepted=True, reason="思路正确。", settled=False),
+        ) as submit:
+            oral = _Handler({"solution": "做法"}, cookie=cookie, csrf=csrf)
+            self.assertTrue(self.app.handle_post(oral, "/api/contest-sessions/oral"))
+
+        submit.assert_called_once()
+        self.assertFalse(submit.call_args.kwargs["settle"])
+        oral_state = oral.json()["state"]["contestSession"]
+        self.assertIsNotNone(oral_state["problems"][0]["oralAcceptedAt"])
+        self.assertIsNotNone(self.app.service.get_active_problem(scope_id))
+
+        end = _Handler({}, cookie=cookie, csrf=csrf)
+        self.assertTrue(self.app.handle_post(end, "/api/contest-sessions/end"))
+        self.assertEqual(end.json()["ended"]["status"], "ended")
+        self.assertIsNone(end.json()["state"]["contestSession"])
+        self.assertEqual(end.json()["state"]["lastContestSession"]["contestId"], 2000)
+        self.assertIsNone(self.app.service.get_active_problem(scope_id))
 
 
 if __name__ == "__main__":

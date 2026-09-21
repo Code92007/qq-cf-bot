@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 from .cf_mirrors import codeforces_url_variants, normalize_codeforces_base_urls
-from .models import CFProblem
+from .models import CFContest, CFProblem
 
 
 LOGGER = logging.getLogger(__name__)
@@ -70,6 +70,38 @@ class CodeforcesClient:
             )
         return contest_problem
 
+    def fetch_contests(self, gym: bool = False) -> List[CFContest]:
+        query = urllib.parse.urlencode({"gym": "true" if gym else "false"})
+        payload = _fetch_json_from_codeforces_variants(
+            f"/api/contest.list?{query}",
+            self.base_urls,
+            timeout_seconds=20,
+        )
+        return list(_parse_contests(payload, gym=gym))
+
+    def fetch_contest(self, contest_id: int) -> tuple[CFContest, List[CFProblem]]:
+        query = urllib.parse.urlencode({"contestId": contest_id, "from": 1, "count": 1})
+        payload = _fetch_json_from_codeforces_variants(
+            f"/api/contest.standings?{query}",
+            self.base_urls,
+            timeout_seconds=20,
+        )
+        result = payload.get("result") or {}
+        raw_contest = result.get("contest") or {}
+        if not raw_contest or int(raw_contest.get("id") or 0) != contest_id:
+            raise RuntimeError(f"Codeforces contest {contest_id} was not found")
+        contest = _contest_from_json(raw_contest, gym=contest_id >= 100_000)
+        problems = list(_parse_contest_problems(result.get("problems") or (), is_gym=contest.is_gym))
+        if not problems:
+            raise RuntimeError(f"Codeforces contest {contest_id} has no public problems")
+        if not contest.is_gym:
+            try:
+                catalog = self.fetch_problems()
+                problems = [_canonical_problem(problem, catalog) for problem in problems]
+            except Exception as exc:
+                LOGGER.warning("failed to canonicalize contest %s problems: %s", contest_id, exc)
+        return contest, problems
+
     def _fetch_remote(self) -> dict:
         return _fetch_json_from_codeforces_variants("/api/problemset.problems", self.base_urls, timeout_seconds=20)
 
@@ -112,6 +144,45 @@ def _parse_problemset(payload: dict) -> Iterable[CFProblem]:
             name=str(name),
             rating=int(rating),
             tags=tuple(str(tag) for tag in raw.get("tags") or ()),
+            is_gym=int(contest_id) >= 100_000,
+        )
+
+
+def _parse_contests(payload: dict, gym: bool = False) -> Iterable[CFContest]:
+    if payload.get("status") != "OK":
+        raise RuntimeError(f"Codeforces API returned non-OK status: {payload.get('status')!r}")
+    for raw in payload.get("result") or []:
+        if raw.get("id") is None or not raw.get("name"):
+            continue
+        yield _contest_from_json(raw, gym=gym)
+
+
+def _contest_from_json(raw: dict, gym: bool = False) -> CFContest:
+    start = raw.get("startTimeSeconds")
+    return CFContest(
+        contest_id=int(raw["id"]),
+        name=str(raw["name"]),
+        phase=str(raw.get("phase") or ""),
+        duration_seconds=max(0, int(raw.get("durationSeconds") or 0)),
+        start_time_seconds=int(start) if start is not None else None,
+        is_gym=bool(gym or int(raw["id"]) >= 100_000),
+    )
+
+
+def _parse_contest_problems(raw_problems: Iterable[dict], is_gym: bool = False) -> Iterable[CFProblem]:
+    for raw in raw_problems:
+        contest_id = raw.get("contestId")
+        index = raw.get("index")
+        name = raw.get("name")
+        if contest_id is None or not index or not name:
+            continue
+        yield CFProblem(
+            contest_id=int(contest_id),
+            index=str(index),
+            name=str(name),
+            rating=int(raw.get("rating") or 0),
+            tags=tuple(str(tag) for tag in raw.get("tags") or ()),
+            is_gym=is_gym,
         )
 
 
@@ -121,6 +192,24 @@ def _find_problem(problems: Iterable[CFProblem], contest_id: int, index: str) ->
         if problem.contest_id == contest_id and problem.index.upper() == normalized_index:
             return problem
     return None
+
+
+def _canonical_problem(problem: CFProblem, catalog: Iterable[CFProblem]) -> CFProblem:
+    problem_list = list(catalog)
+    direct = _find_problem(problem_list, problem.contest_id, problem.index)
+    if direct is not None:
+        return direct
+    candidates = [
+        item
+        for item in problem_list
+        if item.name == problem.name and item.rating == problem.rating
+    ]
+    if not candidates:
+        return problem
+    return min(
+        candidates,
+        key=lambda item: (abs(item.contest_id - problem.contest_id), item.contest_id, item.index),
+    )
 
 
 class CodeforcesStatusClient:

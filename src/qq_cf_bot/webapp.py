@@ -29,8 +29,10 @@ LOGGER = logging.getLogger(__name__)
 _SESSION_COOKIE = "cf_session"
 _WEB_LEADERBOARD_ID = -1
 _WEB_SCOPE_OFFSET = 1_000_000_000_000
+_WEB_CONTEST_SCOPE_OFFSET = 2_000_000_000_000
 _USERNAME_RE = re.compile(r"[A-Za-z0-9_-]{3,24}")
 _LANGUAGES = {"cpp", "c", "java", "py", "python"}
+_CONTEST_CATEGORIES = {"div2", "div1", "gym"}
 _DUMMY_PASSWORD_HASH = "pbkdf2_sha256$310000$00000000000000000000000000000000$" + ("00" * 32)
 
 
@@ -105,6 +107,16 @@ class WebApplication:
                     self._oral_submit(handler, session, payload)
                 elif path == "/api/challenges/code":
                     self._code_submit(handler, session, payload)
+                elif path == "/api/contest-sessions":
+                    self._start_contest_session(handler, session, payload)
+                elif path == "/api/contest-sessions/select":
+                    self._select_contest_problem(handler, session, payload)
+                elif path == "/api/contest-sessions/oral":
+                    self._contest_oral_submit(handler, session, payload)
+                elif path == "/api/contest-sessions/code":
+                    self._contest_code_submit(handler, session, payload)
+                elif path == "/api/contest-sessions/end":
+                    self._end_contest_session(handler, session)
                 else:
                     return False
             finally:
@@ -208,6 +220,151 @@ class WebApplication:
         )
         self._json(handler, self._outcome_payload(session, outcome))
 
+    def _start_contest_session(self, handler, session: dict, payload: dict) -> None:
+        user_id = int(session["user_id"])
+        if self.service.store.get_active_web_contest_session(user_id) is not None:
+            raise ChallengeError("active_contest_session", "当前套题还没有结束。", 409)
+        category = str(payload.get("category") or "").strip().lower()
+        if category not in _CONTEST_CATEGORIES:
+            raise ValueError("套题类型必须是 Div. 2、Div. 1 或 Gym。")
+        raw_contest_id = str(payload.get("contestId") or "").strip()
+        if raw_contest_id:
+            if not raw_contest_id.isdigit() or len(raw_contest_id) > 7:
+                raise ValueError("比赛 ID 必须是数字。")
+            contest_id = int(raw_contest_id)
+            contest, problems = self._fetch_contest(contest_id)
+            if contest.phase != "FINISHED":
+                raise ValueError("只能用已结束的比赛创建 VP 套题。")
+            if not _contest_matches_category(contest.name, contest.is_gym, category):
+                raise ValueError("比赛 ID 与所选套题类型不匹配。")
+        else:
+            contest, problems = self._latest_contest(category)
+
+        first_problem = problems[0]
+        try:
+            prepared = self.service.prepare_specific_problem(first_problem)
+        except ChallengeError:
+            raise
+        except Exception as exc:
+            LOGGER.warning("failed to prepare contest problem %s: %s", first_problem.cf_id, exc)
+            raise ChallengeError("problem_unavailable", "这场比赛的题面暂时不可用，请稍后重试。", 503) from exc
+
+        contest_session = self.service.store.create_web_contest_session(user_id, contest, category, problems)
+        scope_id = self._contest_scope(user_id)
+        try:
+            self.service.store.clear_active_problem(scope_id)
+            self.service.activate_problem(scope_id, prepared, ranked=False)
+        except Exception:
+            self.service.store.clear_active_problem(scope_id)
+            self.service.store.delete_web_contest_session(contest_session["id"], user_id)
+            raise
+        self._json(handler, {"ok": True, "state": self._state(session)}, status=201)
+
+    def _select_contest_problem(self, handler, session: dict, payload: dict) -> None:
+        user_id = int(session["user_id"])
+        contest_session = self._require_contest_session(user_id)
+        cf_id = str(payload.get("cfId") or "").strip().upper()
+        selected = next((item for item in contest_session["problems"] if item["cf_id"] == cf_id), None)
+        if selected is None:
+            raise ValueError("这道题不属于当前套题。")
+        if cf_id != contest_session["current_cf_id"]:
+            try:
+                prepared = self.service.prepare_specific_problem(selected["problem"])
+            except Exception as exc:
+                LOGGER.warning("failed to switch contest problem %s: %s", cf_id, exc)
+                raise ChallengeError("problem_unavailable", "这道题的题面暂时不可用，请稍后重试。", 503) from exc
+            scope_id = self._contest_scope(user_id)
+            self.service.store.clear_active_problem(scope_id)
+            self.service.activate_problem(scope_id, prepared, ranked=False)
+            self.service.store.select_web_contest_problem(contest_session["id"], user_id, cf_id)
+        self._json(handler, {"ok": True, "state": self._state(session)})
+
+    def _contest_oral_submit(self, handler, session: dict, payload: dict) -> None:
+        submission = str(payload.get("solution") or "").strip()
+        if len(submission) > 20_000:
+            raise ValueError("做法说明不能超过 20000 个字符。")
+        user_id = int(session["user_id"])
+        contest_session = self._require_contest_session(user_id)
+        actor = self._contest_actor(session)
+        outcome = self.service.submit_solution(actor, submission, settle=False)
+        self.service.store.record_web_contest_attempt(
+            contest_session["id"], user_id, outcome.active.problem.cf_id, "oral", outcome.accepted
+        )
+        response = self._outcome_payload(session, outcome)
+        response.pop("resolved", None)
+        response["label"] = "ORAL AC" if outcome.accepted else "ORAL REVIEW"
+        response["title"] = "口胡通过，继续写代码" if outcome.accepted else "做法还需要修改"
+        self._json(handler, response)
+
+    def _contest_code_submit(self, handler, session: dict, payload: dict) -> None:
+        language = str(payload.get("language") or self.config.cf_submit_default_language).strip().lower()
+        if language not in _LANGUAGES:
+            raise ValueError("当前仅支持 C++、C、Java 和 Python。")
+        source = str(payload.get("source") or "")
+        if len(source) > 128_000:
+            raise ValueError("代码不能超过 128000 个字符。")
+        user_id = int(session["user_id"])
+        contest_session = self._require_contest_session(user_id)
+        outcome = self.service.submit_code(
+            self._contest_actor(session),
+            CodeSubmission(language=language, source=source),
+            expected_cf_id=contest_session["current_cf_id"],
+            settle=False,
+        )
+        self.service.store.record_web_contest_attempt(
+            contest_session["id"], user_id, outcome.active.problem.cf_id, "code", outcome.accepted
+        )
+        response = self._outcome_payload(session, outcome)
+        response.pop("resolved", None)
+        response["label"] = "CODE AC" if outcome.accepted else response.get("label", "CODE REVIEW")
+        response["title"] = "代码通过" if outcome.accepted else response.get("title", "代码还未通过")
+        self._json(handler, response)
+
+    def _end_contest_session(self, handler, session: dict) -> None:
+        user_id = int(session["user_id"])
+        contest_session = self._require_contest_session(user_id)
+        ended = self.service.store.end_web_contest_session(contest_session["id"], user_id)
+        self.service.store.clear_active_problem(self._contest_scope(user_id))
+        self._json(
+            handler,
+            {
+                "ok": True,
+                "ended": _contest_session_json(ended, None),
+                "state": self._state(session),
+            },
+        )
+
+    def _fetch_contest(self, contest_id: int):
+        try:
+            return self.service.cf.fetch_contest(contest_id)
+        except Exception as exc:
+            LOGGER.warning("failed to load Codeforces contest %s: %s", contest_id, exc)
+            raise ChallengeError("contest_unavailable", "没有找到可访问的比赛套题，请检查比赛 ID。", 404) from exc
+
+    def _latest_contest(self, category: str):
+        try:
+            contests = self.service.cf.fetch_contests(gym=category == "gym")
+        except Exception as exc:
+            LOGGER.warning("failed to load Codeforces contest list: %s", exc)
+            raise ChallengeError("contest_list_unavailable", "Codeforces 比赛列表暂时不可用。", 503) from exc
+        candidates = [
+            contest
+            for contest in contests
+            if contest.phase == "FINISHED" and _contest_matches_category(contest.name, contest.is_gym, category)
+        ]
+        for candidate in candidates[:20]:
+            try:
+                return self.service.cf.fetch_contest(candidate.contest_id)
+            except Exception as exc:
+                LOGGER.info("skip unavailable contest %s: %s", candidate.contest_id, exc)
+        raise ChallengeError("contest_unavailable", "暂时没有找到可访问的该类型比赛。", 503)
+
+    def _require_contest_session(self, user_id: int) -> dict:
+        contest_session = self.service.store.get_active_web_contest_session(user_id)
+        if contest_session is None:
+            raise ChallengeError("no_contest_session", "当前没有进行中的套题。", 409)
+        return contest_session
+
     def _outcome_payload(self, session: dict, outcome: SubmissionOutcome) -> dict:
         payload: dict = {
             "ok": True,
@@ -241,6 +398,17 @@ class WebApplication:
         active = self.service.get_active_problem(actor.scope_id)
         rating_range = self.service.get_rating_range(actor.scope_id)
         stat = self.service.get_user_stat(actor)
+        contest_session = self.service.store.get_active_web_contest_session(int(session["user_id"]))
+        contest_active = (
+            self.service.get_active_problem(self._contest_scope(int(session["user_id"])))
+            if contest_session is not None
+            else None
+        )
+        last_contest_session = (
+            None
+            if contest_session is not None
+            else self.service.store.get_latest_ended_web_contest_session(int(session["user_id"]))
+        )
         return {
             "authenticated": True,
             "csrfToken": session["csrf_token"],
@@ -252,6 +420,8 @@ class WebApplication:
             "ratingRange": {"min": rating_range.min_rating, "max": rating_range.max_rating},
             "me": _stat_json(stat),
             "active": _active_json(active, self.service.giveup_wait_seconds(active)) if active else None,
+            "contestSession": _contest_session_json(contest_session, contest_active) if contest_session else None,
+            "lastContestSession": _contest_session_json(last_contest_session, None) if last_contest_session else None,
             "leaderboard": self._leaderboard(),
             "capabilities": {
                 "oralJudge": self.service.judge.configured,
@@ -303,6 +473,19 @@ class WebApplication:
             user_id=user_id,
             display_name=str(session["display_name"]),
         )
+
+    def _contest_actor(self, session: dict) -> ChallengeActor:
+        user_id = int(session["user_id"])
+        return ChallengeActor(
+            scope_id=self._contest_scope(user_id),
+            leaderboard_id=_WEB_LEADERBOARD_ID,
+            user_id=user_id,
+            display_name=str(session["display_name"]),
+        )
+
+    @staticmethod
+    def _contest_scope(user_id: int) -> int:
+        return -(_WEB_CONTEST_SCOPE_OFFSET + user_id)
 
     def _create_session_response(self, handler, user: dict, status: int = 200) -> None:
         token = secrets.token_urlsafe(32)
@@ -496,6 +679,93 @@ def _revealed_problem(active: ActiveProblem) -> dict:
         "solutionUrl": problem.luogu_solution_url,
         "ranked": active.ranked,
     }
+
+
+def _contest_matches_category(name: str, is_gym: bool, category: str) -> bool:
+    if category == "gym":
+        return is_gym
+    if is_gym:
+        return False
+    division = "1" if category == "div1" else "2"
+    return re.search(rf"\bDiv(?:ision)?\.?\s*{division}\b", name, re.IGNORECASE) is not None
+
+
+def _contest_session_json(contest_session: dict, active: Optional[ActiveProblem]) -> dict:
+    started_at = contest_session["started_at"]
+    clock_end = contest_session["ended_at"] or datetime.now(timezone.utc).isoformat()
+    is_gym = contest_session["category"] == "gym"
+    problems = []
+    for item in contest_session["problems"]:
+        problem = item["problem"]
+        opened_at = item["opened_at"]
+        oral_at = item["oral_accepted_at"]
+        code_at = item["code_accepted_at"]
+        thinking_seconds = item["thinking_seconds"]
+        coding_seconds = item["coding_seconds"]
+        if contest_session["status"] == "active" and problem.cf_id == contest_session["current_cf_id"]:
+            current_elapsed = _elapsed_seconds(contest_session["current_selected_at"], clock_end) or 0
+            if not oral_at and not code_at:
+                thinking_seconds += current_elapsed
+            elif oral_at and not code_at:
+                coding_seconds += current_elapsed
+        base_url = "gym" if is_gym else "contest"
+        problems.append(
+            {
+                "cfId": problem.cf_id,
+                "index": problem.index,
+                "title": problem.name,
+                "rating": problem.rating or None,
+                "tags": list(problem.tags),
+                "url": f"https://codeforces.com/{base_url}/{problem.contest_id}/problem/{problem.index}",
+                "current": problem.cf_id == contest_session["current_cf_id"],
+                "openedAt": opened_at or None,
+                "oralAcceptedAt": oral_at or None,
+                "codeAcceptedAt": code_at or None,
+                "openedSeconds": _elapsed_seconds(started_at, opened_at),
+                "oralAcSeconds": _elapsed_seconds(started_at, oral_at),
+                "codeAcSeconds": _elapsed_seconds(started_at, code_at),
+                "thinkingSeconds": thinking_seconds if opened_at else None,
+                "codingSeconds": coding_seconds if oral_at else None,
+                "splitAvailable": bool(oral_at),
+                "oralAttempts": item["oral_attempts"],
+                "codeAttempts": item["code_attempts"],
+            }
+        )
+
+    active_json = None
+    if active is not None:
+        active_json = _active_json(active, 0)
+        current = next((item for item in problems if item["cfId"] == active.problem.cf_id), None)
+        active_json["problem"] = current
+    return {
+        "id": contest_session["id"],
+        "contestId": contest_session["contest_id"],
+        "contestName": contest_session["contest_name"],
+        "category": contest_session["category"],
+        "durationSeconds": contest_session["duration_seconds"],
+        "startedAt": started_at,
+        "endedAt": contest_session["ended_at"] or None,
+        "status": contest_session["status"],
+        "elapsedSeconds": _elapsed_seconds(started_at, clock_end) or 0,
+        "currentCfId": contest_session["current_cf_id"],
+        "problems": problems,
+        "active": active_json,
+    }
+
+
+def _elapsed_seconds(start_value: str, end_value: str) -> Optional[int]:
+    if not start_value or not end_value:
+        return None
+    try:
+        start = datetime.fromisoformat(start_value.replace("Z", "+00:00"))
+        end = datetime.fromisoformat(end_value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+    return max(0, int((end - start).total_seconds()))
 
 
 def _safe_statement_html(value: str, source_url: str) -> str:

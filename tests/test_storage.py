@@ -1,12 +1,57 @@
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from qq_cf_bot.models import CFProblem, PreparedProblem, ProblemStatement, RatingRange, RemoteJudgeResult, SolutionReference
+from qq_cf_bot.models import CFContest, CFProblem, PreparedProblem, ProblemStatement, RatingRange, RemoteJudgeResult, SolutionReference
 from qq_cf_bot.storage import SentProblemStore
 
 
 class StorageTest(unittest.TestCase):
+    def test_web_contest_session_tracks_problem_timeline(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            user = store.create_web_user("alice", "Alice", "hash")
+            contest = CFContest(2000, "Codeforces Round (Div. 2)", "FINISHED", 7200)
+            problems = [
+                CFProblem(2000, "A", "First", 800),
+                CFProblem(2000, "B", "Second", 1200),
+            ]
+
+            session = store.create_web_contest_session(user["id"], contest, "div2", problems)
+            self.assertEqual(session["current_cf_id"], "2000A")
+            self.assertTrue(session["problems"][0]["opened_at"])
+            self.assertFalse(session["problems"][1]["opened_at"])
+
+            with store._connect() as conn:
+                conn.execute(
+                    "update web_contest_sessions set current_selected_at = ? where id = ?",
+                    ((datetime.now(timezone.utc) - timedelta(seconds=60)).isoformat(), session["id"]),
+                )
+            session = store.record_web_contest_attempt(session["id"], user["id"], "2000A", "oral", True)
+            first_ac = session["problems"][0]["oral_accepted_at"]
+            self.assertGreaterEqual(session["problems"][0]["thinking_seconds"], 59)
+            session = store.record_web_contest_attempt(session["id"], user["id"], "2000A", "oral", True)
+            self.assertEqual(session["problems"][0]["oral_accepted_at"], first_ac)
+            self.assertEqual(session["problems"][0]["oral_attempts"], 2)
+
+            with store._connect() as conn:
+                conn.execute(
+                    "update web_contest_sessions set current_selected_at = ? where id = ?",
+                    ((datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat(), session["id"]),
+                )
+            session = store.record_web_contest_attempt(session["id"], user["id"], "2000A", "code", True)
+            self.assertGreaterEqual(session["problems"][0]["coding_seconds"], 89)
+
+            session = store.select_web_contest_problem(session["id"], user["id"], "2000B")
+            self.assertEqual(session["current_cf_id"], "2000B")
+            self.assertTrue(session["problems"][1]["opened_at"])
+
+            ended = store.end_web_contest_session(session["id"], user["id"])
+            self.assertEqual(ended["status"], "ended")
+            self.assertIsNone(store.get_active_web_contest_session(user["id"]))
+            self.assertEqual(store.get_latest_ended_web_contest_session(user["id"])["id"], session["id"])
+
     def test_active_problem_roundtrip_and_sent_ids(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = SentProblemStore(Path(tmp) / "bot.sqlite3")

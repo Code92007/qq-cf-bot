@@ -315,7 +315,12 @@ class ChallengeService:
         self.store.clear_active_problem(scope_id)
         return active
 
-    def submit_solution(self, actor: ChallengeActor, submission: str) -> SubmissionOutcome:
+    def submit_solution(
+        self,
+        actor: ChallengeActor,
+        submission: str,
+        settle: bool = True,
+    ) -> SubmissionOutcome:
         active = self._require_active(actor.scope_id)
         submission = submission.strip()
         if not submission:
@@ -368,6 +373,8 @@ class ChallengeService:
         )
         if not result.accepted:
             return SubmissionOutcome(active=active, accepted=False, reason=result.reason)
+        if not settle:
+            return SubmissionOutcome(active=active, accepted=True, reason=result.reason, settled=False)
         return self._settle_accepted(actor, active, result.reason)
 
     def submit_code(
@@ -375,6 +382,7 @@ class ChallengeService:
         actor: ChallengeActor,
         submission: CodeSubmission,
         expected_cf_id: str = "",
+        settle: bool = True,
     ) -> SubmissionOutcome:
         active = self._require_active(actor.scope_id)
         if expected_cf_id and active.problem.cf_id != expected_cf_id:
@@ -444,6 +452,14 @@ class ChallengeService:
                 accepted=False,
                 reason=result.message,
                 remote_result=result,
+            )
+        if not settle:
+            return SubmissionOutcome(
+                active=active,
+                accepted=True,
+                reason=result.message,
+                remote_result=result,
+                settled=False,
             )
         current = self.store.get_active_problem(actor.scope_id)
         if current is None or current.problem.cf_id != active.problem.cf_id:

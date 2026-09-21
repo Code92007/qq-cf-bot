@@ -57,9 +57,13 @@
     <main class="workspace">
       <section class="challenge-column">
         <div class="challenge-toolbar">
-          <div>
+          <div class="challenge-heading">
             <p class="eyebrow">CURRENT CHALLENGE</p>
             <h1 id="challengeTitle">训练台</h1>
+            <div class="training-mode-tabs" role="tablist" aria-label="训练模式">
+              <button id="singleModeTab" class="training-mode-tab active" type="button" role="tab" aria-selected="true">单题训练</button>
+              <button id="contestModeTab" class="training-mode-tab" type="button" role="tab" aria-selected="false">套题 VP</button>
+            </div>
           </div>
           <form id="newChallengeForm" class="range-form">
             <label><span>最低</span><select id="minRating" name="minRating" aria-label="最低难度"></select></label>
@@ -68,11 +72,41 @@
             <button id="newChallengeBtn" class="primary" type="submit">抽取题目</button>
             <button id="specificProblemBtn" class="quiet" type="button">指定题目</button>
           </form>
+          <form id="contestSessionForm" class="contest-form hidden">
+            <label><span>套题类型</span>
+              <select id="contestCategory" name="category" aria-label="套题类型">
+                <option value="div2">Div. 2</option>
+                <option value="div1">Div. 1</option>
+                <option value="gym">Gym</option>
+              </select>
+            </label>
+            <label class="contest-id-field"><span>比赛 ID（可选）</span><input id="contestId" name="contestId" inputmode="numeric" pattern="[0-9]*" maxlength="7" placeholder="留空取最近一场"></label>
+            <button id="startContestBtn" class="primary" type="submit">开始套题</button>
+          </form>
         </div>
+
+        <section id="contestBoard" class="contest-board hidden" aria-label="套题进度">
+          <header class="contest-board-head">
+            <div class="contest-title-block">
+              <p id="contestMeta" class="eyebrow">DIV. 2 · VP</p>
+              <h2 id="contestName"></h2>
+            </div>
+            <div class="contest-clock-block">
+              <span>VP CLOCK</span>
+              <strong id="vpClock">00:00:00</strong>
+              <small id="vpDuration">/ 02:00:00</small>
+            </div>
+            <button id="endContestBtn" class="danger-quiet" type="button">结束套题</button>
+          </header>
+          <div class="contest-timing-legend" aria-hidden="true">
+            <span>题目</span><span>口胡 AC</span><span>代码 AC</span><span>耗时拆分</span>
+          </div>
+          <div id="contestProblems" class="contest-problems"></div>
+        </section>
 
         <section id="emptyState" class="empty-state">
           <span class="empty-index">01</span>
-          <h2>等待抽题</h2>
+          <h2 id="emptyTitle">等待抽题</h2>
           <p id="emptyRange">1900 - 2600</p>
         </section>
 
@@ -82,6 +116,7 @@
               <span class="live-dot"></span>
               <span>进行中</span>
               <span id="challengeMode" class="challenge-mode hidden">专项练习 · 不计榜单</span>
+              <span id="contestProblemIdentity" class="problem-identity hidden"></span>
             </div>
             <button id="giveUpBtn" class="danger-quiet" type="button">放弃题目</button>
           </div>

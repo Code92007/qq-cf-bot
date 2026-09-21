@@ -8,6 +8,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from .models import (
     ActiveProblem,
+    CFContest,
     CFProblem,
     PreparedProblem,
     ProblemStatement,
@@ -747,6 +748,292 @@ class SentProblemStore:
         with self._connect() as conn:
             conn.execute("delete from web_sessions where token_hash = ?", (token_hash,))
 
+    def create_web_contest_session(
+        self,
+        user_id: int,
+        contest: CFContest,
+        category: str,
+        problems: Iterable[CFProblem],
+    ) -> dict:
+        problem_list = list(problems)
+        if not problem_list:
+            raise ValueError("contest session requires at least one problem")
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            cursor = conn.execute(
+                """
+                insert into web_contest_sessions (
+                    user_id, contest_id, contest_name, category, duration_seconds,
+                    started_at, ended_at, status, current_cf_id, current_selected_at
+                ) values (?, ?, ?, ?, ?, ?, '', 'active', ?, ?)
+                """,
+                (
+                    user_id,
+                    contest.contest_id,
+                    contest.name,
+                    category,
+                    contest.duration_seconds,
+                    now,
+                    problem_list[0].cf_id,
+                    now,
+                ),
+            )
+            session_id = int(cursor.lastrowid)
+            conn.executemany(
+                """
+                insert into web_contest_session_problems (
+                    session_id, position, cf_id, problem_json, opened_at,
+                    oral_accepted_at, code_accepted_at, oral_attempts, code_attempts,
+                    thinking_seconds, coding_seconds
+                ) values (?, ?, ?, ?, ?, '', '', 0, 0, 0, 0)
+                """,
+                [
+                    (
+                        session_id,
+                        position,
+                        problem.cf_id,
+                        json.dumps(_problem_to_json(problem), ensure_ascii=False),
+                        now if position == 0 else "",
+                    )
+                    for position, problem in enumerate(problem_list)
+                ],
+            )
+        session = self.get_web_contest_session(session_id, user_id)
+        if session is None:
+            raise RuntimeError("failed to persist contest session")
+        return session
+
+    def get_active_web_contest_session(self, user_id: int) -> Optional[dict]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                select id
+                from web_contest_sessions
+                where user_id = ? and status = 'active'
+                order by id desc
+                limit 1
+                """,
+                (user_id,),
+            ).fetchone()
+        return self.get_web_contest_session(int(row[0]), user_id) if row else None
+
+    def get_latest_ended_web_contest_session(self, user_id: int) -> Optional[dict]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                select id
+                from web_contest_sessions
+                where user_id = ? and status = 'ended'
+                order by id desc
+                limit 1
+                """,
+                (user_id,),
+            ).fetchone()
+        return self.get_web_contest_session(int(row[0]), user_id) if row else None
+
+    def get_web_contest_session(self, session_id: int, user_id: int) -> Optional[dict]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                select id, contest_id, contest_name, category, duration_seconds,
+                       started_at, ended_at, status, current_cf_id, current_selected_at
+                from web_contest_sessions
+                where id = ? and user_id = ?
+                """,
+                (session_id, user_id),
+            ).fetchone()
+            if row is None:
+                return None
+            problem_rows = conn.execute(
+                """
+                select position, cf_id, problem_json, opened_at, oral_accepted_at,
+                       code_accepted_at, oral_attempts, code_attempts,
+                       thinking_seconds, coding_seconds
+                from web_contest_session_problems
+                where session_id = ?
+                order by position asc
+                """,
+                (session_id,),
+            ).fetchall()
+        return {
+            "id": int(row[0]),
+            "contest_id": int(row[1]),
+            "contest_name": str(row[2]),
+            "category": str(row[3]),
+            "duration_seconds": int(row[4]),
+            "started_at": str(row[5]),
+            "ended_at": str(row[6]),
+            "status": str(row[7]),
+            "current_cf_id": str(row[8]),
+            "current_selected_at": str(row[9]),
+            "problems": [
+                {
+                    "position": int(item[0]),
+                    "cf_id": str(item[1]),
+                    "problem": _problem_from_json(item[2]),
+                    "opened_at": str(item[3]),
+                    "oral_accepted_at": str(item[4]),
+                    "code_accepted_at": str(item[5]),
+                    "oral_attempts": int(item[6]),
+                    "code_attempts": int(item[7]),
+                    "thinking_seconds": int(item[8]),
+                    "coding_seconds": int(item[9]),
+                }
+                for item in problem_rows
+            ],
+        }
+
+    def select_web_contest_problem(self, session_id: int, user_id: int, cf_id: str) -> dict:
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            active = conn.execute(
+                """
+                select current_cf_id, current_selected_at
+                from web_contest_sessions
+                where id = ? and user_id = ? and status = 'active'
+                """,
+                (session_id, user_id),
+            ).fetchone()
+            if active is None:
+                raise ValueError("contest session is no longer active")
+            selected = conn.execute(
+                """
+                update web_contest_session_problems
+                set opened_at = case when opened_at = '' then ? else opened_at end
+                where session_id = ? and cf_id = ?
+                """,
+                (now, session_id, cf_id),
+            )
+            if selected.rowcount != 1:
+                raise ValueError("problem is not part of this contest session")
+            _accrue_web_contest_focus(conn, session_id, str(active[0]), str(active[1]), now)
+            updated = conn.execute(
+                """
+                update web_contest_sessions
+                set current_cf_id = ?, current_selected_at = ?
+                where id = ? and user_id = ? and status = 'active'
+                """,
+                (cf_id, now, session_id, user_id),
+            )
+            if updated.rowcount != 1:
+                raise ValueError("contest session is no longer active")
+        session = self.get_web_contest_session(session_id, user_id)
+        if session is None:
+            raise RuntimeError("contest session disappeared")
+        return session
+
+    def record_web_contest_attempt(
+        self,
+        session_id: int,
+        user_id: int,
+        cf_id: str,
+        method: str,
+        accepted: bool,
+    ) -> dict:
+        if method not in {"oral", "code"}:
+            raise ValueError("unknown contest attempt method")
+        accepted_column = "oral_accepted_at" if method == "oral" else "code_accepted_at"
+        attempts_column = "oral_attempts" if method == "oral" else "code_attempts"
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            active = conn.execute(
+                """
+                select current_cf_id, current_selected_at
+                from web_contest_sessions
+                where id = ? and user_id = ? and status = 'active'
+                """,
+                (session_id, user_id),
+            ).fetchone()
+            if active is None:
+                raise ValueError("contest session is no longer active")
+            if str(active[0]) != cf_id:
+                raise ValueError("only the current contest problem can receive an attempt")
+            problem_state = conn.execute(
+                """
+                select oral_accepted_at, code_accepted_at
+                from web_contest_session_problems
+                where session_id = ? and cf_id = ?
+                """,
+                (session_id, cf_id),
+            ).fetchone()
+            if problem_state is None:
+                raise ValueError("problem is not part of this contest session")
+            first_accept = accepted and not str(problem_state[0 if method == "oral" else 1])
+            if first_accept:
+                elapsed = _seconds_between(str(active[1]), now)
+                focus_column = None
+                if method == "oral" and not problem_state[0] and not problem_state[1]:
+                    focus_column = "thinking_seconds"
+                elif method == "code" and problem_state[0] and not problem_state[1]:
+                    focus_column = "coding_seconds"
+                if focus_column is not None:
+                    conn.execute(
+                        f"""
+                        update web_contest_session_problems
+                        set {focus_column} = {focus_column} + ?
+                        where session_id = ? and cf_id = ?
+                        """,
+                        (elapsed, session_id, cf_id),
+                    )
+                conn.execute(
+                    "update web_contest_sessions set current_selected_at = ? where id = ?",
+                    (now, session_id),
+                )
+            updated = conn.execute(
+                f"""
+                update web_contest_session_problems
+                set {attempts_column} = {attempts_column} + 1,
+                    {accepted_column} = case
+                        when ? = 1 and {accepted_column} = '' then ?
+                        else {accepted_column}
+                    end
+                where session_id = ? and cf_id = ?
+                """,
+                (1 if accepted else 0, now, session_id, cf_id),
+            )
+            if updated.rowcount != 1:
+                raise ValueError("problem is not part of this contest session")
+        session = self.get_web_contest_session(session_id, user_id)
+        if session is None:
+            raise RuntimeError("contest session disappeared")
+        return session
+
+    def end_web_contest_session(self, session_id: int, user_id: int) -> dict:
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            active = conn.execute(
+                """
+                select current_cf_id, current_selected_at
+                from web_contest_sessions
+                where id = ? and user_id = ? and status = 'active'
+                """,
+                (session_id, user_id),
+            ).fetchone()
+            if active is None:
+                raise ValueError("contest session is no longer active")
+            _accrue_web_contest_focus(conn, session_id, str(active[0]), str(active[1]), now)
+            updated = conn.execute(
+                """
+                update web_contest_sessions
+                set status = 'ended', ended_at = ?
+                where id = ? and user_id = ? and status = 'active'
+                """,
+                (now, session_id, user_id),
+            )
+            if updated.rowcount != 1:
+                raise ValueError("contest session is no longer active")
+        session = self.get_web_contest_session(session_id, user_id)
+        if session is None:
+            raise RuntimeError("contest session disappeared")
+        return session
+
+    def delete_web_contest_session(self, session_id: int, user_id: int) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "delete from web_contest_sessions where id = ? and user_id = ?",
+                (session_id, user_id),
+            )
+
     def _init(self) -> None:
         with self._connect() as conn:
             conn.execute("pragma journal_mode = wal")
@@ -960,6 +1247,69 @@ class SentProblemStore:
                 """
             )
             conn.execute("create index if not exists idx_web_sessions_user on web_sessions(user_id)")
+            conn.execute(
+                """
+                create table if not exists web_contest_sessions (
+                    id integer primary key autoincrement,
+                    user_id integer not null,
+                    contest_id integer not null,
+                    contest_name text not null,
+                    category text not null,
+                    duration_seconds integer not null,
+                    started_at text not null,
+                    ended_at text not null,
+                    status text not null,
+                    current_cf_id text not null,
+                    current_selected_at text not null,
+                    foreign key (user_id) references web_users(id) on delete cascade
+                )
+                """
+            )
+            _ensure_column(
+                conn,
+                "web_contest_sessions",
+                "current_selected_at",
+                "alter table web_contest_sessions add column current_selected_at text not null default ''",
+            )
+            conn.execute(
+                """
+                create unique index if not exists idx_web_contest_sessions_active_user
+                on web_contest_sessions(user_id)
+                where status = 'active'
+                """
+            )
+            conn.execute(
+                """
+                create table if not exists web_contest_session_problems (
+                    session_id integer not null,
+                    position integer not null,
+                    cf_id text not null,
+                    problem_json text not null,
+                    opened_at text not null,
+                    oral_accepted_at text not null,
+                    code_accepted_at text not null,
+                    oral_attempts integer not null,
+                    code_attempts integer not null,
+                    thinking_seconds integer not null,
+                    coding_seconds integer not null,
+                    primary key (session_id, cf_id),
+                    unique (session_id, position),
+                    foreign key (session_id) references web_contest_sessions(id) on delete cascade
+                )
+                """
+            )
+            _ensure_column(
+                conn,
+                "web_contest_session_problems",
+                "thinking_seconds",
+                "alter table web_contest_session_problems add column thinking_seconds integer not null default 0",
+            )
+            _ensure_column(
+                conn,
+                "web_contest_session_problems",
+                "coding_seconds",
+                "alter table web_contest_session_problems add column coding_seconds integer not null default 0",
+            )
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, timeout=30)
@@ -972,6 +1322,55 @@ def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) 
     columns = {str(row[1]) for row in conn.execute(f"pragma table_info({table})").fetchall()}
     if column not in columns:
         conn.execute(ddl)
+
+
+def _seconds_between(start_value: str, end_value: str) -> int:
+    if not start_value or not end_value:
+        return 0
+    try:
+        start = datetime.fromisoformat(start_value.replace("Z", "+00:00"))
+        end = datetime.fromisoformat(end_value.replace("Z", "+00:00"))
+    except ValueError:
+        return 0
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+    return max(0, int((end - start).total_seconds()))
+
+
+def _accrue_web_contest_focus(
+    conn: sqlite3.Connection,
+    session_id: int,
+    cf_id: str,
+    selected_at: str,
+    now: str,
+) -> None:
+    row = conn.execute(
+        """
+        select oral_accepted_at, code_accepted_at
+        from web_contest_session_problems
+        where session_id = ? and cf_id = ?
+        """,
+        (session_id, cf_id),
+    ).fetchone()
+    if row is None:
+        return
+    column = None
+    if not row[0] and not row[1]:
+        column = "thinking_seconds"
+    elif row[0] and not row[1]:
+        column = "coding_seconds"
+    if column is None:
+        return
+    conn.execute(
+        f"""
+        update web_contest_session_problems
+        set {column} = {column} + ?
+        where session_id = ? and cf_id = ?
+        """,
+        (_seconds_between(selected_at, now), session_id, cf_id),
+    )
 
 
 def _web_user_row(row) -> Optional[dict]:
@@ -1035,6 +1434,7 @@ def _problem_to_json(problem: CFProblem) -> dict:
         "name": problem.name,
         "rating": problem.rating,
         "tags": list(problem.tags),
+        "is_gym": problem.is_gym,
     }
 
 
@@ -1046,6 +1446,7 @@ def _problem_from_json(raw_json: str) -> CFProblem:
         name=str(raw["name"]),
         rating=int(raw["rating"]),
         tags=tuple(str(tag) for tag in raw.get("tags") or ()),
+        is_gym=bool(raw.get("is_gym", False)),
     )
 
 
