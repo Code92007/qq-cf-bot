@@ -92,6 +92,41 @@ class CodeforcesClientTest(unittest.TestCase):
         self.assertEqual(problem, expected)
         fetch.assert_not_called()
 
+    def test_fetch_regular_contest_uses_public_anonymous_query(self):
+        payload = {
+            "status": "OK",
+            "result": {
+                "contest": {
+                    "id": 2267,
+                    "name": "Codeforces Round 1123 (Div. 2)",
+                    "phase": "FINISHED",
+                    "durationSeconds": 8100,
+                },
+                "problems": [
+                    {"contestId": 2267, "index": "A", "name": "Example", "rating": 800},
+                ],
+            },
+        }
+        catalog = [CFProblem(2267, "A", "Example", 800)]
+        with tempfile.TemporaryDirectory() as tmp:
+            client = CodeforcesClient(Path(tmp) / "problemset.json")
+            with (
+                patch.object(client, "fetch_problems", return_value=catalog),
+                patch(
+                    "qq_cf_bot.codeforces._fetch_json_from_codeforces_variants",
+                    return_value=payload,
+                ) as fetch,
+            ):
+                contest, problems = client.fetch_contest(2267)
+
+        self.assertEqual(contest.contest_id, 2267)
+        self.assertEqual([problem.cf_id for problem in problems], ["2267A"])
+        fetch.assert_called_once_with(
+            "/api/contest.standings?contestId=2267",
+            client.base_urls,
+            timeout_seconds=20,
+        )
+
     def test_fetch_gym_contest_keeps_unrated_problems(self):
         payload = {
             "status": "OK",
@@ -110,7 +145,10 @@ class CodeforcesClientTest(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as tmp:
             client = CodeforcesClient(Path(tmp) / "problemset.json")
-            with patch("qq_cf_bot.codeforces._fetch_json_from_codeforces_variants", return_value=payload):
+            with patch(
+                "qq_cf_bot.codeforces._fetch_json_from_codeforces_variants",
+                return_value=payload,
+            ) as fetch:
                 contest, problems = client.fetch_contest(105001)
 
         self.assertTrue(contest.is_gym)
@@ -118,6 +156,11 @@ class CodeforcesClientTest(unittest.TestCase):
         self.assertEqual([problem.cf_id for problem in problems], ["105001A", "105001B"])
         self.assertEqual([problem.rating for problem in problems], [0, 2100])
         self.assertEqual(problems[0].cf_url, "https://codeforces.com/gym/105001/problem/A")
+        fetch.assert_called_once_with(
+            "/api/contest.standings?contestId=105001&from=1&count=1",
+            client.base_urls,
+            timeout_seconds=20,
+        )
 
 
 if __name__ == "__main__":

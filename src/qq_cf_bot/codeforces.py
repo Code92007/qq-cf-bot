@@ -80,7 +80,11 @@ class CodeforcesClient:
         return list(_parse_contests(payload, gym=gym))
 
     def fetch_contest(self, contest_id: int) -> tuple[CFContest, List[CFProblem]]:
-        query = urllib.parse.urlencode({"contestId": contest_id, "from": 1, "count": 1})
+        # Public non-gym standings now reject every query parameter except contestId.
+        query_params = {"contestId": contest_id}
+        if contest_id >= 100_000:
+            query_params.update({"from": 1, "count": 1})
+        query = urllib.parse.urlencode(query_params)
         payload = _fetch_json_from_codeforces_variants(
             f"/api/contest.standings?{query}",
             self.base_urls,
