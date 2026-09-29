@@ -594,6 +594,10 @@ class SentProblemStore:
         started_at: str,
         giveup_at: str = "",
         giveup_minutes: int = 0,
+        tag_unlock_minutes: int = 10,
+        first_hint_minutes: int = 20,
+        hint_interval_minutes: int = 10,
+        hint_count: int = 6,
         reset: bool = True,
     ) -> dict:
         with self._connect() as conn:
@@ -602,11 +606,26 @@ class SentProblemStore:
             conn.execute(
                 """
                 insert into web_challenge_controls
-                    (scope_id, user_id, cf_id, started_at, giveup_at, giveup_minutes, revealed_steps_json)
-                values (?, ?, ?, ?, ?, ?, '[]')
+                    (
+                        scope_id, user_id, cf_id, started_at, giveup_at, giveup_minutes,
+                        tag_unlock_minutes, first_hint_minutes, hint_interval_minutes,
+                        hint_count, revealed_steps_json
+                    )
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]')
                 on conflict(scope_id, cf_id) do nothing
                 """,
-                (str(scope_id), user_id, cf_id, started_at, giveup_at, giveup_minutes),
+                (
+                    str(scope_id),
+                    user_id,
+                    cf_id,
+                    started_at,
+                    giveup_at,
+                    giveup_minutes,
+                    tag_unlock_minutes,
+                    first_hint_minutes,
+                    hint_interval_minutes,
+                    hint_count,
+                ),
             )
         control = self.get_web_challenge_control(scope_id, cf_id)
         if control is None:
@@ -618,7 +637,8 @@ class SentProblemStore:
             row = conn.execute(
                 """
                 select scope_id, user_id, cf_id, started_at, giveup_at,
-                       giveup_minutes, revealed_steps_json
+                       giveup_minutes, tag_unlock_minutes, first_hint_minutes,
+                       hint_interval_minutes, hint_count, revealed_steps_json
                 from web_challenge_controls
                 where scope_id = ? and cf_id = ?
                 """,
@@ -627,7 +647,7 @@ class SentProblemStore:
         if row is None:
             return None
         try:
-            raw_steps = json.loads(str(row[6]))
+            raw_steps = json.loads(str(row[10]))
         except (TypeError, ValueError, json.JSONDecodeError):
             raw_steps = []
         revealed_steps = tuple(
@@ -640,7 +660,33 @@ class SentProblemStore:
             "started_at": str(row[3]),
             "giveup_at": str(row[4]),
             "giveup_minutes": int(row[5]),
+            "tag_unlock_minutes": int(row[6]),
+            "first_hint_minutes": int(row[7]),
+            "hint_interval_minutes": int(row[8]),
+            "hint_count": int(row[9]),
             "revealed_steps": revealed_steps,
+        }
+
+    def get_web_challenge_settings(self, scope_id: int) -> Optional[dict]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                select tag_unlock_minutes, first_hint_minutes,
+                       hint_interval_minutes, hint_count
+                from web_challenge_controls
+                where scope_id = ?
+                order by rowid asc
+                limit 1
+                """,
+                (str(scope_id),),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "tag_unlock_minutes": int(row[0]),
+            "first_hint_minutes": int(row[1]),
+            "hint_interval_minutes": int(row[2]),
+            "hint_count": int(row[3]),
         }
 
     def reveal_web_challenge_step(self, scope_id: int, cf_id: str, step: int) -> dict:
@@ -1385,11 +1431,39 @@ class SentProblemStore:
                     started_at text not null,
                     giveup_at text not null,
                     giveup_minutes integer not null,
+                    tag_unlock_minutes integer not null default 10,
+                    first_hint_minutes integer not null default 20,
+                    hint_interval_minutes integer not null default 10,
+                    hint_count integer not null default 6,
                     revealed_steps_json text not null,
                     primary key (scope_id, cf_id),
                     foreign key (user_id) references web_users(id) on delete cascade
                 )
                 """
+            )
+            _ensure_column(
+                conn,
+                "web_challenge_controls",
+                "tag_unlock_minutes",
+                "alter table web_challenge_controls add column tag_unlock_minutes integer not null default 10",
+            )
+            _ensure_column(
+                conn,
+                "web_challenge_controls",
+                "first_hint_minutes",
+                "alter table web_challenge_controls add column first_hint_minutes integer not null default 20",
+            )
+            _ensure_column(
+                conn,
+                "web_challenge_controls",
+                "hint_interval_minutes",
+                "alter table web_challenge_controls add column hint_interval_minutes integer not null default 10",
+            )
+            _ensure_column(
+                conn,
+                "web_challenge_controls",
+                "hint_count",
+                "alter table web_challenge_controls add column hint_count integer not null default 6",
             )
             conn.execute(
                 "create index if not exists idx_web_challenge_controls_user on web_challenge_controls(user_id)"

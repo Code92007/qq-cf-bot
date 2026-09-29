@@ -36,7 +36,13 @@ _CONTEST_CATEGORIES = {"div2", "div1", "gym"}
 _DEFAULT_GIVEUP_MINUTES = 90
 _MIN_GIVEUP_MINUTES = 20
 _MAX_GIVEUP_MINUTES = 240
-_ASSISTANCE_UNLOCK_SECONDS = (600, 1200, 1800, 2400, 3000, 3600, 4200)
+_DEFAULT_TAG_UNLOCK_MINUTES = 10
+_DEFAULT_FIRST_HINT_MINUTES = 20
+_DEFAULT_HINT_INTERVAL_MINUTES = 10
+_DEFAULT_HINT_COUNT = 6
+_MAX_ASSISTANCE_MINUTES = 240
+_MAX_HINT_INTERVAL_MINUTES = 120
+_MAX_HINT_COUNT = 6
 _DUMMY_PASSWORD_HASH = "pbkdf2_sha256$310000$00000000000000000000000000000000$" + ("00" * 32)
 
 
@@ -180,6 +186,7 @@ class WebApplication:
 
     def _new_challenge(self, handler, session: dict, payload: dict) -> None:
         _giveup_minutes(payload.get("giveupMinutes"))
+        _assistance_settings(payload)
         min_rating = _rating_value(payload.get("minRating"))
         max_rating = _rating_value(payload.get("maxRating"))
         if min_rating > max_rating:
@@ -194,6 +201,7 @@ class WebApplication:
 
     def _share_challenge(self, handler, session: dict, payload: dict) -> None:
         _giveup_minutes(payload.get("giveupMinutes"))
+        _assistance_settings(payload)
         problem_id = str(payload.get("problemId") or "").strip()
         if len(problem_id) > 200:
             raise ValueError("题号或链接不能超过 200 个字符。")
@@ -233,11 +241,12 @@ class WebApplication:
             step = int(payload.get("step"))
         except (TypeError, ValueError) as exc:
             raise ValueError("提示编号不正确。") from exc
-        if step < 0 or step >= len(_ASSISTANCE_UNLOCK_SECONDS):
+        unlock_seconds = _assistance_unlock_seconds(control)
+        if step < 0 or step >= len(unlock_seconds):
             raise ValueError("提示编号不正确。")
         elapsed = _elapsed_seconds(control["started_at"], datetime.now(timezone.utc).isoformat()) or 0
-        wait_seconds = max(0, _ASSISTANCE_UNLOCK_SECONDS[step] - elapsed)
-        if wait_seconds:
+        wait_seconds = max(0, unlock_seconds[step] - elapsed)
+        if wait_seconds and payload.get("early") is not True:
             raise ChallengeError("hint_locked", f"这条提示还要等待约 {wait_seconds} 秒解锁。", 409)
         if step > 0:
             hints = self.service.solution_bank.hints_for(active.problem, active.statement)
@@ -281,6 +290,7 @@ class WebApplication:
         category = str(payload.get("category") or "").strip().lower()
         if category not in _CONTEST_CATEGORIES:
             raise ValueError("套题类型必须是 Div. 2、Div. 1 或 Gym。")
+        settings = _assistance_settings(payload)
         raw_contest_id = str(payload.get("contestId") or "").strip()
         if raw_contest_id:
             if not raw_contest_id.isdigit() or len(raw_contest_id) > 7:
@@ -311,7 +321,7 @@ class WebApplication:
             self.service.store.clear_web_challenge_controls(scope_id)
             active = self.service.get_active_problem(scope_id)
             if active is not None:
-                self._ensure_challenge_control(session, scope_id, active, contest_mode=True)
+                self._set_contest_challenge_control(session, scope_id, active, settings)
         except Exception:
             self.service.store.clear_active_problem(scope_id)
             self.service.store.clear_web_challenge_controls(scope_id)
@@ -516,6 +526,7 @@ class WebApplication:
 
     def _set_single_challenge_control(self, session: dict, active: ActiveProblem, payload: dict) -> dict:
         minutes = _giveup_minutes(payload.get("giveupMinutes"))
+        settings = _assistance_settings(payload)
         started_at = active.created_at
         start = _parse_datetime(started_at) or datetime.now(timezone.utc)
         giveup_at = (start + timedelta(minutes=minutes)).isoformat()
@@ -526,7 +537,31 @@ class WebApplication:
             started_at,
             giveup_at=giveup_at,
             giveup_minutes=minutes,
+            **settings,
             reset=True,
+        )
+
+    def _set_contest_challenge_control(
+        self,
+        session: dict,
+        scope_id: int,
+        active: ActiveProblem,
+        settings: dict,
+    ) -> dict:
+        contest = self.service.store.get_active_web_contest_session(int(session["user_id"]))
+        selected = (
+            next((item for item in contest["problems"] if item["cf_id"] == active.problem.cf_id), None)
+            if contest is not None
+            else None
+        )
+        started_at = selected["opened_at"] if selected and selected["opened_at"] else active.created_at
+        return self.service.store.set_web_challenge_control(
+            scope_id,
+            int(session["user_id"]),
+            active.problem.cf_id,
+            started_at,
+            **settings,
+            reset=False,
         )
 
     def _forced_giveup_payload(self, session: dict, active: ActiveProblem) -> dict:
@@ -563,11 +598,13 @@ class WebApplication:
                 )
                 if selected and selected["opened_at"]:
                     started_at = selected["opened_at"]
+        settings = self.service.store.get_web_challenge_settings(scope_id) or _assistance_settings({})
         return self.service.store.set_web_challenge_control(
             scope_id,
             int(session["user_id"]),
             active.problem.cf_id,
             started_at,
+            **settings,
             reset=False,
         )
 
@@ -584,7 +621,7 @@ class WebApplication:
         revealed = set(control["revealed_steps"])
         cached_hints = self.service.store.get_problem_hints(active.problem.cf_id)
         steps = []
-        for step, unlock_seconds in enumerate(_ASSISTANCE_UNLOCK_SECONDS):
+        for step, unlock_seconds in enumerate(_assistance_unlock_seconds(control)):
             item = {
                 "step": step,
                 "label": "算法标签" if step == 0 else f"Hint {step}",
@@ -601,6 +638,10 @@ class WebApplication:
             "startedAt": control["started_at"],
             "giveupAt": control["giveup_at"] or None,
             "giveupMinutes": control["giveup_minutes"] or None,
+            "tagUnlockMinutes": control["tag_unlock_minutes"],
+            "firstHintMinutes": control["first_hint_minutes"],
+            "hintIntervalMinutes": control["hint_interval_minutes"],
+            "hintCount": control["hint_count"],
             "steps": steps,
         }
 
@@ -811,6 +852,63 @@ def _giveup_minutes(value: Any) -> int:
             f"强制放弃时长需在 {_MIN_GIVEUP_MINUTES}-{_MAX_GIVEUP_MINUTES} 分钟之间。"
         )
     return minutes
+
+
+def _assistance_settings(payload: dict) -> dict:
+    return {
+        "tag_unlock_minutes": _bounded_int(
+            payload.get("tagUnlockMinutes"),
+            _DEFAULT_TAG_UNLOCK_MINUTES,
+            0,
+            _MAX_ASSISTANCE_MINUTES,
+            "算法标签解锁时间",
+        ),
+        "first_hint_minutes": _bounded_int(
+            payload.get("firstHintMinutes"),
+            _DEFAULT_FIRST_HINT_MINUTES,
+            0,
+            _MAX_ASSISTANCE_MINUTES,
+            "首条提示解锁时间",
+        ),
+        "hint_interval_minutes": _bounded_int(
+            payload.get("hintIntervalMinutes"),
+            _DEFAULT_HINT_INTERVAL_MINUTES,
+            0,
+            _MAX_HINT_INTERVAL_MINUTES,
+            "提示间隔",
+        ),
+        "hint_count": _bounded_int(
+            payload.get("hintCount"),
+            _DEFAULT_HINT_COUNT,
+            1,
+            _MAX_HINT_COUNT,
+            "提示数量",
+        ),
+    }
+
+
+def _bounded_int(value: Any, default: int, minimum: int, maximum: int, label: str) -> int:
+    if value in (None, ""):
+        return default
+    if isinstance(value, bool):
+        raise ValueError(f"{label}必须是整数。")
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{label}必须是整数。") from exc
+    if parsed < minimum or parsed > maximum:
+        raise ValueError(f"{label}需在 {minimum}-{maximum} 之间。")
+    return parsed
+
+
+def _assistance_unlock_seconds(control: dict) -> tuple[int, ...]:
+    hint_count = max(1, min(_MAX_HINT_COUNT, int(control["hint_count"])))
+    first_hint = max(0, int(control["first_hint_minutes"]))
+    interval = max(0, int(control["hint_interval_minutes"]))
+    return (
+        max(0, int(control["tag_unlock_minutes"])) * 60,
+        *((first_hint + index * interval) * 60 for index in range(hint_count)),
+    )
 
 
 def _validate_password(password: str) -> None:

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>CF Bot</title>
-  <link rel="stylesheet" href="/styles.css">
-  <script src="/app.js" defer></script>
+  <link rel="stylesheet" href="/styles.css?v=training-settings-2">
+  <script src="/app.js?v=training-settings-2" defer></script>
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -69,9 +69,9 @@
             <label><span>最低</span><select id="minRating" name="minRating" aria-label="最低难度"></select></label>
             <span class="range-dash">至</span>
             <label><span>最高</span><select id="maxRating" name="maxRating" aria-label="最高难度"></select></label>
-            <label class="giveup-duration-field"><span>强制放弃</span><span class="duration-input"><input id="giveupMinutes" name="giveupMinutes" type="number" inputmode="numeric" min="20" max="240" step="5" value="90" required><small>分钟</small></span></label>
             <button id="newChallengeBtn" class="primary" type="submit">抽取题目</button>
             <button id="specificProblemBtn" class="quiet" type="button">指定题目</button>
+            <button id="singleSettingsBtn" class="quiet training-settings-button" type="button">训练设置 · 6 条提示</button>
           </form>
           <form id="contestSessionForm" class="contest-form hidden">
             <label><span>套题类型</span>
@@ -83,6 +83,7 @@
             </label>
             <label class="contest-id-field"><span>比赛 ID（可选）</span><input id="contestId" name="contestId" inputmode="numeric" pattern="[0-9]*" maxlength="7" placeholder="留空取最近一场"></label>
             <button id="startContestBtn" class="primary" type="submit">开始套题</button>
+            <button id="contestSettingsBtn" class="quiet training-settings-button" type="button">训练设置 · 6 条提示</button>
           </form>
         </div>
 
@@ -297,6 +298,31 @@ int main() {
       <div class="dialog-actions">
         <button id="cancelSpecificProblemBtn" class="quiet" type="button">取消</button>
         <button class="primary" type="submit">开始练习</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="trainingSettingsDialog" class="specific-dialog settings-dialog">
+    <header class="specific-header">
+      <div>
+        <p class="eyebrow">TRAINING SETTINGS</p>
+        <h2>训练设置</h2>
+      </div>
+      <form method="dialog">
+        <button id="closeTrainingSettingsBtn" class="dialog-close" type="button" aria-label="关闭" title="关闭">&times;</button>
+      </form>
+    </header>
+    <form id="trainingSettingsForm" class="settings-form">
+      <div class="settings-grid">
+        <label><span>算法标签解锁</span><span class="minute-input"><input id="tagUnlockMinutes" type="number" inputmode="numeric" min="0" max="240" step="1" required><small>分钟</small></span></label>
+        <label><span>Hint 1 解锁</span><span class="minute-input"><input id="firstHintMinutes" type="number" inputmode="numeric" min="0" max="240" step="1" required><small>分钟</small></span></label>
+        <label><span>后续 Hint 间隔</span><span class="minute-input"><input id="hintIntervalMinutes" type="number" inputmode="numeric" min="0" max="120" step="1" required><small>分钟</small></span></label>
+        <label><span>Hint 总数</span><span class="minute-input"><input id="hintCount" type="number" inputmode="numeric" min="1" max="6" step="1" required><small>条</small></span></label>
+        <label class="settings-wide"><span>单题强制放弃</span><span class="minute-input"><input id="giveupMinutes" type="number" inputmode="numeric" min="20" max="240" step="5" required><small>分钟</small></span></label>
+      </div>
+      <div class="dialog-actions">
+        <button id="cancelTrainingSettingsBtn" class="quiet" type="button">取消</button>
+        <button class="primary" type="submit">保存设置</button>
       </div>
     </form>
   </dialog>

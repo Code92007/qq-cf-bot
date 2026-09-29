@@ -10,7 +10,13 @@ from unittest.mock import patch
 from qq_cf_bot.config import Config
 from qq_cf_bot.core import ChallengeService, SubmissionOutcome
 from qq_cf_bot.models import CFContest, CFProblem, PreparedProblem, ProblemStatement, RatingRange
-from qq_cf_bot.webapp import WebApplication, _giveup_minutes, _safe_statement_html
+from qq_cf_bot.webapp import (
+    WebApplication,
+    _assistance_settings,
+    _assistance_unlock_seconds,
+    _giveup_minutes,
+    _safe_statement_html,
+)
 
 
 class _Handler:
@@ -113,6 +119,25 @@ class WebApplicationTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             _giveup_minutes(241)
 
+    def test_assistance_settings_are_configurable_and_bounded(self):
+        settings = _assistance_settings(
+            {
+                "tagUnlockMinutes": 3,
+                "firstHintMinutes": 7,
+                "hintIntervalMinutes": 4,
+                "hintCount": 3,
+            }
+        )
+
+        self.assertEqual(
+            _assistance_unlock_seconds(settings),
+            (180, 420, 660, 900),
+        )
+        with self.assertRaises(ValueError):
+            _assistance_settings({"hintCount": 7})
+        with self.assertRaises(ValueError):
+            _assistance_settings({"tagUnlockMinutes": -1})
+
     def test_progressive_assistance_unlocks_only_after_server_deadline(self):
         register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})
         self.app.handle_post(register, "/api/auth/register")
@@ -179,6 +204,39 @@ class WebApplicationTest(unittest.TestCase):
 
         self.assertEqual(hint.status, 409)
         self.assertEqual(hint.json()["error"], "hint_locked")
+
+    def test_progressive_assistance_can_be_revealed_early(self):
+        register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})
+        self.app.handle_post(register, "/api/auth/register")
+        response = register.json()
+        user_id = response["state"]["user"]["id"]
+        cookie = register.header("Set-Cookie").split(";", 1)[0]
+        csrf = response["state"]["csrfToken"]
+        scope_id = -(1_000_000_000_000 + user_id)
+        problem = CFProblem(1, "A", "Theatre Square", 1000, ("math",))
+        statement = ProblemStatement("CF1A", "剧院广场", "description", "input", "output", [])
+        self.app.service.store.set_active_problem(scope_id, problem, statement, [])
+        active = self.app.service.store.get_active_problem(scope_id)
+        self.app.service.store.set_web_challenge_control(
+            scope_id,
+            user_id,
+            problem.cf_id,
+            active.created_at,
+            first_hint_minutes=120,
+            hint_count=2,
+        )
+        generated = tuple(f"渐进提示 {index}" for index in range(1, 7))
+        self.app.service.store.set_problem_hints(problem.cf_id, generated)
+
+        with patch.object(self.app.service.solution_bank, "hints_for", return_value=generated):
+            hint = _Handler({"step": 1, "contest": False, "early": True}, cookie=cookie, csrf=csrf)
+            self.app.handle_post(hint, "/api/challenges/hints/reveal")
+
+        self.assertEqual(hint.status, 200)
+        assistance = hint.json()["state"]["active"]["assistance"]
+        self.assertEqual(len(assistance["steps"]), 3)
+        self.assertTrue(assistance["steps"][1]["revealed"])
+        self.assertEqual(assistance["steps"][1]["content"], "渐进提示 1")
 
     def test_state_forces_giveup_after_voluntary_deadline(self):
         register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})

@@ -1,3 +1,12 @@
+const TRAINING_SETTINGS_KEY = "cf-bot-training-settings-v1";
+const DEFAULT_TRAINING_SETTINGS = Object.freeze({
+  giveupMinutes: 90,
+  tagUnlockMinutes: 10,
+  firstHintMinutes: 20,
+  hintIntervalMinutes: 10,
+  hintCount: 6
+});
+
 const state = {
   data: null,
   csrf: "",
@@ -14,13 +23,15 @@ const state = {
   contestTimer: null,
   drafts: new Map(),
   currentDraftCf: "",
-  singleDraft: { oral: "", code: "" }
+  singleDraft: { oral: "", code: "" },
+  trainingSettings: { ...DEFAULT_TRAINING_SETTINGS }
 };
 
 const el = (id) => document.getElementById(id);
 
 document.addEventListener("DOMContentLoaded", () => {
   populateRatings();
+  loadTrainingSettings();
   bindEvents();
   loadState();
 });
@@ -36,6 +47,11 @@ function bindEvents() {
   el("registerForm").addEventListener("submit", submitRegister);
   el("logoutBtn").addEventListener("click", logout);
   el("newChallengeForm").addEventListener("submit", newChallenge);
+  el("singleSettingsBtn").addEventListener("click", openTrainingSettings);
+  el("contestSettingsBtn").addEventListener("click", openTrainingSettings);
+  el("trainingSettingsForm").addEventListener("submit", saveTrainingSettings);
+  el("cancelTrainingSettingsBtn").addEventListener("click", closeTrainingSettings);
+  el("closeTrainingSettingsBtn").addEventListener("click", closeTrainingSettings);
   el("specificProblemBtn").addEventListener("click", openSpecificProblem);
   el("specificProblemForm").addEventListener("submit", shareChallenge);
   el("contestSessionForm").addEventListener("submit", startContestSession);
@@ -52,6 +68,82 @@ function bindEvents() {
   el("ratingBreakdownTab").addEventListener("click", () => switchAcRecordsTab("breakdown"));
   el("acHistoryTab").addEventListener("click", () => switchAcRecordsTab("history"));
   el("historySearch").addEventListener("input", renderFilteredHistory);
+}
+
+function loadTrainingSettings() {
+  let stored = {};
+  try {
+    stored = JSON.parse(localStorage.getItem(TRAINING_SETTINGS_KEY) || "{}") || {};
+  } catch (_) { /* Use defaults when browser storage is unavailable or malformed. */ }
+  state.trainingSettings = {
+    giveupMinutes: boundedSetting(stored.giveupMinutes, 20, 240, DEFAULT_TRAINING_SETTINGS.giveupMinutes),
+    tagUnlockMinutes: boundedSetting(stored.tagUnlockMinutes, 0, 240, DEFAULT_TRAINING_SETTINGS.tagUnlockMinutes),
+    firstHintMinutes: boundedSetting(stored.firstHintMinutes, 0, 240, DEFAULT_TRAINING_SETTINGS.firstHintMinutes),
+    hintIntervalMinutes: boundedSetting(stored.hintIntervalMinutes, 0, 120, DEFAULT_TRAINING_SETTINGS.hintIntervalMinutes),
+    hintCount: boundedSetting(stored.hintCount, 1, 6, DEFAULT_TRAINING_SETTINGS.hintCount)
+  };
+  syncTrainingSettingsForm();
+  updateTrainingSettingsSummary();
+}
+
+function openTrainingSettings() {
+  syncTrainingSettingsForm();
+  const dialog = el("trainingSettingsDialog");
+  if (!dialog.open && typeof dialog.showModal === "function") dialog.showModal();
+  else if (!dialog.open) {
+    dialog.setAttribute("open", "");
+    dialog.classList.add("dialog-fallback");
+    document.body.classList.add("dialog-fallback-open");
+  }
+  el("tagUnlockMinutes").focus();
+}
+
+function closeTrainingSettings() {
+  const dialog = el("trainingSettingsDialog");
+  if (!dialog) return;
+  if (dialog.open && typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+  dialog.classList.remove("dialog-fallback");
+  document.body.classList.remove("dialog-fallback-open");
+}
+
+function saveTrainingSettings(event) {
+  event.preventDefault();
+  state.trainingSettings = {
+    giveupMinutes: Number(el("giveupMinutes").value),
+    tagUnlockMinutes: Number(el("tagUnlockMinutes").value),
+    firstHintMinutes: Number(el("firstHintMinutes").value),
+    hintIntervalMinutes: Number(el("hintIntervalMinutes").value),
+    hintCount: Number(el("hintCount").value)
+  };
+  try { localStorage.setItem(TRAINING_SETTINGS_KEY, JSON.stringify(state.trainingSettings)); }
+  catch (_) { /* The current page still uses the selected settings. */ }
+  updateTrainingSettingsSummary();
+  closeTrainingSettings();
+  showToast("训练设置已保存");
+}
+
+function syncTrainingSettingsForm() {
+  Object.entries(state.trainingSettings).forEach(([key, value]) => { el(key).value = value; });
+}
+
+function updateTrainingSettingsSummary() {
+  const settings = state.trainingSettings;
+  const summary = `训练设置 · ${settings.hintCount} 条提示`;
+  const details = `标签 ${settings.tagUnlockMinutes} 分钟，Hint 1 ${settings.firstHintMinutes} 分钟，后续间隔 ${settings.hintIntervalMinutes} 分钟`;
+  [el("singleSettingsBtn"), el("contestSettingsBtn")].forEach((button) => {
+    button.textContent = summary;
+    button.title = details;
+  });
+}
+
+function trainingSettingsPayload() {
+  return { ...state.trainingSettings };
+}
+
+function boundedSetting(value, minimum, maximum, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= minimum && parsed <= maximum ? parsed : fallback;
 }
 
 async function loadState() {
@@ -74,6 +166,7 @@ function showAuth() {
   clearInterval(state.forceGiveupTimer);
   if (el("acRecordsDialog").open) el("acRecordsDialog").close();
   if (el("specificProblemDialog").open) el("specificProblemDialog").close();
+  closeTrainingSettings();
   el("appView").classList.add("hidden");
   el("authView").classList.remove("hidden");
 }
@@ -158,7 +251,7 @@ async function newChallenge(event) {
       body: {
         minRating: Number(el("minRating").value),
         maxRating: Number(el("maxRating").value),
-        giveupMinutes: Number(el("giveupMinutes").value)
+        ...trainingSettingsPayload()
       }
     });
     applyState(result.state);
@@ -184,7 +277,7 @@ async function shareChallenge(event) {
   try {
     const result = await api("/api/challenges/share", {
       method: "POST",
-      body: { problemId, giveupMinutes: Number(el("giveupMinutes").value) }
+      body: { problemId, ...trainingSettingsPayload() }
     });
     applyState(result.state);
     state.singleDraft = { oral: "", code: "" };
@@ -204,7 +297,8 @@ async function startContestSession(event) {
       method: "POST",
       body: {
         category: el("contestCategory").value,
-        contestId: el("contestId").value.trim()
+        contestId: el("contestId").value.trim(),
+        ...trainingSettingsPayload()
       }
     });
     state.drafts.clear();
@@ -270,7 +364,8 @@ async function revealAssistance(event) {
       method: "POST",
       body: {
         step: Number(button.dataset.assistanceStep),
-        contest: state.viewMode === "contest"
+        contest: state.viewMode === "contest",
+        early: button.dataset.early === "true"
       }
     });
     applyState(result.state);
@@ -343,7 +438,7 @@ function render(data) {
   el("emptyRange").textContent = contestMode
     ? "选择 Div. 2、Div. 1 或 Gym"
     : `${data.ratingRange.min} - ${data.ratingRange.max}`;
-  [el("contestCategory"), el("contestId"), el("startContestBtn")].forEach((control) => {
+  [el("contestCategory"), el("contestId"), el("startContestBtn"), el("contestSettingsBtn")].forEach((control) => {
     control.disabled = Boolean(contestSession);
   });
   renderLeaderboard(data.leaderboard, data.user.id);
@@ -374,9 +469,9 @@ function renderProblem(active, contestMode, contestSession) {
   el("challengeTitle").textContent = contestMode ? "套题训练" : (active ? "当前挑战" : "训练台");
   el("newChallengeBtn").disabled = Boolean(state.data?.active);
   el("specificProblemBtn").disabled = Boolean(state.data?.active);
+  el("singleSettingsBtn").disabled = Boolean(state.data?.active);
   el("minRating").disabled = Boolean(state.data?.active);
   el("maxRating").disabled = Boolean(state.data?.active);
-  el("giveupMinutes").disabled = Boolean(state.data?.active);
   el("challengeMode").textContent = contestMode ? "套题 VP · 不计榜单" : "专项练习 · 不计榜单";
   el("challengeMode").classList.toggle("hidden", !active || (!contestMode && active.ranked !== false));
   el("giveUpBtn").classList.toggle("hidden", contestMode);
@@ -419,9 +514,14 @@ function renderAssistance(active, contestMode) {
     button.type = "button";
     button.dataset.assistanceStep = step.step;
     button.dataset.unlockSeconds = step.unlockSeconds;
-    button.textContent = step.revealed ? `${step.label} · 已查看` : step.label;
+    button.dataset.label = step.label;
+    button.dataset.early = String(!step.revealed && step.waitSeconds > 0);
+    button.textContent = step.revealed
+      ? `${step.label} · 已查看`
+      : (step.waitSeconds > 0 ? `${step.label} · 提前看` : step.label);
     button.classList.toggle("revealed", step.revealed);
-    button.disabled = step.revealed || step.waitSeconds > 0;
+    button.classList.toggle("early", !step.revealed && step.waitSeconds > 0);
+    button.disabled = step.revealed;
 
     const content = document.createElement("div");
     content.className = "assistance-content";
@@ -441,7 +541,7 @@ function renderAssistance(active, contestMode) {
     } else {
       content.classList.add("locked");
       content.textContent = step.waitSeconds > 0
-        ? `${formatCompactDuration(step.waitSeconds)} 后解锁`
+        ? `常规解锁还有 ${formatCompactDuration(step.waitSeconds)}`
         : "已解锁 · 点击查看";
     }
     row.append(button, content);
@@ -462,12 +562,14 @@ function updateAssistanceClock(assistance, contestMode) {
   el("assistanceSteps").querySelectorAll("button[data-assistance-step]").forEach((button) => {
     if (button.classList.contains("revealed")) return;
     const remaining = Math.max(0, Number(button.dataset.unlockSeconds) - elapsed);
-    button.disabled = remaining > 0;
+    button.dataset.early = String(remaining > 0);
+    button.textContent = remaining > 0 ? `${button.dataset.label} · 提前看` : button.dataset.label;
+    button.classList.toggle("early", remaining > 0);
     const content = el("assistanceSteps").querySelector(
       `[data-assistance-content="${button.dataset.assistanceStep}"]`
     );
     if (content) content.textContent = remaining > 0
-      ? `${formatCompactDuration(remaining)} 后解锁`
+      ? `常规解锁还有 ${formatCompactDuration(remaining)}`
       : "已解锁 · 点击查看";
   });
   if (!assistance.giveupAt || contestMode) return;

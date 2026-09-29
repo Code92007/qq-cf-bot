@@ -355,9 +355,30 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(store.get_problem_hints("1A"), hints)
 
             control = store.set_web_challenge_control(
-                -1, user["id"], "1A", "2026-01-01T00:00:00+00:00", giveup_minutes=90
+                -1,
+                user["id"],
+                "1A",
+                "2026-01-01T00:00:00+00:00",
+                giveup_minutes=90,
+                tag_unlock_minutes=3,
+                first_hint_minutes=7,
+                hint_interval_minutes=4,
+                hint_count=3,
             )
             self.assertEqual(control["revealed_steps"], ())
+            self.assertEqual(control["tag_unlock_minutes"], 3)
+            self.assertEqual(control["first_hint_minutes"], 7)
+            self.assertEqual(control["hint_interval_minutes"], 4)
+            self.assertEqual(control["hint_count"], 3)
+            self.assertEqual(
+                store.get_web_challenge_settings(-1),
+                {
+                    "tag_unlock_minutes": 3,
+                    "first_hint_minutes": 7,
+                    "hint_interval_minutes": 4,
+                    "hint_count": 3,
+                },
+            )
             updated = store.reveal_web_challenge_step(-1, "1A", 2)
             self.assertEqual(updated["revealed_steps"], (2,))
             store.clear_web_challenge_controls(-1)
