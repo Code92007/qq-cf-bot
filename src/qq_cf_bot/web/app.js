@@ -4,6 +4,9 @@ const state = {
   busy: false,
   toastTimer: null,
   giveupTimer: null,
+  challengeTimer: null,
+  forceGiveupTimer: null,
+  forceGivingUp: false,
   acRecords: null,
   acRecordsPromise: null,
   activeRecordsTab: "breakdown",
@@ -39,7 +42,8 @@ function bindEvents() {
   el("endContestBtn").addEventListener("click", endContestSession);
   el("contestProblems").addEventListener("click", selectContestProblem);
   el("cancelSpecificProblemBtn").addEventListener("click", () => el("specificProblemDialog").close());
-  el("giveUpBtn").addEventListener("click", giveUp);
+  el("giveUpBtn").addEventListener("click", () => giveUp(false));
+  el("assistanceSteps").addEventListener("click", revealAssistance);
   el("oralForm").addEventListener("submit", submitOral);
   el("codeForm").addEventListener("submit", submitCode);
   el("sourceCode").addEventListener("keydown", handleEditorTab);
@@ -65,6 +69,9 @@ function showAuth() {
   state.csrf = "";
   state.acRecords = null;
   clearInterval(state.contestTimer);
+  clearInterval(state.giveupTimer);
+  clearInterval(state.challengeTimer);
+  clearInterval(state.forceGiveupTimer);
   if (el("acRecordsDialog").open) el("acRecordsDialog").close();
   if (el("specificProblemDialog").open) el("specificProblemDialog").close();
   el("appView").classList.add("hidden");
@@ -79,6 +86,7 @@ function showApp(data) {
   el("authView").classList.add("hidden");
   el("appView").classList.remove("hidden");
   render(data);
+  showForcedGiveup(data);
 }
 
 function switchTrainingMode(mode) {
@@ -147,7 +155,11 @@ async function newChallenge(event) {
   try {
     const result = await api("/api/challenges", {
       method: "POST",
-      body: { minRating: Number(el("minRating").value), maxRating: Number(el("maxRating").value) }
+      body: {
+        minRating: Number(el("minRating").value),
+        maxRating: Number(el("maxRating").value),
+        giveupMinutes: Number(el("giveupMinutes").value)
+      }
     });
     applyState(result.state);
     state.singleDraft = { oral: "", code: "" };
@@ -172,7 +184,7 @@ async function shareChallenge(event) {
   try {
     const result = await api("/api/challenges/share", {
       method: "POST",
-      body: { problemId }
+      body: { problemId, giveupMinutes: Number(el("giveupMinutes").value) }
     });
     applyState(result.state);
     state.singleDraft = { oral: "", code: "" };
@@ -231,13 +243,37 @@ async function endContestSession() {
   finally { setBusy(false); }
 }
 
-async function giveUp() {
-  if (el("giveUpBtn").disabled) return;
+async function giveUp(forced = false) {
+  if (!forced && el("giveUpBtn").disabled) return;
+  if (state.forceGivingUp) return;
+  state.forceGivingUp = forced;
   setBusy(true, "正在结束本轮");
   try {
     const result = await api("/api/challenges/giveup", { method: "POST", body: {} });
     applyState(result.state);
-    showResult({ accepted: false, message: "本轮已结束。", resolved: result.resolved, label: "CHALLENGE CLOSED" });
+    showResult({
+      accepted: false,
+      message: forced ? "已到你设置的自愿时限，本轮自动结束。" : "本轮已结束。",
+      resolved: result.resolved,
+      label: forced ? "TIME LIMIT REACHED" : "CHALLENGE CLOSED"
+    });
+  } catch (error) { showToast(error.message, true); }
+  finally { state.forceGivingUp = false; setBusy(false); }
+}
+
+async function revealAssistance(event) {
+  const button = event.target.closest("button[data-assistance-step]");
+  if (!button || button.disabled) return;
+  setBusy(true, Number(button.dataset.assistanceStep) === 0 ? "正在解锁标签" : "正在准备提示");
+  try {
+    const result = await api("/api/challenges/hints/reveal", {
+      method: "POST",
+      body: {
+        step: Number(button.dataset.assistanceStep),
+        contest: state.viewMode === "contest"
+      }
+    });
+    applyState(result.state);
   } catch (error) { showToast(error.message, true); }
   finally { setBusy(false); }
 }
@@ -282,6 +318,7 @@ function applyState(data) {
   state.csrf = data.csrfToken;
   state.acRecords = null;
   render(data);
+  showForcedGiveup(data);
 }
 
 function render(data) {
@@ -311,6 +348,7 @@ function render(data) {
   });
   renderLeaderboard(data.leaderboard, data.user.id);
   renderCapabilities(data.capabilities);
+  startForcedGiveupTimer(data.active?.assistance);
   renderContestBoard(contestMode ? displayedContest : null);
   renderProblem(active, contestMode, contestSession);
   restoreEditor(active, contestMode);
@@ -330,6 +368,7 @@ function renderCapabilities(capabilities) {
 
 function renderProblem(active, contestMode, contestSession) {
   clearInterval(state.giveupTimer);
+  clearInterval(state.challengeTimer);
   el("emptyState").classList.toggle("hidden", Boolean(active));
   el("problemView").classList.toggle("hidden", !active);
   el("challengeTitle").textContent = contestMode ? "套题训练" : (active ? "当前挑战" : "训练台");
@@ -337,6 +376,7 @@ function renderProblem(active, contestMode, contestSession) {
   el("specificProblemBtn").disabled = Boolean(state.data?.active);
   el("minRating").disabled = Boolean(state.data?.active);
   el("maxRating").disabled = Boolean(state.data?.active);
+  el("giveupMinutes").disabled = Boolean(state.data?.active);
   el("challengeMode").textContent = contestMode ? "套题 VP · 不计榜单" : "专项练习 · 不计榜单";
   el("challengeMode").classList.toggle("hidden", !active || (!contestMode && active.ranked !== false));
   el("giveUpBtn").classList.toggle("hidden", contestMode);
@@ -357,7 +397,97 @@ function renderProblem(active, contestMode, contestSession) {
   renderHtmlSection("outputSection", "输出", active.statement.output);
   renderHtmlSection("hintSection", "提示", active.statement.hint);
   renderSamples(active.statement.samples);
+  renderAssistance(active, contestMode);
   if (!contestMode) startGiveupTimer(active.giveupWaitSeconds);
+}
+
+function renderAssistance(active, contestMode) {
+  clearInterval(state.challengeTimer);
+  const assistance = active.assistance;
+  const container = el("assistanceSteps");
+  container.replaceChildren();
+  if (!assistance) {
+    el("assistancePanel").classList.add("hidden");
+    return;
+  }
+  el("assistancePanel").classList.remove("hidden");
+  assistance.steps.forEach((step) => {
+    const row = document.createElement("div");
+    row.className = "assistance-step";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.assistanceStep = step.step;
+    button.dataset.unlockSeconds = step.unlockSeconds;
+    button.textContent = step.revealed ? `${step.label} · 已查看` : step.label;
+    button.classList.toggle("revealed", step.revealed);
+    button.disabled = step.revealed || step.waitSeconds > 0;
+
+    const content = document.createElement("div");
+    content.className = "assistance-content";
+    content.dataset.assistanceContent = step.step;
+    if (step.revealed && step.step === 0) {
+      const tags = document.createElement("div");
+      tags.className = "tag-list";
+      (step.tags?.length ? step.tags : ["暂无标签"]).forEach((tag) => {
+        const chip = document.createElement("span");
+        chip.className = "tag-chip";
+        chip.textContent = tag;
+        tags.append(chip);
+      });
+      content.append(tags);
+    } else if (step.revealed) {
+      content.textContent = step.content || "提示内容暂不可用";
+    } else {
+      content.classList.add("locked");
+      content.textContent = step.waitSeconds > 0
+        ? `${formatCompactDuration(step.waitSeconds)} 后解锁`
+        : "已解锁 · 点击查看";
+    }
+    row.append(button, content);
+    container.append(row);
+  });
+
+  const forcedStatus = el("forcedGiveupStatus");
+  forcedStatus.classList.toggle("hidden", !assistance.giveupAt || contestMode);
+  const update = () => updateAssistanceClock(assistance, contestMode);
+  update();
+  state.challengeTimer = setInterval(update, 1000);
+}
+
+function updateAssistanceClock(assistance, contestMode) {
+  const started = Date.parse(assistance.startedAt);
+  const elapsed = Number.isNaN(started) ? 0 : Math.max(0, Math.floor((Date.now() - started) / 1000));
+  el("challengeElapsed").textContent = formatClock(elapsed);
+  el("assistanceSteps").querySelectorAll("button[data-assistance-step]").forEach((button) => {
+    if (button.classList.contains("revealed")) return;
+    const remaining = Math.max(0, Number(button.dataset.unlockSeconds) - elapsed);
+    button.disabled = remaining > 0;
+    const content = el("assistanceSteps").querySelector(
+      `[data-assistance-content="${button.dataset.assistanceStep}"]`
+    );
+    if (content) content.textContent = remaining > 0
+      ? `${formatCompactDuration(remaining)} 后解锁`
+      : "已解锁 · 点击查看";
+  });
+  if (!assistance.giveupAt || contestMode) return;
+  const deadline = Date.parse(assistance.giveupAt);
+  const remaining = Number.isNaN(deadline) ? 0 : Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+  el("forcedGiveupStatus").textContent = `自愿时限 · ${formatClock(remaining)} 后强制放弃`;
+  if (remaining <= 0 && !state.busy && !state.forceGivingUp) giveUp(true);
+}
+
+function startForcedGiveupTimer(assistance) {
+  clearInterval(state.forceGiveupTimer);
+  if (!assistance?.giveupAt) return;
+  const update = () => {
+    const deadline = Date.parse(assistance.giveupAt);
+    if (!Number.isNaN(deadline) && deadline <= Date.now() && !state.busy && !state.forceGivingUp) {
+      giveUp(true);
+    }
+  };
+  update();
+  state.forceGiveupTimer = setInterval(update, 1000);
 }
 
 function renderContestBoard(contestSession) {
@@ -721,6 +851,19 @@ function showContestSummary(contestSession) {
   addDefinition(reveal, "代码 AC", `${codeCount} / ${contestSession.problems.length}`);
 }
 
+function showForcedGiveup(data) {
+  if (!data?.forcedGiveup) return;
+  const resolved = data.forcedGiveup;
+  data.forcedGiveup = null;
+  showResult({
+    accepted: false,
+    label: "TIME LIMIT REACHED",
+    title: "已按约定强制放弃",
+    message: "你设置的自愿时限已到，本轮自动结束。",
+    resolved
+  });
+}
+
 function startGiveupTimer(initialSeconds) {
   let remaining = Math.max(0, initialSeconds);
   const update = () => {
@@ -757,7 +900,7 @@ function showResult(result) {
     if (result.verdict.timeMs != null) addDefinition(reveal, "耗时", `${result.verdict.timeMs} ms`);
     if (result.verdict.memoryKb != null) addDefinition(reveal, "内存", `${result.verdict.memoryKb} KB`);
   }
-  el("resultDialog").showModal();
+  if (!el("resultDialog").open) el("resultDialog").showModal();
 }
 
 function addDefinition(list, term, description) {

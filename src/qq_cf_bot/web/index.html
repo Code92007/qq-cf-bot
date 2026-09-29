@@ -69,6 +69,7 @@
             <label><span>最低</span><select id="minRating" name="minRating" aria-label="最低难度"></select></label>
             <span class="range-dash">至</span>
             <label><span>最高</span><select id="maxRating" name="maxRating" aria-label="最高难度"></select></label>
+            <label class="giveup-duration-field"><span>强制放弃</span><span class="duration-input"><input id="giveupMinutes" name="giveupMinutes" type="number" inputmode="numeric" min="20" max="240" step="5" value="90" required><small>分钟</small></span></label>
             <button id="newChallengeBtn" class="primary" type="submit">抽取题目</button>
             <button id="specificProblemBtn" class="quiet" type="button">指定题目</button>
           </form>
@@ -125,6 +126,21 @@
           <div id="outputSection" class="statement-section"></div>
           <div id="samplesSection" class="statement-section"></div>
           <div id="hintSection" class="statement-section"></div>
+
+          <section id="assistancePanel" class="assistance-panel" aria-labelledby="assistanceTitle">
+            <header class="assistance-head">
+              <div>
+                <p class="eyebrow">PROGRESSIVE ASSIST</p>
+                <h2 id="assistanceTitle">渐进提示</h2>
+              </div>
+              <div class="challenge-clock">
+                <span>本题用时</span>
+                <strong id="challengeElapsed">00:00</strong>
+              </div>
+            </header>
+            <div id="assistanceSteps" class="assistance-steps"></div>
+            <p id="forcedGiveupStatus" class="forced-giveup-status hidden"></p>
+          </section>
 
           <section class="submission-zone">
             <div class="submission-tabs" role="tablist" aria-label="提交方式">

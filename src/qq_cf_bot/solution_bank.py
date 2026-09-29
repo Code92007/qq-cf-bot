@@ -108,6 +108,23 @@ class SolutionBank:
             used += len(chunk)
         return "\n\n".join(chunks)
 
+    def hints_for(self, problem: CFProblem, statement: ProblemStatement) -> tuple[str, ...]:
+        cached = self.store.get_problem_hints(problem.cf_id)
+        if len(cached) == 6:
+            return cached
+
+        references = self.ensure(problem, statement)
+        hints: tuple[str, ...] = ()
+        if self.solution_generator is not None and self.solution_generator.configured:
+            try:
+                context = self.context_for_prompt(references, max_chars=8_000)
+                hints = self.solution_generator.generate_hints(problem, statement, context).items
+            except Exception as exc:
+                LOGGER.warning("failed to generate progressive hints for %s: %s", problem.cf_id, exc)
+        if len(hints) != 6:
+            hints = _fallback_progressive_hints(references)
+        return self.store.set_problem_hints(problem.cf_id, hints) if len(hints) == 6 else ()
+
     def _fetch_luogu(self, problem: CFProblem) -> List[SolutionReference]:
         try:
             payload = self.luogu.fetch_solution_payload(problem)
@@ -366,3 +383,24 @@ def _trim(text: str, max_chars: int) -> str:
     if len(text) <= max_chars:
         return text
     return text[:max_chars] + "\n\n[参考内容过长，后续内容已截断]"
+
+
+def _fallback_progressive_hints(references: Iterable[SolutionReference]) -> tuple[str, ...]:
+    text = "\n".join(reference.content for reference in references if reference.content.strip())
+    text = re.sub(r"https?://\S+", " ", text)
+    text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
+    sentences = [
+        re.sub(r"\s+", " ", item).strip(" -#*：:")
+        for item in re.split(r"(?<=[。！？!?；;])\s*|\n+", text)
+    ]
+    useful = [item for item in sentences if 18 <= len(item) <= 260]
+    if not useful:
+        return ()
+    positions = [round(index * (len(useful) - 1) / 5) for index in range(6)]
+    hints = []
+    for position in positions:
+        hint = useful[position]
+        if len(hint) > 180:
+            hint = hint[:180].rstrip() + "..."
+        hints.append(hint)
+    return tuple(hints)

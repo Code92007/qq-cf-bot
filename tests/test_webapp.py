@@ -2,6 +2,7 @@ import io
 import json
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from email.message import Message
 from pathlib import Path
 from unittest.mock import patch
@@ -9,7 +10,7 @@ from unittest.mock import patch
 from qq_cf_bot.config import Config
 from qq_cf_bot.core import ChallengeService, SubmissionOutcome
 from qq_cf_bot.models import CFContest, CFProblem, PreparedProblem, ProblemStatement, RatingRange
-from qq_cf_bot.webapp import WebApplication, _safe_statement_html
+from qq_cf_bot.webapp import WebApplication, _giveup_minutes, _safe_statement_html
 
 
 class _Handler:
@@ -103,6 +104,109 @@ class WebApplicationTest(unittest.TestCase):
         self.assertNotIn("onclick", result.lower())
         self.assertNotIn("javascript:", result.lower())
         self.assertIn("安全文本", result)
+
+    def test_giveup_minutes_are_bounded(self):
+        self.assertEqual(_giveup_minutes(None), 90)
+        self.assertEqual(_giveup_minutes("45"), 45)
+        with self.assertRaises(ValueError):
+            _giveup_minutes(19)
+        with self.assertRaises(ValueError):
+            _giveup_minutes(241)
+
+    def test_progressive_assistance_unlocks_only_after_server_deadline(self):
+        register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})
+        self.app.handle_post(register, "/api/auth/register")
+        response = register.json()
+        user_id = response["state"]["user"]["id"]
+        cookie = register.header("Set-Cookie").split(";", 1)[0]
+        csrf = response["state"]["csrfToken"]
+        scope_id = -(1_000_000_000_000 + user_id)
+        problem = CFProblem(1, "A", "Theatre Square", 1000, ("math", "implementation"))
+        statement = ProblemStatement("CF1A", "剧院广场", "description", "input", "output", [])
+        self.app.service.store.set_active_problem(scope_id, problem, statement, [])
+        started_at = (datetime.now(timezone.utc) - timedelta(minutes=21)).isoformat()
+        giveup_at = (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat()
+        self.app.service.store.set_web_challenge_control(
+            scope_id,
+            user_id,
+            problem.cf_id,
+            started_at,
+            giveup_at=giveup_at,
+            giveup_minutes=51,
+        )
+
+        current = _Handler(cookie=cookie)
+        self.app.handle_get(current, "/api/state")
+        assistance = current.json()["active"]["assistance"]
+        self.assertEqual(assistance["steps"][0]["waitSeconds"], 0)
+        self.assertNotIn("tags", assistance["steps"][0])
+        self.assertEqual(assistance["steps"][1]["waitSeconds"], 0)
+
+        tags = _Handler({"step": 0, "contest": False}, cookie=cookie, csrf=csrf)
+        self.app.handle_post(tags, "/api/challenges/hints/reveal")
+        self.assertEqual(tags.status, 200)
+        self.assertEqual(tags.json()["state"]["active"]["assistance"]["steps"][0]["tags"], ["math", "implementation"])
+
+        generated = tuple(f"渐进提示 {index}" for index in range(1, 7))
+        self.app.service.store.set_problem_hints(problem.cf_id, generated)
+        with patch.object(self.app.service.solution_bank, "hints_for", return_value=generated):
+            hint = _Handler({"step": 1, "contest": False}, cookie=cookie, csrf=csrf)
+            self.app.handle_post(hint, "/api/challenges/hints/reveal")
+        self.assertEqual(hint.status, 200)
+        self.assertEqual(
+            hint.json()["state"]["active"]["assistance"]["steps"][1]["content"],
+            "渐进提示 1",
+        )
+
+    def test_progressive_assistance_rejects_locked_hint(self):
+        register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})
+        self.app.handle_post(register, "/api/auth/register")
+        response = register.json()
+        user_id = response["state"]["user"]["id"]
+        cookie = register.header("Set-Cookie").split(";", 1)[0]
+        csrf = response["state"]["csrfToken"]
+        scope_id = -(1_000_000_000_000 + user_id)
+        problem = CFProblem(1, "A", "Theatre Square", 1000, ("math",))
+        statement = ProblemStatement("CF1A", "剧院广场", "description", "input", "output", [])
+        self.app.service.store.set_active_problem(scope_id, problem, statement, [])
+        active = self.app.service.store.get_active_problem(scope_id)
+        self.app.service.store.set_web_challenge_control(
+            scope_id, user_id, problem.cf_id, active.created_at
+        )
+
+        hint = _Handler({"step": 1, "contest": False}, cookie=cookie, csrf=csrf)
+        self.app.handle_post(hint, "/api/challenges/hints/reveal")
+
+        self.assertEqual(hint.status, 409)
+        self.assertEqual(hint.json()["error"], "hint_locked")
+
+    def test_state_forces_giveup_after_voluntary_deadline(self):
+        register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})
+        self.app.handle_post(register, "/api/auth/register")
+        response = register.json()
+        user_id = response["state"]["user"]["id"]
+        cookie = register.header("Set-Cookie").split(";", 1)[0]
+        scope_id = -(1_000_000_000_000 + user_id)
+        problem = CFProblem(1, "A", "Theatre Square", 1000, ("math",))
+        statement = ProblemStatement("CF1A", "剧院广场", "description", "input", "output", [])
+        self.app.service.store.set_active_problem(scope_id, problem, statement, [])
+        active = self.app.service.store.get_active_problem(scope_id)
+        self.app.service.store.set_web_challenge_control(
+            scope_id,
+            user_id,
+            problem.cf_id,
+            active.created_at,
+            giveup_at=(datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat(),
+            giveup_minutes=20,
+        )
+
+        current = _Handler(cookie=cookie)
+        self.app.handle_get(current, "/api/state")
+
+        payload = current.json()
+        self.assertIsNone(payload["active"])
+        self.assertEqual(payload["forcedGiveup"]["cfId"], "1A")
+        self.assertIsNone(self.app.service.store.get_active_problem(scope_id))
 
     def test_ac_records_requires_login_and_returns_breakdown(self):
         unauthorized = _Handler()

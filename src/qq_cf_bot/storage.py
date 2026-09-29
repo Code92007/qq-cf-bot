@@ -552,6 +552,126 @@ class SentProblemStore:
                 (cf_id, now),
             )
 
+    def get_problem_hints(self, cf_id: str) -> Tuple[str, ...]:
+        with self._connect() as conn:
+            row = conn.execute(
+                "select hints_json from problem_hints where cf_id = ?",
+                (cf_id,),
+            ).fetchone()
+        if row is None:
+            return ()
+        try:
+            hints = json.loads(str(row[0]))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return ()
+        if not isinstance(hints, list):
+            return ()
+        return tuple(str(item).strip() for item in hints if str(item).strip())
+
+    def set_problem_hints(self, cf_id: str, hints: Iterable[str]) -> Tuple[str, ...]:
+        normalized = tuple(str(item).strip() for item in hints if str(item).strip())[:6]
+        if not normalized:
+            return ()
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                insert into problem_hints (cf_id, hints_json, generated_at)
+                values (?, ?, ?)
+                on conflict(cf_id) do update set
+                    hints_json = excluded.hints_json,
+                    generated_at = excluded.generated_at
+                """,
+                (cf_id, json.dumps(normalized, ensure_ascii=False), now),
+            )
+        return normalized
+
+    def set_web_challenge_control(
+        self,
+        scope_id: int,
+        user_id: int,
+        cf_id: str,
+        started_at: str,
+        giveup_at: str = "",
+        giveup_minutes: int = 0,
+        reset: bool = True,
+    ) -> dict:
+        with self._connect() as conn:
+            if reset:
+                conn.execute("delete from web_challenge_controls where scope_id = ?", (str(scope_id),))
+            conn.execute(
+                """
+                insert into web_challenge_controls
+                    (scope_id, user_id, cf_id, started_at, giveup_at, giveup_minutes, revealed_steps_json)
+                values (?, ?, ?, ?, ?, ?, '[]')
+                on conflict(scope_id, cf_id) do nothing
+                """,
+                (str(scope_id), user_id, cf_id, started_at, giveup_at, giveup_minutes),
+            )
+        control = self.get_web_challenge_control(scope_id, cf_id)
+        if control is None:
+            raise RuntimeError("failed to persist web challenge control")
+        return control
+
+    def get_web_challenge_control(self, scope_id: int, cf_id: str) -> Optional[dict]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                select scope_id, user_id, cf_id, started_at, giveup_at,
+                       giveup_minutes, revealed_steps_json
+                from web_challenge_controls
+                where scope_id = ? and cf_id = ?
+                """,
+                (str(scope_id), cf_id),
+            ).fetchone()
+        if row is None:
+            return None
+        try:
+            raw_steps = json.loads(str(row[6]))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            raw_steps = []
+        revealed_steps = tuple(
+            sorted({int(item) for item in raw_steps if isinstance(item, int) and 0 <= item <= 6})
+        )
+        return {
+            "scope_id": int(row[0]),
+            "user_id": int(row[1]),
+            "cf_id": str(row[2]),
+            "started_at": str(row[3]),
+            "giveup_at": str(row[4]),
+            "giveup_minutes": int(row[5]),
+            "revealed_steps": revealed_steps,
+        }
+
+    def reveal_web_challenge_step(self, scope_id: int, cf_id: str, step: int) -> dict:
+        control = self.get_web_challenge_control(scope_id, cf_id)
+        if control is None:
+            raise ValueError("web challenge control does not exist")
+        steps = sorted(set(control["revealed_steps"]) | {step})
+        with self._connect() as conn:
+            conn.execute(
+                """
+                update web_challenge_controls
+                set revealed_steps_json = ?
+                where scope_id = ? and cf_id = ?
+                """,
+                (json.dumps(steps), str(scope_id), cf_id),
+            )
+        updated = self.get_web_challenge_control(scope_id, cf_id)
+        if updated is None:
+            raise RuntimeError("web challenge control disappeared")
+        return updated
+
+    def clear_web_challenge_controls(self, scope_id: int, cf_id: str = "") -> None:
+        with self._connect() as conn:
+            if cf_id:
+                conn.execute(
+                    "delete from web_challenge_controls where scope_id = ? and cf_id = ?",
+                    (str(scope_id), cf_id),
+                )
+            else:
+                conn.execute("delete from web_challenge_controls where scope_id = ?", (str(scope_id),))
+
     def get_user_stat(self, group_id: int, user_id: int, display_name: str, initial_rating: float) -> UserStat:
         with self._connect() as conn:
             row = conn.execute(
@@ -1225,6 +1345,15 @@ class SentProblemStore:
             )
             conn.execute(
                 """
+                create table if not exists problem_hints (
+                    cf_id text primary key,
+                    hints_json text not null,
+                    generated_at text not null
+                )
+                """
+            )
+            conn.execute(
+                """
                 create table if not exists web_users (
                     id integer primary key autoincrement,
                     username text not null unique collate nocase,
@@ -1247,6 +1376,24 @@ class SentProblemStore:
                 """
             )
             conn.execute("create index if not exists idx_web_sessions_user on web_sessions(user_id)")
+            conn.execute(
+                """
+                create table if not exists web_challenge_controls (
+                    scope_id text not null,
+                    user_id integer not null,
+                    cf_id text not null,
+                    started_at text not null,
+                    giveup_at text not null,
+                    giveup_minutes integer not null,
+                    revealed_steps_json text not null,
+                    primary key (scope_id, cf_id),
+                    foreign key (user_id) references web_users(id) on delete cascade
+                )
+                """
+            )
+            conn.execute(
+                "create index if not exists idx_web_challenge_controls_user on web_challenge_controls(user_id)"
+            )
             conn.execute(
                 """
                 create table if not exists web_contest_sessions (

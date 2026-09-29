@@ -34,15 +34,24 @@ class _FakeGeneratedSolution:
     content = "这是模型生成的参考解法，包含算法思路、正确性说明、复杂度分析和边界条件。" * 3
 
 
+class _FakeGeneratedHints:
+    items = tuple(f"渐进提示 {index}" for index in range(1, 7))
+
+
 class _FakeSolutionGenerator:
     configured = True
 
     def __init__(self):
         self.calls = 0
+        self.hint_calls = 0
 
     def generate(self, problem, statement):
         self.calls += 1
         return _FakeGeneratedSolution()
+
+    def generate_hints(self, problem, statement, context):
+        self.hint_calls += 1
+        return _FakeGeneratedHints()
 
 
 class SolutionBankTest(unittest.TestCase):
@@ -121,6 +130,27 @@ class SolutionBankTest(unittest.TestCase):
             context = bank.context_for_prompt(refs, max_chars=200)
             self.assertLessEqual(len(context), 260)
             self.assertIn("参考题解 1", context)
+
+    def test_progressive_hints_are_generated_and_cached(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            generator = _FakeSolutionGenerator()
+            bank = SolutionBank(
+                store=store,
+                luogu=_FakeLuogu(),
+                remote_judge=_FakeRemoteJudge(),
+                solution_generator=generator,
+                fetch_cf_editorial=False,
+            )
+            problem = CFProblem(1, "A", "Theatre Square", 1000)
+            statement = ProblemStatement("CF1A", "剧院广场", "题面", "输入", "输出", [])
+
+            first = bank.hints_for(problem, statement)
+            cached = bank.hints_for(problem, statement)
+
+            self.assertEqual(first, _FakeGeneratedHints.items)
+            self.assertEqual(cached, first)
+            self.assertEqual(generator.hint_calls, 1)
 
 
 if __name__ == "__main__":

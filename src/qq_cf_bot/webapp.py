@@ -33,6 +33,10 @@ _WEB_CONTEST_SCOPE_OFFSET = 2_000_000_000_000
 _USERNAME_RE = re.compile(r"[A-Za-z0-9_-]{3,24}")
 _LANGUAGES = {"cpp", "c", "java", "py", "python"}
 _CONTEST_CATEGORIES = {"div2", "div1", "gym"}
+_DEFAULT_GIVEUP_MINUTES = 90
+_MIN_GIVEUP_MINUTES = 20
+_MAX_GIVEUP_MINUTES = 240
+_ASSISTANCE_UNLOCK_SECONDS = (600, 1200, 1800, 2400, 3000, 3600, 4200)
 _DUMMY_PASSWORD_HASH = "pbkdf2_sha256$310000$00000000000000000000000000000000$" + ("00" * 32)
 
 
@@ -103,6 +107,8 @@ class WebApplication:
                     self._share_challenge(handler, session, payload)
                 elif path == "/api/challenges/giveup":
                     self._give_up(handler, session)
+                elif path == "/api/challenges/hints/reveal":
+                    self._reveal_hint(handler, session, payload)
                 elif path == "/api/challenges/oral":
                     self._oral_submit(handler, session, payload)
                 elif path == "/api/challenges/code":
@@ -173,6 +179,7 @@ class WebApplication:
         )
 
     def _new_challenge(self, handler, session: dict, payload: dict) -> None:
+        _giveup_minutes(payload.get("giveupMinutes"))
         min_rating = _rating_value(payload.get("minRating"))
         max_rating = _rating_value(payload.get("maxRating"))
         if min_rating > max_rating:
@@ -180,9 +187,13 @@ class WebApplication:
         actor = self._actor(session)
         rating_range = self.service.set_rating_range(actor.scope_id, min_rating, max_rating)
         self.service.issue_problem(actor.scope_id, rating_range)
+        active = self.service.get_active_problem(actor.scope_id)
+        if active is not None:
+            self._set_single_challenge_control(session, active, payload)
         self._json(handler, {"ok": True, "state": self._state(session)})
 
     def _share_challenge(self, handler, session: dict, payload: dict) -> None:
+        _giveup_minutes(payload.get("giveupMinutes"))
         problem_id = str(payload.get("problemId") or "").strip()
         if len(problem_id) > 200:
             raise ValueError("题号或链接不能超过 200 个字符。")
@@ -191,16 +202,55 @@ class WebApplication:
             raise ValueError("请输入正确的 Codeforces 题号或题目链接。")
         actor = self._actor(session)
         self.service.issue_specific_problem(actor.scope_id, parsed[0], parsed[1])
+        active = self.service.get_active_problem(actor.scope_id)
+        if active is not None:
+            self._set_single_challenge_control(session, active, payload)
         self._json(handler, {"ok": True, "state": self._state(session)})
 
     def _give_up(self, handler, session: dict) -> None:
-        active = self.service.give_up(self._actor(session).scope_id)
+        actor = self._actor(session)
+        active = self._expire_single_challenge(session) or self.service.give_up(actor.scope_id)
+        self.service.store.clear_web_challenge_controls(actor.scope_id)
         self._json(
             handler,
             {"ok": True, "resolved": _revealed_problem(active), "state": self._state(session)},
         )
 
+    def _reveal_hint(self, handler, session: dict, payload: dict) -> None:
+        contest_mode = bool(payload.get("contest"))
+        actor = self._contest_actor(session) if contest_mode else self._actor(session)
+        expired = None if contest_mode else self._expire_single_challenge(session)
+        if expired is not None:
+            self._json(handler, self._forced_giveup_payload(session, expired))
+            return
+        active = self.service.get_active_problem(actor.scope_id)
+        if active is None:
+            raise ChallengeError("no_active_problem", "当前没有可查看提示的题目。", 409)
+        if contest_mode:
+            self._require_contest_session(int(session["user_id"]))
+        control = self._ensure_challenge_control(session, actor.scope_id, active, contest_mode)
+        try:
+            step = int(payload.get("step"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("提示编号不正确。") from exc
+        if step < 0 or step >= len(_ASSISTANCE_UNLOCK_SECONDS):
+            raise ValueError("提示编号不正确。")
+        elapsed = _elapsed_seconds(control["started_at"], datetime.now(timezone.utc).isoformat()) or 0
+        wait_seconds = max(0, _ASSISTANCE_UNLOCK_SECONDS[step] - elapsed)
+        if wait_seconds:
+            raise ChallengeError("hint_locked", f"这条提示还要等待约 {wait_seconds} 秒解锁。", 409)
+        if step > 0:
+            hints = self.service.solution_bank.hints_for(active.problem, active.statement)
+            if len(hints) != 6:
+                raise ChallengeError("hint_unavailable", "渐进提示暂时无法生成，请稍后再试。", 503)
+        self.service.store.reveal_web_challenge_step(actor.scope_id, active.problem.cf_id, step)
+        self._json(handler, {"ok": True, "state": self._state(session)})
+
     def _oral_submit(self, handler, session: dict, payload: dict) -> None:
+        expired = self._expire_single_challenge(session)
+        if expired is not None:
+            self._json(handler, self._forced_giveup_payload(session, expired))
+            return
         submission = str(payload.get("solution") or "").strip()
         if len(submission) > 20_000:
             raise ValueError("做法说明不能超过 20000 个字符。")
@@ -208,6 +258,10 @@ class WebApplication:
         self._json(handler, self._outcome_payload(session, outcome))
 
     def _code_submit(self, handler, session: dict, payload: dict) -> None:
+        expired = self._expire_single_challenge(session)
+        if expired is not None:
+            self._json(handler, self._forced_giveup_payload(session, expired))
+            return
         language = str(payload.get("language") or self.config.cf_submit_default_language).strip().lower()
         if language not in _LANGUAGES:
             raise ValueError("当前仅支持 C++、C、Java 和 Python。")
@@ -254,8 +308,13 @@ class WebApplication:
         try:
             self.service.store.clear_active_problem(scope_id)
             self.service.activate_problem(scope_id, prepared, ranked=False)
+            self.service.store.clear_web_challenge_controls(scope_id)
+            active = self.service.get_active_problem(scope_id)
+            if active is not None:
+                self._ensure_challenge_control(session, scope_id, active, contest_mode=True)
         except Exception:
             self.service.store.clear_active_problem(scope_id)
+            self.service.store.clear_web_challenge_controls(scope_id)
             self.service.store.delete_web_contest_session(contest_session["id"], user_id)
             raise
         self._json(handler, {"ok": True, "state": self._state(session)}, status=201)
@@ -276,7 +335,10 @@ class WebApplication:
             scope_id = self._contest_scope(user_id)
             self.service.store.clear_active_problem(scope_id)
             self.service.activate_problem(scope_id, prepared, ranked=False)
-            self.service.store.select_web_contest_problem(contest_session["id"], user_id, cf_id)
+            contest_session = self.service.store.select_web_contest_problem(contest_session["id"], user_id, cf_id)
+            active = self.service.get_active_problem(scope_id)
+            if active is not None:
+                self._ensure_challenge_control(session, scope_id, active, contest_mode=True)
         self._json(handler, {"ok": True, "state": self._state(session)})
 
     def _contest_oral_submit(self, handler, session: dict, payload: dict) -> None:
@@ -324,7 +386,9 @@ class WebApplication:
         user_id = int(session["user_id"])
         contest_session = self._require_contest_session(user_id)
         ended = self.service.store.end_web_contest_session(contest_session["id"], user_id)
-        self.service.store.clear_active_problem(self._contest_scope(user_id))
+        scope_id = self._contest_scope(user_id)
+        self.service.store.clear_active_problem(scope_id)
+        self.service.store.clear_web_challenge_controls(scope_id)
         self._json(
             handler,
             {
@@ -374,6 +438,8 @@ class WebApplication:
         }
         if outcome.accepted:
             payload["resolved"] = _revealed_problem(outcome.active)
+            if outcome.settled:
+                self.service.store.clear_web_challenge_controls(self._actor(session).scope_id)
         if outcome.stat is not None:
             payload["rating"] = round(outcome.leaderboard_rating or outcome.stat.rating, 2)
             payload["solvedCount"] = outcome.stat.solved_count
@@ -395,6 +461,7 @@ class WebApplication:
 
     def _state(self, session: dict) -> dict:
         actor = self._actor(session)
+        forced_giveup = self._expire_single_challenge(session)
         active = self.service.get_active_problem(actor.scope_id)
         rating_range = self.service.get_rating_range(actor.scope_id)
         stat = self.service.get_user_stat(actor)
@@ -409,6 +476,21 @@ class WebApplication:
             if contest_session is not None
             else self.service.store.get_latest_ended_web_contest_session(int(session["user_id"]))
         )
+        contest_json = _contest_session_json(contest_session, contest_active) if contest_session else None
+        if active is not None:
+            active_json = _active_json(active, self.service.giveup_wait_seconds(active))
+            active_json["assistance"] = self._assistance_json(session, actor.scope_id, active, contest_mode=False)
+        else:
+            active_json = None
+            if forced_giveup is None:
+                self.service.store.clear_web_challenge_controls(actor.scope_id)
+        if contest_json and contest_active is not None and contest_json.get("active"):
+            contest_json["active"]["assistance"] = self._assistance_json(
+                session,
+                self._contest_scope(int(session["user_id"])),
+                contest_active,
+                contest_mode=True,
+            )
         return {
             "authenticated": True,
             "csrfToken": session["csrf_token"],
@@ -419,9 +501,10 @@ class WebApplication:
             },
             "ratingRange": {"min": rating_range.min_rating, "max": rating_range.max_rating},
             "me": _stat_json(stat),
-            "active": _active_json(active, self.service.giveup_wait_seconds(active)) if active else None,
-            "contestSession": _contest_session_json(contest_session, contest_active) if contest_session else None,
+            "active": active_json,
+            "contestSession": contest_json,
             "lastContestSession": _contest_session_json(last_contest_session, None) if last_contest_session else None,
+            "forcedGiveup": _revealed_problem(forced_giveup) if forced_giveup else None,
             "leaderboard": self._leaderboard(),
             "capabilities": {
                 "oralJudge": self.service.judge.configured,
@@ -430,6 +513,111 @@ class WebApplication:
                 "registration": self.config.web_registration_enabled,
             },
         }
+
+    def _set_single_challenge_control(self, session: dict, active: ActiveProblem, payload: dict) -> dict:
+        minutes = _giveup_minutes(payload.get("giveupMinutes"))
+        started_at = active.created_at
+        start = _parse_datetime(started_at) or datetime.now(timezone.utc)
+        giveup_at = (start + timedelta(minutes=minutes)).isoformat()
+        return self.service.store.set_web_challenge_control(
+            self._actor(session).scope_id,
+            int(session["user_id"]),
+            active.problem.cf_id,
+            started_at,
+            giveup_at=giveup_at,
+            giveup_minutes=minutes,
+            reset=True,
+        )
+
+    def _forced_giveup_payload(self, session: dict, active: ActiveProblem) -> dict:
+        resolved = _revealed_problem(active)
+        current_state = self._state(session)
+        current_state["forcedGiveup"] = resolved
+        return {
+            "ok": True,
+            "accepted": False,
+            "label": "TIME LIMIT REACHED",
+            "title": "已按约定强制放弃",
+            "message": "你设置的自愿时限已到，本轮自动结束。",
+            "resolved": resolved,
+            "state": current_state,
+        }
+
+    def _ensure_challenge_control(
+        self,
+        session: dict,
+        scope_id: int,
+        active: ActiveProblem,
+        contest_mode: bool,
+    ) -> dict:
+        control = self.service.store.get_web_challenge_control(scope_id, active.problem.cf_id)
+        if control is not None:
+            return control
+        started_at = active.created_at
+        if contest_mode:
+            contest = self.service.store.get_active_web_contest_session(int(session["user_id"]))
+            if contest is not None:
+                selected = next(
+                    (item for item in contest["problems"] if item["cf_id"] == active.problem.cf_id),
+                    None,
+                )
+                if selected and selected["opened_at"]:
+                    started_at = selected["opened_at"]
+        return self.service.store.set_web_challenge_control(
+            scope_id,
+            int(session["user_id"]),
+            active.problem.cf_id,
+            started_at,
+            reset=False,
+        )
+
+    def _assistance_json(
+        self,
+        session: dict,
+        scope_id: int,
+        active: ActiveProblem,
+        contest_mode: bool,
+    ) -> dict:
+        control = self._ensure_challenge_control(session, scope_id, active, contest_mode)
+        now = datetime.now(timezone.utc).isoformat()
+        elapsed = _elapsed_seconds(control["started_at"], now) or 0
+        revealed = set(control["revealed_steps"])
+        cached_hints = self.service.store.get_problem_hints(active.problem.cf_id)
+        steps = []
+        for step, unlock_seconds in enumerate(_ASSISTANCE_UNLOCK_SECONDS):
+            item = {
+                "step": step,
+                "label": "算法标签" if step == 0 else f"Hint {step}",
+                "unlockSeconds": unlock_seconds,
+                "waitSeconds": max(0, unlock_seconds - elapsed),
+                "revealed": step in revealed,
+            }
+            if step == 0 and step in revealed:
+                item["tags"] = list(active.problem.tags)
+            elif step in revealed and len(cached_hints) == 6:
+                item["content"] = cached_hints[step - 1]
+            steps.append(item)
+        return {
+            "startedAt": control["started_at"],
+            "giveupAt": control["giveup_at"] or None,
+            "giveupMinutes": control["giveup_minutes"] or None,
+            "steps": steps,
+        }
+
+    def _expire_single_challenge(self, session: dict) -> Optional[ActiveProblem]:
+        actor = self._actor(session)
+        active = self.service.get_active_problem(actor.scope_id)
+        if active is None:
+            return None
+        control = self.service.store.get_web_challenge_control(actor.scope_id, active.problem.cf_id)
+        if control is None or not control["giveup_at"]:
+            return None
+        deadline = _parse_datetime(control["giveup_at"])
+        if deadline is None or datetime.now(timezone.utc) < deadline:
+            return None
+        self.service.store.clear_active_problem(actor.scope_id)
+        self.service.store.clear_web_challenge_controls(actor.scope_id)
+        return active
 
     def _leaderboard(self) -> list:
         return [
@@ -609,6 +797,22 @@ def _rating_value(value: Any) -> int:
     return rating
 
 
+def _giveup_minutes(value: Any) -> int:
+    if value in (None, ""):
+        return _DEFAULT_GIVEUP_MINUTES
+    if isinstance(value, bool):
+        raise ValueError("强制放弃时长必须是整数分钟。")
+    try:
+        minutes = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("强制放弃时长必须是整数分钟。") from exc
+    if minutes < _MIN_GIVEUP_MINUTES or minutes > _MAX_GIVEUP_MINUTES:
+        raise ValueError(
+            f"强制放弃时长需在 {_MIN_GIVEUP_MINUTES}-{_MAX_GIVEUP_MINUTES} 分钟之间。"
+        )
+    return minutes
+
+
 def _validate_password(password: str) -> None:
     if len(password) < 8 or len(password) > 128:
         raise ValueError("密码长度需为 8-128 个字符。")
@@ -715,7 +919,7 @@ def _contest_session_json(contest_session: dict, active: Optional[ActiveProblem]
                 "index": problem.index,
                 "title": problem.name,
                 "rating": problem.rating or None,
-                "tags": list(problem.tags),
+                "tags": list(problem.tags) if contest_session["status"] == "ended" else [],
                 "url": f"https://codeforces.com/{base_url}/{problem.contest_id}/problem/{problem.index}",
                 "current": problem.cf_id == contest_session["current_cf_id"],
                 "openedAt": opened_at or None,
@@ -766,6 +970,16 @@ def _elapsed_seconds(start_value: str, end_value: str) -> Optional[int]:
     if end.tzinfo is None:
         end = end.replace(tzinfo=timezone.utc)
     return max(0, int((end - start).total_seconds()))
+
+
+def _parse_datetime(value: str) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed
 
 
 def _safe_statement_html(value: str, source_url: str) -> str:

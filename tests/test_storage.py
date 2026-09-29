@@ -345,6 +345,24 @@ class StorageTest(unittest.TestCase):
             store.mark_solution_fetch_attempt("1A")
             self.assertTrue(store.get_solution_fetch_attempt("1A"))
 
+    def test_problem_hints_and_web_challenge_control_roundtrip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            user = store.create_web_user("alice", "Alice", "hash")
+            hints = tuple(f"hint {index}" for index in range(1, 7))
+
+            self.assertEqual(store.set_problem_hints("1A", hints), hints)
+            self.assertEqual(store.get_problem_hints("1A"), hints)
+
+            control = store.set_web_challenge_control(
+                -1, user["id"], "1A", "2026-01-01T00:00:00+00:00", giveup_minutes=90
+            )
+            self.assertEqual(control["revealed_steps"], ())
+            updated = store.reveal_web_challenge_step(-1, "1A", 2)
+            self.assertEqual(updated["revealed_steps"], (2,))
+            store.clear_web_challenge_controls(-1)
+            self.assertIsNone(store.get_web_challenge_control(-1, "1A"))
+
 
 if __name__ == "__main__":
     unittest.main()
