@@ -1,10 +1,10 @@
-const TRAINING_SETTINGS_KEY = "cf-bot-training-settings-v1";
+const TRAINING_SETTINGS_KEY = "cf-bot-training-settings-v2";
 const DEFAULT_TRAINING_SETTINGS = Object.freeze({
   giveupMinutes: 90,
   tagUnlockMinutes: 10,
   firstHintMinutes: 20,
   hintIntervalMinutes: 10,
-  hintCount: 6
+  hintCount: 0
 });
 
 const state = {
@@ -16,6 +16,8 @@ const state = {
   challengeTimer: null,
   forceGiveupTimer: null,
   forceGivingUp: false,
+  autoHintPending: false,
+  autoHintRetryAt: 0,
   acRecords: null,
   acRecordsPromise: null,
   activeRecordsTab: "breakdown",
@@ -82,7 +84,7 @@ function loadTrainingSettings() {
     tagUnlockMinutes: boundedSetting(stored.tagUnlockMinutes, 0, 240, DEFAULT_TRAINING_SETTINGS.tagUnlockMinutes),
     firstHintMinutes: boundedSetting(stored.firstHintMinutes, 0, 240, DEFAULT_TRAINING_SETTINGS.firstHintMinutes),
     hintIntervalMinutes: boundedSetting(stored.hintIntervalMinutes, 0, 120, DEFAULT_TRAINING_SETTINGS.hintIntervalMinutes),
-    hintCount: boundedSetting(stored.hintCount, 1, 6, DEFAULT_TRAINING_SETTINGS.hintCount)
+    hintCount: boundedSetting(stored.hintCount, 0, 6, DEFAULT_TRAINING_SETTINGS.hintCount)
   };
   syncTrainingSettingsForm();
   updateTrainingSettingsSummary();
@@ -131,7 +133,7 @@ function syncTrainingSettingsForm() {
 
 function updateTrainingSettingsSummary() {
   const settings = state.trainingSettings;
-  const summary = `训练设置 · ${settings.hintCount} 条提示`;
+  const summary = settings.hintCount ? `训练设置 · ${settings.hintCount} 条提示` : "训练设置 · 按难度自动分配 2–5 条提示";
   const details = `标签 ${settings.tagUnlockMinutes} 分钟，Hint 1 ${settings.firstHintMinutes} 分钟，后续间隔 ${settings.hintIntervalMinutes} 分钟`;
   [el("singleSettingsBtn"), el("contestSettingsBtn")].forEach((button) => {
     button.textContent = summary;
@@ -370,6 +372,7 @@ async function revealAssistance(event) {
         early: button.dataset.early === "true"
       }
     });
+    state.autoHintRetryAt = 0;
     applyState(result.state);
   } catch (error) { showToast(error.message, true); }
   finally { setBusy(false); }
@@ -520,7 +523,7 @@ function renderAssistance(active, contestMode) {
     button.dataset.early = String(!step.revealed && step.waitSeconds > 0);
     button.textContent = step.revealed
       ? `${step.label} · 已查看`
-      : (step.waitSeconds > 0 ? `${step.label} · 提前看` : step.label);
+      : (step.waitSeconds > 0 ? `${step.label} · 提前解锁` : step.label);
     button.classList.toggle("revealed", step.revealed);
     button.classList.toggle("early", !step.revealed && step.waitSeconds > 0);
     button.disabled = step.revealed;
@@ -543,8 +546,8 @@ function renderAssistance(active, contestMode) {
     } else {
       content.classList.add("locked");
       content.textContent = step.waitSeconds > 0
-        ? `常规解锁还有 ${formatCompactDuration(step.waitSeconds)}`
-        : "已解锁 · 点击查看";
+        ? `自动解锁还有 ${formatCompactDuration(step.waitSeconds)}`
+        : "已到解锁时间 · 正在自动解锁";
     }
     row.append(button, content);
     container.append(row);
@@ -561,19 +564,26 @@ function updateAssistanceClock(assistance, contestMode) {
   const started = Date.parse(assistance.startedAt);
   const elapsed = Number.isNaN(started) ? 0 : Math.max(0, Math.floor((Date.now() - started) / 1000));
   el("challengeElapsed").textContent = formatClock(elapsed);
+  let dueButton = null;
   el("assistanceSteps").querySelectorAll("button[data-assistance-step]").forEach((button) => {
     if (button.classList.contains("revealed")) return;
     const remaining = Math.max(0, Number(button.dataset.unlockSeconds) - elapsed);
+    if (remaining === 0 && !dueButton) dueButton = button;
     button.dataset.early = String(remaining > 0);
-    button.textContent = remaining > 0 ? `${button.dataset.label} · 提前看` : button.dataset.label;
+    button.textContent = remaining > 0 ? `${button.dataset.label} · 提前解锁` : button.dataset.label;
     button.classList.toggle("early", remaining > 0);
     const content = el("assistanceSteps").querySelector(
       `[data-assistance-content="${button.dataset.assistanceStep}"]`
     );
     if (content) content.textContent = remaining > 0
-      ? `常规解锁还有 ${formatCompactDuration(remaining)}`
-      : "已解锁 · 点击查看";
+      ? `自动解锁还有 ${formatCompactDuration(remaining)}`
+      : "已到解锁时间 · 正在自动解锁";
   });
+  if (dueButton && !state.busy && !state.autoHintPending && Date.now() >= state.autoHintRetryAt) {
+    state.autoHintPending = true;
+    state.autoHintRetryAt = Date.now() + 30000;
+    revealAssistance({ target: dueButton }).finally(() => { state.autoHintPending = false; });
+  }
   if (!assistance.giveupAt || contestMode) return;
   const deadline = Date.parse(assistance.giveupAt);
   const remaining = Number.isNaN(deadline) ? 0 : Math.max(0, Math.ceil((deadline - Date.now()) / 1000));

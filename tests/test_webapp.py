@@ -13,6 +13,8 @@ from qq_cf_bot.models import CFContest, CFProblem, PreparedProblem, ProblemState
 from qq_cf_bot.webapp import (
     WebApplication,
     _assistance_settings,
+    _resolved_hint_control,
+    _compressed_hints,
     _assistance_unlock_seconds,
     _giveup_minutes,
     _safe_statement_html,
@@ -118,6 +120,19 @@ class WebApplicationTest(unittest.TestCase):
             _giveup_minutes(19)
         with self.assertRaises(ValueError):
             _giveup_minutes(241)
+
+    def test_dynamic_hint_count_and_compression(self):
+        settings = _assistance_settings({})
+        self.assertEqual(settings["hint_count"], 0)
+        for rating, expected in [(800, 2), (1200, 2), (1400, 3), (1800, 3),
+                                 (2000, 4), (2400, 4), (2600, 5)]:
+            control = _resolved_hint_control(settings, rating)
+            self.assertEqual(control["hint_count"], expected)
+            hints = tuple(str(i) for i in range(6))
+            compressed = _compressed_hints(hints, expected)
+            self.assertEqual(len(compressed), expected)
+            self.assertEqual("\n".join(compressed), "\n".join(hints))
+        self.assertEqual(_resolved_hint_control({"hint_count": 1}, 2600)["hint_count"], 1)
 
     def test_assistance_settings_are_configurable_and_bounded(self):
         settings = _assistance_settings(
@@ -236,7 +251,7 @@ class WebApplicationTest(unittest.TestCase):
         assistance = hint.json()["state"]["active"]["assistance"]
         self.assertEqual(len(assistance["steps"]), 3)
         self.assertTrue(assistance["steps"][1]["revealed"])
-        self.assertEqual(assistance["steps"][1]["content"], "渐进提示 1")
+        self.assertEqual(assistance["steps"][1]["content"], "渐进提示 1\n渐进提示 2\n渐进提示 3")
 
     def test_state_forces_giveup_after_voluntary_deadline(self):
         register = _Handler({"username": "alice", "displayName": "Alice", "password": "password123"})

@@ -383,3 +383,5 @@ tr.me td { background: #e4f1ea; }
   .history-toolbar input { max-width: none; }
   .history-toolbar span { text-align: right; }
 }
+
+.assistance-content:not(.locked) { white-space: pre-line; }

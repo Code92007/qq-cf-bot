@@ -39,7 +39,7 @@ _MAX_GIVEUP_MINUTES = 240
 _DEFAULT_TAG_UNLOCK_MINUTES = 10
 _DEFAULT_FIRST_HINT_MINUTES = 20
 _DEFAULT_HINT_INTERVAL_MINUTES = 10
-_DEFAULT_HINT_COUNT = 6
+_DEFAULT_HINT_COUNT = 0
 _MAX_ASSISTANCE_MINUTES = 240
 _MAX_HINT_INTERVAL_MINUTES = 120
 _MAX_HINT_COUNT = 6
@@ -587,7 +587,7 @@ class WebApplication:
     ) -> dict:
         control = self.service.store.get_web_challenge_control(scope_id, active.problem.cf_id)
         if control is not None:
-            return control
+            return _resolved_hint_control(control, active.problem.rating)
         started_at = active.created_at
         if contest_mode:
             contest = self.service.store.get_active_web_contest_session(int(session["user_id"]))
@@ -599,7 +599,7 @@ class WebApplication:
                 if selected and selected["opened_at"]:
                     started_at = selected["opened_at"]
         settings = self.service.store.get_web_challenge_settings(scope_id) or _assistance_settings({})
-        return self.service.store.set_web_challenge_control(
+        control = self.service.store.set_web_challenge_control(
             scope_id,
             int(session["user_id"]),
             active.problem.cf_id,
@@ -607,6 +607,7 @@ class WebApplication:
             **settings,
             reset=False,
         )
+        return _resolved_hint_control(control, active.problem.rating)
 
     def _assistance_json(
         self,
@@ -619,7 +620,9 @@ class WebApplication:
         now = datetime.now(timezone.utc).isoformat()
         elapsed = _elapsed_seconds(control["started_at"], now) or 0
         revealed = set(control["revealed_steps"])
-        cached_hints = self.service.store.get_problem_hints(active.problem.cf_id)
+        cached_hints = _compressed_hints(
+            self.service.store.get_problem_hints(active.problem.cf_id), control["hint_count"]
+        )
         steps = []
         for step, unlock_seconds in enumerate(_assistance_unlock_seconds(control)):
             item = {
@@ -631,7 +634,7 @@ class WebApplication:
             }
             if step == 0 and step in revealed:
                 item["tags"] = list(active.problem.tags)
-            elif step in revealed and len(cached_hints) == 6:
+            elif step in revealed and len(cached_hints) == control["hint_count"]:
                 item["content"] = cached_hints[step - 1]
             steps.append(item)
         return {
@@ -880,7 +883,7 @@ def _assistance_settings(payload: dict) -> dict:
         "hint_count": _bounded_int(
             payload.get("hintCount"),
             _DEFAULT_HINT_COUNT,
-            1,
+            0,
             _MAX_HINT_COUNT,
             "提示数量",
         ),
@@ -899,6 +902,23 @@ def _bounded_int(value: Any, default: int, minimum: int, maximum: int, label: st
     if parsed < minimum or parsed > maximum:
         raise ValueError(f"{label}需在 {minimum}-{maximum} 之间。")
     return parsed
+
+
+def _resolved_hint_control(control: dict, rating: int) -> dict:
+    if control["hint_count"]:
+        return control
+    count = 2 if rating <= 1200 else 3 if rating <= 1800 else 4 if rating <= 2400 else 5
+    return {**control, "hint_count": count}
+
+
+def _compressed_hints(hints: tuple[str, ...], count: int) -> tuple[str, ...]:
+    if len(hints) != 6:
+        return ()
+    # Keep every stage, including the final implementation advice.
+    return tuple(
+        "\n".join(hints[index * 6 // count:(index + 1) * 6 // count])
+        for index in range(count)
+    )
 
 
 def _assistance_unlock_seconds(control: dict) -> tuple[int, ...]:
