@@ -62,6 +62,8 @@ function bindEvents() {
   el("assistanceSteps").addEventListener("click", revealAssistance);
   el("oralForm").addEventListener("submit", submitOral);
   el("codeForm").addEventListener("submit", submitCode);
+  el("solutionText").addEventListener("input", saveCurrentDraft);
+  el("sourceCode").addEventListener("input", saveCurrentDraft);
   el("sourceCode").addEventListener("keydown", handleEditorTab);
   el("ratingDetailBtn").addEventListener("click", () => openAcRecords("breakdown"));
   el("acHistoryBtn").addEventListener("click", () => openAcRecords("history"));
@@ -1042,6 +1044,7 @@ function handleEditorTab(event) {
   const start = input.selectionStart;
   input.value = `${input.value.slice(0, start)}    ${input.value.slice(input.selectionEnd)}`;
   input.selectionStart = input.selectionEnd = start + 4;
+  saveCurrentDraft();
 }
 
 async function api(path, options = {}) {
