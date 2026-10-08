@@ -13,3 +13,11 @@
 .difficulty-legend .difficulty-purple,.tile.difficulty-purple{color:#8743ac}
 .difficulty-legend .difficulty-orange,.tile.difficulty-orange{color:#b5680c}
 .difficulty-legend .difficulty-red,.tile.difficulty-red{color:#bd3444}
+
+.rating-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:-10px 0 20px}.rating-toolbar button{font-size:12px;padding:5px 10px}
+.tile{display:inline-flex;align-items:flex-start;justify-content:center;gap:4px;width:43px;height:38px;min-height:38px;padding-top:4px;line-height:16px}
+.tile .rating-circle{display:inline-block;box-sizing:border-box;width:9px;height:9px;flex-shrink:0;border:1.5px solid currentColor;border-radius:50%;background:currentColor;margin-top:3px}
+.tile.difficulty-unknown .rating-circle{background:transparent}
+.tile span.tile-rating{position:absolute;bottom:3px;left:0;right:0;font:10px/11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+.tile span.tile-mark{right:-1px;bottom:-2px}
+@media(max-width:850px){.tile{width:39px;height:37px;min-height:37px}.tile .rating-circle{width:8px;height:8px}}

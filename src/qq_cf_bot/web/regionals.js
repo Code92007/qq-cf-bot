@@ -34,7 +34,7 @@ function renderWall(){
       const marks=model.view==="oral"?(status.oral?"口":status.draft?"草稿":status.oralAttempted?"需修改":"") :model.view==="code"?(status.code?"AC":status.attempted?(status.verdict||"已提交"):"") :[status.oral?"口":"",status.code?"码":""].filter(Boolean).join("")||(status.draft?"草稿":tried?"尝试":"");
       const diff=model.data.difficulty?.[p.id] || (p.difficulty?{rating:p.difficulty,source:p.difficulty_source}:null);
       const title=`${diff?`难度 ${diff.rating} · ${diff.source}\n`:"难度未评级\n"}${c.name} ${p.index} · ${p.name}\n口胡：${status.oral?"通过":status.oralAttempted?"已尝试":"未通过"}；代码：${status.code?"AC":status.attempted?(status.verdict||"提交过"):"未提交"}${status.draft?"；有草稿":""}${p.unmapped?"；平台题号待核验":""}`;
-      return `<td><button class="tile ${difficultyClass(diff?.rating)} ${ok?"done":status.draft&&model.view!=="code"?"draft":tried?"tried":""} ${show?"":"filtered"} ${p.unmapped?"unmapped":""}" data-problem="${esc(p.id)}" title="${esc(title)}" aria-label="${esc(title)}">${esc(p.index)}<span class="tile-mark" aria-hidden="true">${esc(marks)}</span></button></td>`;
+      return `<td><button class="tile ${difficultyClass(diff?.rating)} ${ok?"done":status.draft&&model.view!=="code"?"draft":tried?"tried":""} ${show?"":"filtered"} ${p.unmapped?"unmapped":""}" data-problem="${esc(p.id)}" title="${esc(title)}" aria-label="${esc(title)}"><i class="rating-circle" aria-hidden="true"></i>${esc(p.index)}<span class="tile-rating" aria-hidden="true">${diff?esc(diff.rating):"—"}</span><span class="tile-mark" aria-hidden="true">${esc(marks)}</span></button></td>`;
     }).join("");
     done+=solved;total+=c.problems.length;
     return `<tr><th scope="row"><a class="site-name" href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer"><span class="series-badge">${esc(c.series)}</span>${esc(c.year)} · ${esc(c.site)}站</a></th><td>${model.view==="code"?`AC ${solved} / ${c.problems.length}<br>提交过 ${tries}`:`完成 ${solved} / ${c.problems.length}<br>尝试过 ${tries}`}</td>${cells}${"<td></td>".repeat(max-c.problems.length)}</tr>`;
@@ -42,6 +42,7 @@ function renderWall(){
   $("summary").textContent=`${rows.length} 场比赛 · ${model.user?`${done} / ${total} 题完成`:`${total} 题已收录`}`;
   $("coverage").textContent=`目录核验于 ${model.data.verifiedAt||"—"}。来源：Codeforces、QOJ 等公开目录；虚线题格表示平台映射待核验。账号历史未回填完时，未着色不代表从未做过。`;
   document.querySelectorAll("[data-view]").forEach(b=>{b.classList.toggle("selected",b.dataset.view===model.view);b.setAttribute("aria-pressed",String(b.dataset.view===model.view));});
+  renderDifficultyProgress();
   persistFilters();
 }
 function renderRecords(){
@@ -76,7 +77,7 @@ async function run(task){
   if(model.busy)return;
   model.busy=true;message();
   const buttons=[...document.querySelectorAll('button:not(:disabled)')];buttons.forEach(b=>b.disabled=true);
-  try{await task();}catch(e){message(e.message);}finally{model.busy=false;buttons.filter(b=>b.isConnected).forEach(b=>b.disabled=false);renderRecords();updateAvailability();}
+  try{await task();}catch(e){message(e.message);}finally{model.busy=false;buttons.filter(b=>b.isConnected).forEach(b=>b.disabled=false);renderRecords();renderDifficultyProgress();updateAvailability();}
 }
 function updateAvailability(){if(!model.detail)return;$("estimateDifficulty").disabled=model.busy||!model.detail.statement||!model.data.oralJudge;$("submitOral").disabled=model.busy||!model.detail.statement||!model.data.oralJudge;$("submitCode").disabled=model.busy||!model.detail.statement||!model.data.codeJudge||!model.detail.problem.cf_contest_id;}
 async function openProblem(pid){
@@ -129,6 +130,7 @@ async function submit(kind){
   await refresh();await openProblem(pid);$("oralResult").textContent=outcome;
 }
 document.addEventListener("DOMContentLoaded",()=>{
+  $("estimateYear").addEventListener("click",()=>run(async()=>{await post("difficulty-year",{year:Number($("year").value)});await refresh();message("后台开始准备题面并估算本年未评级题目，可继续练习；结果会逐步更新。");}));
   boot().catch(e=>message(e.message));
   ["year","series","filter"].forEach(id=>$(id).addEventListener("change",renderWall));$("search").addEventListener("input",renderWall);
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener("click",()=>{model.view=b.dataset.view;renderWall();}));
@@ -144,7 +146,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("qojAuthorize").addEventListener("click",()=>run(authorizeQoj));
   $("qojAccounts").addEventListener("click",e=>{const b=e.target.closest("[data-qoj-revoke]");if(b)run(async()=>{await post("qoj-revoke",{uid:b.dataset.qojRevoke});await refresh();message("授权已断开，已有记录和口胡草稿保留。");});});
   $("batches").addEventListener("click",e=>{const b=e.target.closest('[data-revoke]');if(b)run(async()=>{await post('import-revoke',{token:b.dataset.revoke});await refresh();});});
-  setInterval(()=>{if(!model.user||model.busy||document.hidden)return;const syncing=(model.data.bindings||[]).some(b=>['queued','running'].includes(b.status));const due=(model.data.bindings||[]).some(b=>b.status==='idle'&&Date.now()/1000-b.last_sync>(b.complete?900:120));const qojDue=(model.data.qojAccounts||[]).length&&!model.detail&&Date.now()-(model.qojPollAt||0)>15000;if(qojDue)model.qojPollAt=Date.now();if(syncing||due||qojDue)refresh().catch(e=>message(e.message));},5000);
+  setInterval(()=>{if(!model.user||model.busy||document.hidden)return;const syncing=(model.data.bindings||[]).some(b=>['queued','running'].includes(b.status));const due=(model.data.bindings||[]).some(b=>b.status==='idle'&&Date.now()/1000-b.last_sync>(b.complete?900:120));const qojDue=(model.data.qojAccounts||[]).length&&!model.detail&&Date.now()-(model.qojPollAt||0)>15000;if(qojDue)model.qojPollAt=Date.now();if(syncing||due||qojDue||model.data.difficultyJob?.status==="running")refresh().catch(e=>message(e.message));},5000);
 });
 
 function qojAuthParams(){
@@ -163,4 +165,13 @@ async function authorizeQoj(){
   window.opener.postMessage({type:'regional-qoj-authorized',uid:auth.uid,nonce:auth.nonce,token:result.token},'https://qoj.ac');
   history.replaceState(null,'',location.pathname);$('qojAuthorization').hidden=true;
   await refresh();message('已连接，请回到 QOJ 页面点击插件的「同步」。');
+}
+
+function renderDifficultyProgress(){
+  const ps=model.data.contests.filter(c=>c.year===Number($('year').value)).flatMap(c=>c.problems);
+  const count=ps.filter(p=>model.data.difficulty?.[p.id]||p.difficulty).length;
+  const job=model.data.difficultyJob;
+  $('estimateYear').hidden=!model.user;
+  $('estimateYear').disabled=!model.data.oralJudge||job?.status==='running';
+  $('ratingProgress').textContent=`本年已评级 ${count} / ${ps.length}；模型估算非官方 Rating，未评级显示空心灰圈。`+(job?.year===Number($('year').value)&&job.total?` ${job.status==='running'?'正在评级':'最近一批'}：成功 ${job.done}，失败 ${job.failed} / ${job.total}。失败题保留未评级，可稍后重试。`:'');
 }

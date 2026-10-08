@@ -245,3 +245,32 @@ class RegionalQojWebTest(unittest.TestCase):
         self.assertIn('// @match        https://qoj.ac/*',script)
         self.assertIn('/api/regional-qoj/import',script)
         self.assertNotIn('__SITE_JSON__',script)
+
+
+class RegionalDifficultyTest(unittest.TestCase):
+    setUp = RegionalWebTest.setUp
+    tearDown = RegionalWebTest.tearDown
+
+    def test_year_estimation_skips_cached_and_retains_failures_as_unrated(self):
+        regional=self.app.regionals
+        problems=regional.store.contests[0]['problems'][:3]
+        year=regional.store.contests[0]['year']
+        regional.store.contests=[{'year':year,'problems':problems}]
+        with regional.store.connect() as db:
+            db.execute('insert into regional_difficulty values (?,?,?,?)',(problems[0]['id'],1700,'已有评级','2026-10-08'))
+        def estimate(pid):
+            if pid==problems[2]['id']:raise RuntimeError('source unavailable')
+            with regional.store.connect() as db:
+                db.execute('insert into regional_difficulty values (?,?,?,?)',(pid,2200,'模型估算，非官方 Rating','2026-10-08'))
+        with patch.object(regional.service.judge.__class__,'configured',new_callable=__import__('unittest').mock.PropertyMock,return_value=True),patch.object(regional,'estimate_difficulty',side_effect=estimate) as mock:
+            result=regional.estimate_year(year)
+            regional.difficulty_thread.join(timeout=2)
+        self.assertEqual(result['total'],2)
+        self.assertEqual(mock.call_count,2)
+        self.assertEqual(regional.difficulty_job,{'year':year,'status':'finished','total':2,'done':1,'failed':1})
+        public=_Handler();self.app.handle_get(public,'/api/regional-catalog')
+        scores=public.json()['difficulty']
+        self.assertEqual(scores[problems[0]['id']]['rating'],1700)
+        self.assertEqual(scores[problems[1]['id']]['rating'],2200)
+        self.assertNotIn(problems[2]['id'],scores)
+        self.assertNotIn('progress',public.json())

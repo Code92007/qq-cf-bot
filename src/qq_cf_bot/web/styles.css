@@ -117,7 +117,7 @@ button { min-height: 40px; border-radius: 4px; padding: 9px 15px; border: 1px so
 .eyebrow { margin: 0 0 6px; color: var(--green); font: 700 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; }
 .challenge-toolbar h1, .section-heading h2 { margin: 0; font-size: 26px; line-height: 1.2; }
 .training-mode-tabs { display: flex; align-items: center; width: max-content; margin-top: 15px; border: 1px solid var(--line); border-radius: 4px; }
-.training-mode-tab { min-height: 32px; padding: 6px 11px; border: 0; border-radius: 0; background: transparent; color: var(--muted); font-size: 12px; }
+.training-mode-tab { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 32px; padding: 6px 11px; border: 0; border-radius: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 750; line-height: 1.5; letter-spacing: 0; text-decoration: none; white-space: nowrap; }
 .training-mode-tab + .training-mode-tab { border-left: 1px solid var(--line); }
 .training-mode-tab.active { background: var(--ink); color: #fff; }
 .range-form { display: flex; align-items: flex-end; justify-content: flex-end; flex-wrap: wrap; gap: 9px; }
