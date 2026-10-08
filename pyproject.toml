@@ -10,6 +10,7 @@ requires-python = ">=3.9"
 dependencies = [
     "markdown>=3.6",
     "playwright>=1.46.0",
+    "pypdf>=5.0",
 ]
 
 [project.scripts]
@@ -20,4 +21,4 @@ qq-cf-bot-check-submit = "qq_cf_bot.check_submit:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-qq_cf_bot = ["web/*"]
+qq_cf_bot = ["web/*", "catalog/*.json"]

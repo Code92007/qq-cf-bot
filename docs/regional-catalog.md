@@ -1,0 +1,42 @@
+# 区域赛目录与运行说明
+
+入口：`/regionals`。与现有 Web 登录共享会话，区域赛练习不计时、不改变随机训练 Rating。设计见 [regional-practice-design.md](regional-practice-design.md)。
+
+## 已收录范围
+
+2026-10-08 核验。当前目录是 **2023–2025 三个赛季、33 场正赛、426 题**，以 QOJ 的中国 ICPC / CCPC 区域赛分类为范围，不包括预选、热身、邀请赛、女生/高职专场或总决赛。没有宣称覆盖所有历史年份。每题均有 QOJ 原题号；同时核验到的 Gym、洛谷镜像作为同一题的 aliases，不重复列比赛。
+
+| 年份 | ICPC 赛站 | CCPC 赛站 |
+| --- | --- | --- |
+| 2023 | 杭州、合肥、济南、澳门、南京、沈阳、西安 | 桂林、哈尔滨、秦皇岛、深圳 |
+| 2024 | 成都、杭州、香港、昆明、南京、上海、沈阳 | 哈尔滨、济南、郑州、重庆 |
+| 2025 | 成都、香港、南京、上海、沈阳、武汉、西安 | 哈尔滨、济南、郑州、重庆 |
+
+目录核验来源：[ICPC 2023](https://qoj.ac/category/459)、[2024](https://qoj.ac/category/458)、[2025](https://qoj.ac/category/576)，[CCPC 2023](https://qoj.ac/category/275)、[2024](https://qoj.ac/category/379)、[2025](https://qoj.ac/category/581)。各场 `source_url`、`qoj_url` 与 `mapping_source` 保存原始题单/重现赛链接。2025 济南对照 [QOJ 来源标签题单](https://qoj.ac/problems?tag=CCPC+Jinan+2025)。热身题不能仅凭搜索结果混入正赛。
+
+## 使用
+
+- 三视角分别统计口胡通过、代码 AC、二者并集。WA/TLE/CE 只计尝试；历史通过不会被后来失败覆盖。模型静态代码审核不计真实 AC。
+- 每题一个紧凑字母徽标。字母颜色表示难度，背景表示当前视角的完成状态，小标记区分「口 / 码」。未知难度为灰色；单题页可主动估算，明确标记为模型估算而非官方 Rating。
+- 草稿按用户和规范题目 ID 自动保存，有本机恢复副本及版本冲突保护。返回墙恢复筛选与滚动位置。
+- 绑定 Codeforces/Gym、VJudge、牛客个人 UID，同步公开记录，无需平台密码。绑定仅声明公开账号。后台限量回填，失败保留成功记录；访问墙时距上次成功同步超过 15 分钟自动排队，也可以手动同步/继续回填。没有离线定时任务。
+- QOJ、洛谷等可导入 CSV / JSON（包括 `{"submissions": [...]}`）。支持 oj-submission-wall 的 `platform / problem_id / verdict / handle / remote_id / submitted_at` 字段。先预览再确认，可撤销整批。无时间则显示未知；未匹配题号保留，后续补目录自动匹配。
+
+## 中文题面与依赖
+
+优先取 QOJ 简体中文文本；无单独中文版本时取原始页的单题 PDF，用 `pypdf` 提取文字，再按需复用现有翻译服务。有 Gym 映射时可回退到现有 CF 题面服务。目录完整不等于 426 道中文题面已逐题缓存；首次打开才准备，中文检查失败会明确提示并禁用审核，不会以英文兜底冒充中文。扫描 PDF、图像题意及 PDF 公式排版仍需原始 PDF 核对；保留原题链接。
+
+更新环境需重新 `pip install -e .`（或重建 Docker），新增依赖 `pypdf>=5.0`。口胡审核与难度估算复用 `JUDGE_*`，英文来源翻译复用 `TRANSLATE_*`。未配置模型时，浏览、导入与草稿仍可用；需要翻译的题不会假装就绪。QOJ-only 题当前在原平台交代码，再通过导入或 VJudge 同步记录；站内代码判题仅用于有 CF 映射的题。
+
+真实公网同步/翻译依赖部署环境能访问平台与模型。本次本地环境 QOJ HTTP 抓取受限，已验证失败提示及草稿保留；未将模拟测试等同于全量线上同步或全部中文题面验收。牛客绑定目前读取个人练习历史；目录尚无牛客原题号 aliases，记录先保留，需维护映射后才能点亮对应题。
+
+## 维护目录
+
+编辑 `src/qq_cf_bot/catalog/regionals.json` 后运行：
+
+```sh
+python3 scripts/validate_regional_catalog.py
+PYTHONPATH=src python3 -m unittest discover -s tests -p test_regional.py
+```
+
+保留已有 canonical ID。新增平台映射前核验赛季、正赛/热身归属、官方题号及题意，不按标题模糊匹配自动合并。补充旧年份时也更新覆盖说明和赛站验收集合。重启服务加载新目录，既有草稿与提交证据无需迁移。目录随 Python 包一起分发，个人数据保存在既有 SQLite 中。

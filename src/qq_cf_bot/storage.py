@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -344,6 +345,57 @@ class SentProblemStore:
                     1 if ranked else 0,
                 ),
             )
+
+    def record_web_giveup(self, group_id: int, user_id: int, active: ActiveProblem, automatic: bool = False) -> None:
+        problem = active.problem
+        with self._connect() as conn:
+            conn.execute(
+                "insert into web_giveups (group_id, user_id, cf_id, title, rating, created_at, reason) values (?, ?, ?, ?, ?, ?, ?)",
+                (str(group_id), str(user_id), problem.cf_id, problem.name, problem.rating,
+                 datetime.now(timezone.utc).isoformat(), "达到练习时限，自动放弃" if automatic else "主动放弃"),
+            )
+
+    def list_user_practice_history(self, group_id: int, user_id: int) -> List[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                select a.cf_id, coalesce(sp.name, a.title, a.cf_id), coalesce(sp.rating, a.rating, 0),
+                       a.created_at, a.method, a.verdict, a.reason, a.url, sc.statement_json
+                from (
+                    select group_id, user_id, cf_id, created_at, 'oral' as method,
+                           case when accepted = 1 then 'AC' else 'REJECTED' end as verdict,
+                           reason, '' as url, null as title, null as rating from submissions
+                    union all
+                    select group_id, user_id, cf_id, created_at, 'code',
+                           case when accepted = 1 then 'AC' else verdict end, message, url, null, null
+                    from code_submissions
+                    union all
+                    select group_id, user_id, cf_id, created_at, 'giveup', 'GIVEUP', reason, '', title, rating
+                    from web_giveups
+                ) a
+                left join sent_problems sp on sp.group_id = a.group_id and sp.cf_id = a.cf_id
+                left join statement_cache sc on sc.cf_id = a.cf_id
+                where a.group_id = ? and a.user_id = ?
+                order by a.created_at desc
+                """, (str(group_id), str(user_id)),
+            ).fetchall()
+        history = []
+        for row in rows:
+            verdict = str(row[5])
+            reason = str(row[6])
+            if verdict == "REJECTED":
+                verdict = "TLE" if any(word in reason for word in ("复杂度", "超时", "时间限制", "TLE")) else "WA"
+            verdict = {"WRONG_ANSWER": "WA", "TIME_LIMIT_EXCEEDED": "TLE"}.get(verdict, verdict)
+            cf_id = str(row[0])
+            history.append({
+                "cfId": cf_id, "title": _cached_statement_title(row[8], str(row[1])),
+                "rating": int(row[2]) or None, "acceptedAt": str(row[3]),
+                "method": str(row[4]), "verdict": verdict, "reason": reason,
+                "submissionUrl": str(row[7]),
+                "codeforcesUrl": "https://codeforces.com/problemset/problem/" + re.sub(r'^(\d+)(.*)$', r'\1/\2', cf_id),
+                "solutionUrl": f"https://www.luogu.com.cn/problem/solution/CF{cf_id}",
+            })
+        return history
 
     def list_user_accepted_problems(self, group_id: int, user_id: int) -> List[dict]:
         with self._connect() as conn:
@@ -1300,6 +1352,10 @@ class SentProblemStore:
                 "ranked",
                 "alter table submissions add column ranked integer not null default 1",
             )
+            conn.execute("""create table if not exists web_giveups (
+                id integer primary key autoincrement, group_id text not null, user_id text not null,
+                cf_id text not null, title text not null, rating integer not null,
+                created_at text not null, reason text not null)""")
             conn.execute("create index if not exists idx_submissions_group on submissions(group_id, cf_id)")
             conn.execute(
                 """

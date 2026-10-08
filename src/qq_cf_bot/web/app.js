@@ -71,6 +71,7 @@ function bindEvents() {
   el("acHistoryBtn").addEventListener("click", () => openAcRecords("history"));
   el("ratingBreakdownTab").addEventListener("click", () => switchAcRecordsTab("breakdown"));
   el("acHistoryTab").addEventListener("click", () => switchAcRecordsTab("history"));
+  el("historyVerdict").addEventListener("change", renderFilteredHistory);
   el("historySearch").addEventListener("input", renderFilteredHistory);
 }
 
@@ -176,6 +177,10 @@ function showAuth() {
 }
 
 function showApp(data) {
+  if (new URLSearchParams(location.search).get("next") === "regionals") {
+    location.replace("/regionals");
+    return;
+  }
   state.data = data;
   state.csrf = data.csrfToken;
   state.acRecords = null;
@@ -830,6 +835,7 @@ function renderAcRecords(data) {
   el("recordLevels").textContent = breakdown.length;
   renderRatingBreakdown(breakdown, data.total || 0);
   el("historySearch").value = "";
+  el("historyVerdict").value = "";
   renderFilteredHistory();
 }
 
@@ -859,11 +865,12 @@ function renderRatingBreakdown(rows, total) {
 function renderFilteredHistory() {
   if (!state.acRecords) return;
   const query = el("historySearch").value.trim().toLocaleLowerCase();
-  const history = (state.acRecords.history || []).filter((item) => {
+  const history = (state.acRecords.practiceHistory || state.acRecords.history || []).filter((item) => {
+    if (el("historyVerdict").value && item.verdict !== el("historyVerdict").value) return false;
     if (!query) return true;
     return `${item.cfId} ${item.title} ${item.rating ?? ""}`.toLocaleLowerCase().includes(query);
   });
-  renderAcHistory(history, Boolean(query));
+  renderAcHistory(history, Boolean(query || el("historyVerdict").value));
 }
 
 function renderAcHistory(history, filtered) {
@@ -880,8 +887,17 @@ function renderAcHistory(history, filtered) {
     const methodCell = document.createElement("td");
     const method = document.createElement("span");
     method.className = "method-badge";
-    method.textContent = acceptedMethod(item);
+    method.textContent = `${item.verdict === "GIVEUP" ? "放弃" : item.verdict} · ${item.method === "giveup" ? "结束练习" : acceptedMethod(item)}`;
     methodCell.append(method);
+    if (item.reason) {
+      const detail = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = "查看判定理由";
+      const reason = document.createElement("p");
+      reason.textContent = item.reason;
+      detail.append(summary, reason);
+      methodCell.append(detail);
+    }
 
     const actionsCell = document.createElement("td");
     actionsCell.className = "history-links";
@@ -897,8 +913,8 @@ function renderAcHistory(history, filtered) {
     );
     body.append(tr);
   });
-  el("historyResultCount").textContent = `${history.length} 道题`;
-  el("acHistoryEmpty").textContent = filtered ? "没有匹配的 AC 记录" : "暂无计分 AC 记录";
+  el("historyResultCount").textContent = `${history.length} 条记录`;
+  el("acHistoryEmpty").textContent = filtered ? "没有匹配的练习记录" : "暂无练习记录";
   el("acHistoryEmpty").classList.toggle("hidden", history.length > 0);
 }
 
@@ -919,7 +935,7 @@ function externalLink(label, href) {
 
 function acceptedMethod(item) {
   if (item.verdict === "LLM_ACCEPTED") return "静态审核";
-  return item.method === "code" ? "代码 AC" : "做法审核";
+  return item.method === "code" ? "代码提交" : "做法审核";
 }
 
 function formatAcceptedAt(value) {

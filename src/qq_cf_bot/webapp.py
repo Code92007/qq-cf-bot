@@ -53,11 +53,24 @@ class WebApplication:
         self.static_dir = Path(__file__).with_name("web")
         self._locks: Dict[int, threading.Lock] = {}
         self._locks_guard = threading.Lock()
+        from .regional import RegionalApplication
+        self.regionals = RegionalApplication(self)
 
     def handle_get(self, handler, path: str) -> bool:
         if not self.config.web_enabled:
             return False
         try:
+            if path == "/api/regional-catalog":
+                store = self.regionals.store
+                self._json(handler, {"contests": store.contests, "years": sorted({c["year"] for c in store.contests}, reverse=True), "verifiedAt": store.catalog.get("verified_at")})
+                return True
+            if path == "/api/regionals":
+                session = self._require_session(handler)
+                self._json(handler, self.regionals.state(session))
+                return True
+            if path in {"/regionals", "/regionals/"}:
+                self._static(handler, "regionals.html", "text/html; charset=utf-8", no_cache=True)
+                return True
             if path == "/api/state":
                 session = self._require_session(handler)
                 self._json(handler, self._state(session))
@@ -73,6 +86,8 @@ class WebApplication:
                 self._static(handler, "index.html", "text/html; charset=utf-8", no_cache=True)
                 return True
             static_files = {
+                "/regionals.js": ("regionals.js", "text/javascript; charset=utf-8"),
+                "/regionals.css": ("regionals.css", "text/css; charset=utf-8"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
                 "/styles.css": ("styles.css", "text/css; charset=utf-8"),
             }
@@ -107,7 +122,9 @@ class WebApplication:
             if not lock.acquire(blocking=False):
                 raise ChallengeError("operation_in_progress", "上一个操作还在处理中。", 409)
             try:
-                if path == "/api/challenges":
+                if path.startswith("/api/regionals/"):
+                    self._json(handler, self.regionals.post(session, path.rsplit("/", 1)[-1], payload))
+                elif path == "/api/challenges":
                     self._new_challenge(handler, session, payload)
                 elif path == "/api/challenges/share":
                     self._share_challenge(handler, session, payload)
@@ -217,7 +234,10 @@ class WebApplication:
 
     def _give_up(self, handler, session: dict) -> None:
         actor = self._actor(session)
-        active = self._expire_single_challenge(session) or self.service.give_up(actor.scope_id)
+        active = self._expire_single_challenge(session)
+        if active is None:
+            active = self.service.give_up(actor.scope_id)
+            self.service.store.record_web_giveup(actor.leaderboard_id, actor.user_id, active)
         self.service.store.clear_web_challenge_controls(actor.scope_id)
         self._json(
             handler,
@@ -659,6 +679,7 @@ class WebApplication:
         deadline = _parse_datetime(control["giveup_at"])
         if deadline is None or datetime.now(timezone.utc) < deadline:
             return None
+        self.service.store.record_web_giveup(actor.leaderboard_id, actor.user_id, active, automatic=True)
         self.service.store.clear_active_problem(actor.scope_id)
         self.service.store.clear_web_challenge_controls(actor.scope_id)
         return active
@@ -676,6 +697,7 @@ class WebApplication:
         )
         rating_counts = Counter(item["rating"] for item in history)
         return {
+            "practiceHistory": self.service.store.list_user_practice_history(_WEB_LEADERBOARD_ID, int(session["user_id"])),
             "total": len(history),
             "ratingBreakdown": [
                 {"rating": rating, "count": count}

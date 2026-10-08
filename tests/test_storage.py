@@ -8,6 +8,26 @@ from qq_cf_bot.storage import SentProblemStore
 
 
 class StorageTest(unittest.TestCase):
+    def test_practice_history_keeps_failures_giveup_and_ac(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SentProblemStore(Path(tmp) / "bot.sqlite3")
+            problem = CFProblem(123, "A1", "Practice", 1200)
+            store.mark_sent(10, problem)
+            store.record_submission(10, 7, "Alice", problem, "first idea", False, "存在反例")
+            store.record_submission(10, 7, "Alice", problem, "slow idea", False, "复杂度过高，超时")
+            store.record_submission(10, 7, "Alice", problem, "correct idea", True, "正确")
+            statement = ProblemStatement(pid="CF123A1", title="Practice", description="desc",
+                                         input_format="in", output_format="out", samples=[])
+            store.set_active_problem(77, problem, statement, [])
+            store.record_web_giveup(10, 7, store.get_active_problem(77), automatic=True)
+            records = store.list_user_practice_history(10, 7)
+            self.assertEqual([r["verdict"] for r in records], ["GIVEUP", "AC", "TLE", "WA"])
+            self.assertEqual(records[0]["codeforcesUrl"], "https://codeforces.com/problemset/problem/123/A1")
+            self.assertIn("自动放弃", records[0]["reason"])
+            self.assertEqual(len(store.list_user_accepted_problems(10, 7)), 1)
+            self.assertEqual(store.list_user_practice_history(10, 8), [])
+            self.assertEqual(store.list_user_practice_history(11, 7), [])
+
     def test_web_contest_session_tracks_problem_timeline(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = SentProblemStore(Path(tmp) / "bot.sqlite3")
