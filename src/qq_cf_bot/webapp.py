@@ -62,9 +62,7 @@ class WebApplication:
         try:
             if path == "/api/regional-catalog":
                 store = self.regionals.store
-                with store.connect() as db:
-                    difficulty = {r["problem_id"]: {"rating": r["rating"], "source": r["source"]} for r in db.execute("select * from regional_difficulty")}
-                self._json(handler, {"difficulty": difficulty, "contests": store.contests, "years": sorted({c["year"] for c in store.contests}, reverse=True), "verifiedAt": store.catalog.get("verified_at")})
+                self._json(handler, {"difficulty": store.difficulties(), "ratingRelease": store.rating_metadata(), "contests": store.contests, "years": sorted({c["year"] for c in store.contests}, reverse=True), "verifiedAt": store.catalog.get("verified_at")})
                 return True
             if path == "/api/regionals":
                 session = self._require_session(handler)

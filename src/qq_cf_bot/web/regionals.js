@@ -3,6 +3,16 @@ const $ = id => document.getElementById(id);
 const model = {data:null, csrf:"", user:0, detail:null, view:"union", savePromise:null, saveTimer:null, dirty:false, busy:false, preview:null, scroll:0, scrollX:0, initialized:false, pending:{}};
 const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function difficultyClass(r){return !r?"difficulty-unknown":r<1200?"difficulty-brown":r<1600?"difficulty-green":r<1900?"difficulty-cyan":r<2100?"difficulty-blue":r<2400?"difficulty-purple":r<2700?"difficulty-orange":"difficulty-red";}
+function difficultyText(d){
+  if(!d)return "难度未评级";
+  let text=`难度 ${d.rating} · ${d.source}`;
+  if(d.range)text+=`\n参考区间 ${d.range[0]}–${d.range[1]}`;
+  if(d.official_teams){
+    text+=`\n赛时通过 ${d.accepted_teams} / ${d.official_teams} 支正式队`;
+    text+=`；金 ${d.medal_accepted.gold}/${d.medal_teams.gold} · 银 ${d.medal_accepted.silver}/${d.medal_teams.silver} · 铜 ${d.medal_accepted.bronze}/${d.medal_teams.bronze}`;
+  }
+  return text;
+}
 const EMPTY = {oral:false,code:false,attempted:false,oralAttempted:false,draft:false};
 function message(text="") { $("notice").textContent=text; }
 async function request(path, body) {
@@ -33,7 +43,7 @@ function renderWall(){
       solved+=Number(ok);tries+=Number(tried||(model.view!=="code"&&status.draft));
       const marks=model.view==="oral"?(status.oral?"口":status.draft?"草稿":status.oralAttempted?"需修改":"") :model.view==="code"?(status.code?"AC":status.attempted?(status.verdict||"已提交"):"") :[status.oral?"口":"",status.code?"码":""].filter(Boolean).join("")||(status.draft?"草稿":tried?"尝试":"");
       const diff=model.data.difficulty?.[p.id] || (p.difficulty?{rating:p.difficulty,source:p.difficulty_source}:null);
-      const title=`${diff?`难度 ${diff.rating} · ${diff.source}\n`:"难度未评级\n"}${c.name} ${p.index} · ${p.name}\n口胡：${status.oral?"通过":status.oralAttempted?"已尝试":"未通过"}；代码：${status.code?"AC":status.attempted?(status.verdict||"提交过"):"未提交"}${status.draft?"；有草稿":""}${p.unmapped?"；平台题号待核验":""}`;
+      const title=`${difficultyText(diff)}\n${c.name} ${p.index} · ${p.name}\n口胡：${status.oral?"通过":status.oralAttempted?"已尝试":"未通过"}；代码：${status.code?"AC":status.attempted?(status.verdict||"提交过"):"未提交"}${status.draft?"；有草稿":""}${p.unmapped?"；平台题号待核验":""}`;
       return `<td><button class="tile ${difficultyClass(diff?.rating)} ${ok?"done":status.draft&&model.view!=="code"?"draft":tried?"tried":""} ${show?"":"filtered"} ${p.unmapped?"unmapped":""}" data-problem="${esc(p.id)}" title="${esc(title)}" aria-label="${esc(title)}"><i class="rating-circle" aria-hidden="true"></i>${esc(p.index)}<span class="tile-rating" aria-hidden="true">${diff?esc(diff.rating):"—"}</span><span class="tile-mark" aria-hidden="true">${esc(marks)}</span></button></td>`;
     }).join("");
     done+=solved;total+=c.problems.length;
@@ -79,7 +89,7 @@ async function run(task){
   const buttons=[...document.querySelectorAll('button:not(:disabled)')];buttons.forEach(b=>b.disabled=true);
   try{await task();}catch(e){message(e.message);}finally{model.busy=false;buttons.filter(b=>b.isConnected).forEach(b=>b.disabled=false);renderRecords();renderDifficultyProgress();updateAvailability();}
 }
-function updateAvailability(){if(!model.detail)return;$("estimateDifficulty").disabled=model.busy||!model.detail.statement||!model.data.oralJudge;$("submitOral").disabled=model.busy||!model.detail.statement||!model.data.oralJudge;$("submitCode").disabled=model.busy||!model.detail.statement||!model.data.codeJudge||!model.detail.problem.cf_contest_id;}
+function updateAvailability(){if(!model.detail)return;$("submitOral").disabled=model.busy||!model.detail.statement||!model.data.oralJudge;$("submitCode").disabled=model.busy||!model.detail.statement||!model.data.codeJudge||!model.detail.problem.cf_contest_id;}
 async function openProblem(pid){
   if(!model.user){message("请先登录本站，再开始口胡。比赛目录仍可浏览。");$("loginRequired").scrollIntoView({behavior:"smooth"});return;}
   await saveDraft();
@@ -92,13 +102,13 @@ async function openProblem(pid){
   if(recovery&&recovery.body!==d.draft.body&&recovery.dirty){$("oralText").value=recovery.body;model.dirty=true;message("已恢复本机尚未同步的草稿。服务器版本仍保留；如有冲突请复制后合并。");}else message();
   const contest=model.data.contests.find(c=>c.id===d.problem.contest);
   $("practiceContest").textContent=contest.name;
-  const diff=model.data.difficulty?.[pid];$("difficultyStatus").textContent=diff?`难度 ${diff.rating} · ${diff.source}`:"难度未评级";
-  $("estimateDifficulty").disabled=!model.data.oralJudge;
+  const diff=model.data.difficulty?.[pid];$("difficultyStatus").textContent=difficultyText(diff);
   $("problemTitle").textContent=`${d.problem.index} · ${d.title&&d.title!=="区域赛题目"?d.title:d.problem.name}`;
   $("problemNav").innerHTML=contest.problems.map(p=>`<button data-problem="${esc(p.id)}" class="${p.id===pid?"selected":""}">${esc(p.index)}</button>`).join("");
   const s=d.statement;
   $("statementBody").innerHTML=s?`${s.description}${s.input?`<h3>输入格式</h3>${s.input}`:""}${s.output?`<h3>输出格式</h3>${s.output}`:""}${s.samples.map((sample,i)=>`<h3>样例 ${i+1}</h3><pre>${esc(sample.input)}</pre><pre>${esc(sample.output)}</pre>`).join("")}${s.hint?`<h3>样例说明</h3>${s.hint}`:""}`:`<p>${esc(d.statementError)}</p>`;
   $("sourceLinks").innerHTML=(d.problem.aliases||[]).map(key=>{const [oj,id]=key.split(':');let url=oj==="codeforces"?`https://codeforces.com/gym/${d.problem.cf_contest_id}/problem/${d.problem.index}`:oj==="qoj"?`https://qoj.ac/problem/${id}`:null;return url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(oj)} 原题 ↗</a>`:"";}).join("");
+  if(diff?.standings_url)$("sourceLinks").innerHTML+=` <a href="${esc(diff.standings_url)}" target="_blank" rel="noopener noreferrer">赛时榜单 ↗</a>`;
   $("attempts").innerHTML=d.attempts.map(a=>`<div class="attempt"><strong>${esc(a.verdict)}</strong> <small class="muted">${esc(new Date(a.created_at).toLocaleString())}</small><p>${esc(a.reason)}</p><details><summary>查看当时的${a.kind==="oral"?"做法":"代码"}</summary><pre>${esc(a.body)}</pre></details></div>`).join("")+d.evidence.map(e=>`<div class="attempt"><strong>${esc(e.verdict)}</strong> · ${esc(e.platform)} · ${esc(e.handle)}<br><small class="muted">${e.submitted_at?esc(new Date(e.submitted_at*1000).toLocaleString()):"时间未知"} · ${e.origin.startsWith("import:")?"导入记录":"账号同步"}</small></div>`).join("");
   if(!d.attempts.length&&!d.evidence.length)$("attempts").textContent="还没有练习记录。";
   $("saveStatus").textContent=model.dirty?"本机恢复，尚未同步":d.draft.updated_at?"草稿已保存":"自动保存";
@@ -130,13 +140,11 @@ async function submit(kind){
   await refresh();await openProblem(pid);$("oralResult").textContent=outcome;
 }
 document.addEventListener("DOMContentLoaded",()=>{
-  $("estimateYear").addEventListener("click",()=>run(async()=>{await post("difficulty-year",{year:Number($("year").value)});await refresh();message("后台开始准备题面并估算本年未评级题目，可继续练习；结果会逐步更新。");}));
   boot().catch(e=>message(e.message));
   ["year","series","filter"].forEach(id=>$(id).addEventListener("change",renderWall));$("search").addEventListener("input",renderWall);
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener("click",()=>{model.view=b.dataset.view;renderWall();}));
   document.addEventListener("click",e=>{const b=e.target.closest('button[data-problem]');if(b)run(()=>openProblem(b.dataset.problem));});
   $("resume").addEventListener("click",()=>run(()=>openProblem(model.data.lastProblem)));
-  $("estimateDifficulty").addEventListener("click",()=>run(async()=>{const r=await post("difficulty",{problemId:model.detail.problem.id});await refresh();$("difficultyStatus").textContent=`难度 ${r.rating} · ${r.source}`;}));
   $("back").addEventListener("click",()=>run(back));$("retry").addEventListener("click",()=>run(()=>openProblem(model.detail.problem.id)));
   $("saveDraft").addEventListener("click",()=>run(saveDraft));$("submitOral").addEventListener("click",()=>run(()=>submit('oral')));$("submitCode").addEventListener("click",()=>run(()=>submit('code')));
   $("oralText").addEventListener("input",()=>{if(!model.detail)return;model.dirty=true;$("saveStatus").textContent="尚未同步 · 本机已保留";localSet(draftKey(model.detail.problem.id),JSON.stringify({body:$("oralText").value,dirty:true}));clearTimeout(model.saveTimer);model.saveTimer=setTimeout(()=>saveDraft().catch(e=>message(e.message)),900);});
@@ -146,7 +154,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("qojAuthorize").addEventListener("click",()=>run(authorizeQoj));
   $("qojAccounts").addEventListener("click",e=>{const b=e.target.closest("[data-qoj-revoke]");if(b)run(async()=>{await post("qoj-revoke",{uid:b.dataset.qojRevoke});await refresh();message("授权已断开，已有记录和口胡草稿保留。");});});
   $("batches").addEventListener("click",e=>{const b=e.target.closest('[data-revoke]');if(b)run(async()=>{await post('import-revoke',{token:b.dataset.revoke});await refresh();});});
-  setInterval(()=>{if(!model.user||model.busy||document.hidden)return;const syncing=(model.data.bindings||[]).some(b=>['queued','running'].includes(b.status));const due=(model.data.bindings||[]).some(b=>b.status==='idle'&&Date.now()/1000-b.last_sync>(b.complete?900:120));const qojDue=(model.data.qojAccounts||[]).length&&!model.detail&&Date.now()-(model.qojPollAt||0)>15000;if(qojDue)model.qojPollAt=Date.now();if(syncing||due||qojDue||model.data.difficultyJob?.status==="running")refresh().catch(e=>message(e.message));},5000);
+  setInterval(()=>{if(!model.user||model.busy||document.hidden)return;const syncing=(model.data.bindings||[]).some(b=>['queued','running'].includes(b.status));const due=(model.data.bindings||[]).some(b=>b.status==='idle'&&Date.now()/1000-b.last_sync>(b.complete?900:120));const qojDue=(model.data.qojAccounts||[]).length&&!model.detail&&Date.now()-(model.qojPollAt||0)>15000;if(qojDue)model.qojPollAt=Date.now();if(syncing||due||qojDue)refresh().catch(e=>message(e.message));},5000);
 });
 
 function qojAuthParams(){
@@ -170,8 +178,5 @@ async function authorizeQoj(){
 function renderDifficultyProgress(){
   const ps=model.data.contests.filter(c=>c.year===Number($('year').value)).flatMap(c=>c.problems);
   const count=ps.filter(p=>model.data.difficulty?.[p.id]||p.difficulty).length;
-  const job=model.data.difficultyJob;
-  $('estimateYear').hidden=!model.user;
-  $('estimateYear').disabled=!model.data.oralJudge||job?.status==='running';
-  $('ratingProgress').textContent=`本年已评级 ${count} / ${ps.length}；模型估算非官方 Rating，未评级显示空心灰圈。`+(job?.year===Number($('year').value)&&job.total?` ${job.status==='running'?'正在评级':'最近一批'}：成功 ${job.done}，失败 ${job.failed} / ${job.total}。失败题保留未评级，可稍后重试。`:'');
+  $('ratingProgress').textContent=`本年已评级 ${count} / ${ps.length}；按正式队赛时通过数与金银铜牌通过比例校准，非官方 Rating。`;
 }
