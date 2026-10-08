@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         区域赛墙 QOJ个人 / 团队同步
 // @namespace    regional-qoj
-// @version      1.0.1
+// @version      1.0.2
 // @downloadURL  https://cf-bot.wannafly.cn/regional-qoj-sync.user.js
 // @updateURL    https://cf-bot.wannafly.cn/regional-qoj-sync.user.js
 // @description  在浏览器中授权并手动同步当前个人或团队账号的QOJ提交记录
@@ -24,6 +24,26 @@
     if (!match) throw new Error('QOJ 当前账号格式无法识别');
     return decodeURIComponent(match[1]);
   }
+  function submissionUsername(cell) {
+    const usernames = new Set();
+    for (const link of cell.querySelectorAll('a[href]')) {
+      const url = new URL(link.getAttribute('href'), 'https://qoj.ac/');
+      if (url.origin !== 'https://qoj.ac') continue;
+      const profile = url.pathname.match(/^\/user\/profile\/([^/]+)\/?$/);
+      const name = profile ? decodeURIComponent(profile[1]) :
+        url.pathname === '/submissions' ? url.searchParams.get('submitter') : null;
+      if (name && /^[A-Za-z0-9_-]{1,64}$/.test(name)) usernames.add(name);
+    }
+    if (usernames.size > 1) throw new Error('QOJ 提交者栏包含不同账号的链接，已停止');
+    if (usernames.size === 1) return [...usernames][0];
+    // A separate "#" filter/control is presentation, not part of a username.
+    const copy = cell.cloneNode(true);
+    for (const node of copy.querySelectorAll('a, button, sup, .badge, .glyphicon')) {
+      if (/^[#＃]$/.test(node.textContent.trim())) node.remove();
+    }
+    const plain = copy.textContent.trim();
+    return /^[A-Za-z0-9_-]{1,64}$/.test(plain) ? plain : '';
+  }
   function parsePage(text, uid, page) {
     const doc = new DOMParser().parseFromString(text, 'text/html');
     if (doc.querySelector('input[type="password"]')) throw new Error('QOJ 登录失效，请重新登录');
@@ -44,13 +64,12 @@
       if (cells.length < 9) throw new Error('QOJ 提交表列数变化，已停止');
       const submission = cells[0].querySelector('a[href*="/submission/"]');
       const problem = cells[1].querySelector('a[href*="/problem/"]');
-      const user = cells[2].querySelector('a[href*="/user/profile/"]');
       const id = submission?.getAttribute('href').match(/\/submission\/(\d+)(?:[/?#]|$)/)?.[1] || cells[0].textContent.trim().match(/^#?\s*(\d+)$/)?.[1];
       const problemId = problem?.getAttribute('href').match(/\/problem\/(\d+)(?:[/?#]|$)/)?.[1] || cells[1].textContent.trim().match(/^#(\d+)(?:[.\s]|$)/)?.[1];
-      const submitter = user ? decodeURIComponent(new URL(user.getAttribute('href'), 'https://qoj.ac').pathname.split('/').filter(Boolean).pop()) : cells[2].textContent.trim();
+      const submitter = submissionUsername(cells[2]);
       if (!id) throw new Error(`QOJ 第 ${page} 页无法识别提交编号：${cells[0].textContent.trim().slice(0, 40)}`);
       if (!problemId) throw new Error(`QOJ 提交 #${id} 无法识别题号：${cells[1].textContent.trim().slice(0, 60)}`);
-      if (submitter !== uid) throw new Error(`QOJ 提交 #${id} 的账号为「${submitter || '未显示'}」，授权账号为「${uid}」，已停止`);
+      if (submitter !== uid) throw new Error(`QOJ 提交 #${id} 的账号为「${submitter || cells[2].textContent.trim().slice(0, 80) || '未显示'}」，授权账号为「${uid}」，已停止`);
       const time = cells[8].textContent.trim().match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
       if (!time) throw new Error('QOJ 提交时间格式变化，已停止');
       const [, year, month, day, hour, minute, second] = time.map(Number);
