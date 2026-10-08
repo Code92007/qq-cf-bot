@@ -1,0 +1,139 @@
+// ==UserScript==
+// @name         区域赛墙 QOJ个人 / 团队同步
+// @namespace    regional-qoj
+// @version      1.0.1
+// @downloadURL  https://cf-bot.wannafly.cn/regional-qoj-sync.user.js
+// @updateURL    https://cf-bot.wannafly.cn/regional-qoj-sync.user.js
+// @description  在浏览器中授权并手动同步当前个人或团队账号的QOJ提交记录
+// @match        https://qoj.ac/*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_xmlhttpRequest
+// @connect      cf-bot.wannafly.cn
+// @run-at       document-idle
+// ==/UserScript==
+(() => {
+  'use strict';
+  const site = "https://cf-bot.wannafly.cn";
+  const key = `regional:qoj:${site}`;
+  function currentUid(doc = document) {
+    const profile = doc.querySelector('a.dropdown-item[href*="/user/profile/"]') ||
+      doc.querySelector('.navbar .dropdown-menu a[href*="/user/profile/"]');
+    if (!profile) throw new Error('请先登录 QOJ；无法识别导航栏中的当前账号');
+    const match = new URL(profile.getAttribute('href'), 'https://qoj.ac').pathname.match(/^\/user\/profile\/([^/]+)\/?$/);
+    if (!match) throw new Error('QOJ 当前账号格式无法识别');
+    return decodeURIComponent(match[1]);
+  }
+  function parsePage(text, uid, page) {
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    if (doc.querySelector('input[type="password"]')) throw new Error('QOJ 登录失效，请重新登录');
+    if (currentUid(doc) !== uid) throw new Error('QOJ 登录账号已变化，请重新连接');
+    const bodies = [...doc.querySelectorAll('table tbody')];
+    const tbody = bodies.find(body => body.querySelector('a[href*="/submission/"]')) ||
+      bodies.find(body => [...body.querySelectorAll('tr')].some(row => row.cells.length >= 9 && /^#?\s*\d+$/.test(row.cells[0].textContent.trim()))) ||
+      bodies.find(body => body.querySelector('td[colspan="233"]'));
+    if (!tbody) throw new Error('QOJ 提交表格式改变或需要验证，请打开提交列表检查');
+    const rows = [...tbody.querySelectorAll('tr')];
+    if (rows.length === 1 && rows[0].cells.length === 1 && /^(None|无)$/i.test(rows[0].textContent.trim())) {
+      return {list: [], hasNext: false};
+    }
+    const timezone = doc.body.textContent.match(/UTC([+-])(\d{1,2})(?::(\d{2}))?/);
+    const offset = timezone ? (timezone[1] === '-' ? -1 : 1) * (+timezone[2] * 60 + +(timezone[3] || 0)) : 480;
+    const list = rows.map(row => {
+      const cells = [...row.cells];
+      if (cells.length < 9) throw new Error('QOJ 提交表列数变化，已停止');
+      const submission = cells[0].querySelector('a[href*="/submission/"]');
+      const problem = cells[1].querySelector('a[href*="/problem/"]');
+      const user = cells[2].querySelector('a[href*="/user/profile/"]');
+      const id = submission?.getAttribute('href').match(/\/submission\/(\d+)(?:[/?#]|$)/)?.[1] || cells[0].textContent.trim().match(/^#?\s*(\d+)$/)?.[1];
+      const problemId = problem?.getAttribute('href').match(/\/problem\/(\d+)(?:[/?#]|$)/)?.[1] || cells[1].textContent.trim().match(/^#(\d+)(?:[.\s]|$)/)?.[1];
+      const submitter = user ? decodeURIComponent(new URL(user.getAttribute('href'), 'https://qoj.ac').pathname.split('/').filter(Boolean).pop()) : cells[2].textContent.trim();
+      if (!id) throw new Error(`QOJ 第 ${page} 页无法识别提交编号：${cells[0].textContent.trim().slice(0, 40)}`);
+      if (!problemId) throw new Error(`QOJ 提交 #${id} 无法识别题号：${cells[1].textContent.trim().slice(0, 60)}`);
+      if (submitter !== uid) throw new Error(`QOJ 提交 #${id} 的账号为「${submitter || '未显示'}」，授权账号为「${uid}」，已停止`);
+      const time = cells[8].textContent.trim().match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+      if (!time) throw new Error('QOJ 提交时间格式变化，已停止');
+      const [, year, month, day, hour, minute, second] = time.map(Number);
+      const submittedAt = Math.floor((Date.UTC(year, month - 1, day, hour, minute, second) - offset * 60000) / 1000);
+      return {id, problemId, submitter, submittedAt, problemTitle: (problem || cells[1]).textContent.trim(),
+        verdict: cells[3].textContent.trim(), language: cells[6].textContent.trim()};
+    });
+    const hasNext = [...doc.querySelectorAll('a[href]')].some(link => {
+      const url = new URL(link.getAttribute('href'), 'https://qoj.ac/submissions');
+      return url.origin === 'https://qoj.ac' && url.pathname === '/submissions' &&
+        url.searchParams.get('page') === String(page + 1) &&
+        (!url.searchParams.has('submitter') || url.searchParams.get('submitter') === uid);
+    });
+    return {list, hasNext};
+  }
+  const panel = document.createElement('div');
+  panel.style.cssText = 'position:fixed;right:20px;bottom:220px;z-index:99999;background:#fff;color:#222;padding:16px;border:1px solid #888;border-radius:12px;box-shadow:0 3px 15px #0003;max-width:280px;font:14px sans-serif';
+  const title = document.createElement('strong'); title.textContent = '区域赛墙同步';
+  const status = document.createElement('p'); status.textContent = '连接后手动同步当前个人或团队账号的提交记录'; status.setAttribute('aria-live', 'polite');
+  const connect = document.createElement('button'); connect.textContent = '连接 / 重新授权';
+  const sync = document.createElement('button'); sync.textContent = '同步';
+  const disconnect = document.createElement('button'); disconnect.textContent = '断开';
+  panel.append(title, status, connect, sync, disconnect); document.body.append(panel);
+  let popup, nonce, pendingUid;
+  connect.onclick = () => {
+    try {
+      pendingUid = currentUid();
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(pendingUid)) throw new Error('请先登录QOJ');
+      nonce = crypto.randomUUID();
+      popup = window.open(`${site}/regionals?qojAuthorize=1&uid=${encodeURIComponent(pendingUid)}&nonce=${nonce}`, '_blank');
+      if (!popup) throw new Error('请允许打开授权窗口');
+      status.textContent = '请在本站确认账号并授权';
+    } catch (e) { status.textContent = e.message; }
+  };
+  window.addEventListener('message', event => {
+    if (event.origin !== new URL(site).origin || event.source !== popup || !nonce) return;
+    const data = event.data;
+    if (data?.type !== 'regional-qoj-authorized' || data.nonce !== nonce || data.uid !== pendingUid || typeof data.token !== 'string') return;
+    GM_setValue(key, {uid: data.uid, token: data.token}); nonce = null;
+    status.textContent = `已连接账号 ${data.uid}，可以同步`;
+  });
+  function upload(auth, records) {
+    return new Promise((resolve, reject) => GM_xmlhttpRequest({
+      method: 'POST', url: `${site}/api/regional-qoj/import`, anonymous: true, timeout: 30000,
+      headers: {'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}`},
+      data: JSON.stringify({uid: auth.uid, records}),
+      onload: response => {
+        try { const data = JSON.parse(response.responseText); if (!data.ok) throw new Error(data.message || data.error || '同步失败'); resolve(data); }
+        catch (e) { reject(e); }
+      }, onerror: () => reject(new Error('本站连接失败，请稍后重试')),
+      ontimeout: () => reject(new Error('上传超时，请稍后重试'))
+    }));
+  }
+  disconnect.onclick = () => { GM_setValue(key, null); status.textContent = '本机已断开；在本站解绑QOJ账号可撤销服务器授权'; };
+  sync.onclick = async () => {
+    sync.disabled = connect.disabled = true;
+    try {
+      const auth = GM_getValue(key, null);
+      if (!auth || currentUid() !== auth.uid) throw new Error('请登录已授权的QOJ账号并连接本站');
+      const last = GM_getValue(`${key}:last`, 0);
+      if (Date.now() - last < 120000) throw new Error('请间隔至少两分钟再同步');
+      GM_setValue(`${key}:last`, Date.now());
+      let page = 1, total = 0;
+      const seen = new Set();
+      for (; page <= 1000; page++) {
+        status.textContent = `正在同步第 ${page} 页，已导入 ${total} 条，请保持页面开启`;
+        const response = await fetch(`/submissions?submitter=${encodeURIComponent(auth.uid)}&page=${page}`, {credentials: 'same-origin'});
+        if (!response.ok) throw new Error(`QOJ HTTP ${response.status}，请稍后重试`);
+        if (new URL(response.url).pathname === '/login') throw new Error('QOJ 登录失效，请重新登录');
+        const {list, hasNext} = parsePage(await response.text(), auth.uid, page);
+        if (!list.length) break;
+        for (const record of list) {
+          if (seen.has(record.id)) throw new Error('QOJ 返回重复分页，已停止；稍后可重试');
+          seen.add(record.id);
+        }
+        for (let i = 0; i < list.length; i += 20) {
+          await upload(auth, list.slice(i, i + 20)); total += Math.min(20, list.length - i);
+        }
+        if (!hasNext) break;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      status.textContent = page > 1000 ? `已导入 ${total} 条，达到单次页数上限` : `同步完成，共处理 ${total} 条（重复记录自动更新）`;
+    } catch (e) { status.textContent = `${e.message}；已导入的数据会保留`; }
+    finally { sync.disabled = connect.disabled = false; }
+  };
+})();

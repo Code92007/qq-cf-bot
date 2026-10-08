@@ -86,6 +86,7 @@ class WebApplication:
                 self._static(handler, "index.html", "text/html; charset=utf-8", no_cache=True)
                 return True
             static_files = {
+                "/regional-qoj-sync.user.js": ("regional-qoj-sync.user.js", "text/javascript; charset=utf-8"),
                 "/regionals.js": ("regionals.js", "text/javascript; charset=utf-8"),
                 "/regionals.css": ("regionals.css", "text/css; charset=utf-8"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
@@ -105,6 +106,9 @@ class WebApplication:
             return False
         try:
             payload = self._read_json(handler)
+            if path == "/api/regional-qoj/import":
+                self._json(handler, self.regionals.qoj.upload(handler.headers.get("Authorization", ""), payload))
+                return True
             if path == "/api/auth/register":
                 self._register(handler, payload)
                 return True

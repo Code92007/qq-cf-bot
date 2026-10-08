@@ -215,3 +215,33 @@ class RegionalWebTest(unittest.TestCase):
             s=RegionalApplication.qoj_statement(15032)
         self.assertTrue(_needs_statement_translation(s))
         self.assertIn('原始 PDF',s.background)
+
+
+class RegionalQojWebTest(unittest.TestCase):
+    setUp=RegionalWebTest.setUp
+    tearDown=RegionalWebTest.tearDown
+    register_user=RegionalWebTest.register_user
+    call=RegionalWebTest.call
+    def test_qoj_token_upload_requires_authorization_but_not_session(self):
+        cookie,csrf=self.register_user()
+        denied=self.call('qoj-authorize',{'uid':'ucup-team123'},cookie,'')
+        self.assertEqual(denied.status,403)
+        grant=self.call('qoj-authorize',{'uid':'ucup-team123'},cookie,csrf)
+        self.assertEqual(grant.status,200)
+        payload={'uid':'ucup-team123','records':[{'id':'1234','problemId':'9726','submitter':'ucup-team123','submittedAt':1720000000,'verdict':'100 ✓'}]}
+        request=_Handler(payload);request.headers['Authorization']='Bearer '+grant.json()['token']
+        self.app.handle_post(request,'/api/regional-qoj/import')
+        self.assertEqual(request.status,200)
+        self.assertEqual(request.json()['matched'],1)
+        self.call('qoj-revoke',{'uid':'ucup-team123'},cookie,csrf)
+        request=_Handler(payload);request.headers['Authorization']='Bearer '+grant.json()['token']
+        self.app.handle_post(request,'/api/regional-qoj/import')
+        self.assertEqual(request.status,401)
+
+    def test_plugin_download_is_public_and_scoped(self):
+        request=_Handler();self.app.handle_get(request,'/regional-qoj-sync.user.js')
+        self.assertEqual(request.status,200)
+        script=request.wfile.getvalue().decode()
+        self.assertIn('// @match        https://qoj.ac/*',script)
+        self.assertIn('/api/regional-qoj/import',script)
+        self.assertNotIn('__SITE_JSON__',script)

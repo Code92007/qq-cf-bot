@@ -312,9 +312,12 @@ class RegionalApplication:
         self.store = RegionalStore(self.service.store.db_path)
         self.sync = SubmissionSync(self.store, self.service.cf.base_urls)
         self.prepare_lock = threading.Lock()
+        from .regional_qoj import QojPlugin
+        self.qoj = QojPlugin(self.store)
 
     def state(self,session):
         data = self.store.wall(int(session['user_id']))
+        data['qojAccounts'] = self.qoj.accounts(int(session['user_id']))
         for binding in data['bindings']:
             interval=900 if binding['complete'] else 120
             if binding['status']=='idle' and time.time()-binding['last_sync']>interval:
@@ -326,6 +329,10 @@ class RegionalApplication:
     def post(self,session,action,payload):
         user = int(session['user_id'])
         pid = str(payload.get('problemId') or '')
+        if action == 'qoj-authorize':
+            return self.qoj.authorize(user,payload.get('uid'))
+        if action == 'qoj-revoke':
+            return self.qoj.revoke(user,str(payload.get('uid') or ''))
         if action == 'bind':
             return self.sync.bind(user,str(payload.get('platform') or ''),payload.get('handle') or '')
         if action == 'sync':

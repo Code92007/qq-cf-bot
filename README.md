@@ -18,7 +18,7 @@
 
 访问 `/regionals`，按年份、赛事和赛站浏览紧凑长表：题号颜色表示难度，背景表示口胡 / 代码 / 并集视角的完成状态。当前收录 2023–2025 年 33 场正赛、426 题，全部关联 QOJ 原题号，Gym / 洛谷镜像合并统计。点击题格进入中文口胡工作台，草稿自动保存，不启动五小时计时，也不改变训练 Rating。
 
-支持绑定 CF/Gym、VJudge、牛客公开账号，以及 CSV / JSON 历史预览、导入和撤销。未知难度保持灰色，可主动请求模型估算。中文题面按需准备；审核/翻译依赖现有模型配置，平台不可访问时保留草稿并提示重试。新增 `pypdf` 依赖，更新需重新安装或重建容器。详见 [实现设计](docs/regional-practice-design.md) 和 [目录覆盖、使用及限制](docs/regional-catalog.md)。
+支持绑定 CF/Gym、VJudge、牛客公开账号，QOJ 则通过浏览器插件同步个人 / 团队记录，保留旧导入批次的撤销入口。未知难度保持灰色，可主动请求模型估算。中文题面按需准备；审核/翻译依赖现有模型配置，平台不可访问时保留草稿并提示重试。新增 `pypdf` 依赖，更新需重新安装或重建容器。详见 [实现设计](docs/regional-practice-design.md) 和 [目录覆盖、使用及限制](docs/regional-catalog.md)。
 
 ### QQ 群
 
@@ -488,3 +488,5 @@ sudo systemctl status napcat-watchdog --no-pager
 - 任何真实账号、密码、access token
 
 `.gitignore` 已经默认忽略这些文件。
+
+QOJ 区域赛记录可安装 [浏览器同步插件](https://cf-bot.wannafly.cn/regional-qoj-sync.user.js)，连接个人或 ucup-team 团队账号后手动同步，无需编写 CSV / JSON；Gym 直接绑定 Codeforces 账号。口胡内容自动保留每题最新草稿，未提交或判错后均可继续。

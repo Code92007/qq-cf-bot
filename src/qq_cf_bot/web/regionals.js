@@ -45,6 +45,7 @@ function renderWall(){
   persistFilters();
 }
 function renderRecords(){
+  $("qojAccounts").innerHTML=(model.data.qojAccounts||[]).map(a=>`<div class="binding"><strong>QOJ · ${esc(a.uid)}</strong><small>${a.last_sync?"最近收到记录 · "+esc(new Date(a.last_sync).toLocaleString()):"已连接，请在 QOJ 插件中点击同步"}</small><button data-qoj-revoke="${esc(a.uid)}">断开授权</button></div>`).join("")||'<p class="muted small">尚未连接 QOJ 个人或团队账号。</p>';
   const names={codeforces:"Codeforces",vjudge:"VJudge",nowcoder:"牛客"},statuses={queued:"排队中",running:"同步中",idle:"已同步",failed:"同步失败"};
   $("bindings").innerHTML=(model.data.bindings||[]).map(b=>`<div class="binding"><strong>${esc(names[b.platform]||b.platform)} · ${esc(b.handle)}</strong><small>${esc(statuses[b.status]||b.status)} · ${esc(b.message)}${b.last_sync?` · ${esc(new Date(b.last_sync*1000).toLocaleString())}`:""}${b.complete?"":" · 历史未完成"}</small><button data-sync="${b.id}" ${["queued","running"].includes(b.status)?"disabled":""}>同步 / 继续回填</button><button data-unbind="${b.id}">解绑</button></div>`).join("")||'<p class="muted small">尚未绑定账号。绑定后会同步公开提交记录。</p>';
   $("batches").innerHTML=(model.data.imports||[]).map(b=>{const s=JSON.parse(b.summary);return `<div class="batch"><span>导入 ${s.valid} 条 · ${esc(new Date(b.created_at).toLocaleString())}</span><button data-revoke="${esc(b.id)}">撤销此批导入</button></div>`;}).join("");
@@ -55,7 +56,7 @@ async function refresh(){
   $("userName").textContent=data.user.displayName;
   $("privateRecords").hidden=false;
   $("resume").hidden=!data.lastProblem;
-  if(model.initialized)renderWall();renderRecords();
+  if(model.initialized)renderWall();renderRecords();renderQojAuthorization();
 }
 async function boot(){
   try{await refresh();}catch(e){
@@ -67,7 +68,7 @@ async function boot(){
   let saved={};try{saved=JSON.parse(localGet(`regional-filters:${model.user}`)||"{}");}catch(_){}
   for(const id of ["year","series","filter","search"]){if(saved[id]!==undefined&&(!(id==="year")||model.data.years.includes(Number(saved[id]))))$(id).value=saved[id];}
   if(["oral","code","union"].includes(saved.view))model.view=saved.view;
-  model.initialized=true;renderWall();
+  model.initialized=true;renderWall();renderQojAuthorization();
   const hash=decodeURIComponent(location.hash.slice(1));
   if(hash&&model.user&&model.data.contests.some(c=>c.problems.some(p=>p.id===hash)))await openProblem(hash);
 }
@@ -140,11 +141,26 @@ document.addEventListener("DOMContentLoaded",()=>{
   window.addEventListener("beforeunload",e=>{if(model.dirty){e.preventDefault();e.returnValue="";}});
   $("bindForm").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget);run(async()=>{await post('bind',{platform:f.get('platform'),handle:f.get('handle')});await refresh();});});
   $("bindings").addEventListener("click",e=>{const b=e.target.closest('button');if(!b)return;run(async()=>{if(b.dataset.sync)await post('sync',{bindingId:Number(b.dataset.sync)});if(b.dataset.unbind)await post('unbind',{bindingId:Number(b.dataset.unbind)});await refresh();});});
-  $("importFile").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;if(file.size>220000){message("文件过大，请拆分成不超过 2000 条的小文件。");return;}$("importText").value=await file.text();model.preview=null;$("importPreview").hidden=true;});
-  $("importText").addEventListener("input",()=>{model.preview=null;$("importPreview").hidden=true;});
-  $("previewBtn").addEventListener("click",()=>run(async()=>{model.preview=await post('import-preview',{text:$("importText").value});const p=model.preview;$("previewSummary").textContent=`共 ${p.total} 条，有效 ${p.valid} 条，匹配区域赛 ${p.matched} 条，重复 ${p.duplicates} 条。\n未匹配 ${p.unmatchedCount} 条（保留原题号，目录补齐后自动匹配）；无效 ${p.invalidCount} 条（跳过）。\n`+p.unmatched.map(x=>`第 ${x.row} 行：${x.key} 尚未映射`).join('\n')+'\n'+p.errors.map(x=>`第 ${x.row} 行：${x.message}`).join('\n');$("importPreview").hidden=false;}));
-  $("confirmImport").addEventListener("click",()=>run(async()=>{if(!model.preview)return;await post('import-confirm',{token:model.preview.token});model.preview=null;$("importPreview").hidden=true;await refresh();message("记录已导入，墙面进度已更新。");}));
+  $("qojAuthorize").addEventListener("click",()=>run(authorizeQoj));
+  $("qojAccounts").addEventListener("click",e=>{const b=e.target.closest("[data-qoj-revoke]");if(b)run(async()=>{await post("qoj-revoke",{uid:b.dataset.qojRevoke});await refresh();message("授权已断开，已有记录和口胡草稿保留。");});});
   $("batches").addEventListener("click",e=>{const b=e.target.closest('[data-revoke]');if(b)run(async()=>{await post('import-revoke',{token:b.dataset.revoke});await refresh();});});
-  $("template").addEventListener("click",()=>{const blob=new Blob(['\ufeffplatform,problem_id,verdict,handle,submission_id,submitted_at\ncodeforces,105657A,AC,my_handle,,\nqoj,9726,AC,my_handle,,\n'],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='regional-submissions-template.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
-  setInterval(()=>{if(!model.user||model.busy||document.hidden)return;const syncing=(model.data.bindings||[]).some(b=>['queued','running'].includes(b.status));const due=(model.data.bindings||[]).some(b=>b.status==='idle'&&Date.now()/1000-b.last_sync>(b.complete?900:120));if(syncing||due)refresh().catch(e=>message(e.message));},5000);
+  setInterval(()=>{if(!model.user||model.busy||document.hidden)return;const syncing=(model.data.bindings||[]).some(b=>['queued','running'].includes(b.status));const due=(model.data.bindings||[]).some(b=>b.status==='idle'&&Date.now()/1000-b.last_sync>(b.complete?900:120));const qojDue=(model.data.qojAccounts||[]).length&&!model.detail&&Date.now()-(model.qojPollAt||0)>15000;if(qojDue)model.qojPollAt=Date.now();if(syncing||due||qojDue)refresh().catch(e=>message(e.message));},5000);
 });
+
+function qojAuthParams(){
+  const p=new URLSearchParams(location.search),uid=p.get('uid')||'',nonce=p.get('nonce')||'';
+  return p.has('qojAuthorize')&&/^[A-Za-z0-9_-]{1,64}$/.test(uid)&&/^[A-Za-z0-9_-]{16,100}$/.test(nonce)?{uid,nonce}:null;
+}
+function renderQojAuthorization(){
+  const auth=qojAuthParams();if(!auth)return;
+  if(!model.user){document.querySelector('#loginRequired a').href='/?next=regionals&qojReturn='+encodeURIComponent(location.pathname+location.search);return;}
+  $('recordsPanel').open=true;$('qojAuthorization').hidden=false;
+  $('qojAuthorizeText').textContent=`将 QOJ 账号「${auth.uid}」的提交记录同步到本站用户「${model.data.user.displayName}」。如果是团队账号，其 AC 将计入你的代码进度。仅在确认此账号属于你或你的团队时连接。`;
+}
+async function authorizeQoj(){
+  const auth=qojAuthParams();if(!auth||!window.opener)throw new Error('请从 QOJ 插件重新发起连接。');
+  const result=await post('qoj-authorize',{uid:auth.uid});
+  window.opener.postMessage({type:'regional-qoj-authorized',uid:auth.uid,nonce:auth.nonce,token:result.token},'https://qoj.ac');
+  history.replaceState(null,'',location.pathname);$('qojAuthorization').hidden=true;
+  await refresh();message('已连接，请回到 QOJ 页面点击插件的「同步」。');
+}
