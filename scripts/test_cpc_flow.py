@@ -141,6 +141,25 @@ class FlowTests(unittest.TestCase):
         self.dlut.review(claim,'revoked','fixture-admin');self.wall.sync()
         self.assertNotIn(self.pid,self.wall.progress('1')['problems'])
 
+    def test_starred_onsite_ac_reaches_both_services_without_personal_submission(self):
+        with self.database.connect() as db:
+            db.execute("update honors set official=0,medal='' where id='fixture-award'")
+        self.wall.sync()
+        with self.wall.db() as db:
+            remote, _ = self.wall.remote(db)
+        self.assertFalse(remote['roster']['participations'][0]['official'])
+        self.approve()
+        self.wall.import_onsite(self.evidence())
+        progress = self.wall.progress('1')['problems'][self.pid]
+        self.assertTrue(progress['onsite'])
+        self.assertFalse(progress['personal'])
+        self.assertFalse(progress['team'])
+        self.connect_cf(self.wall.issue_token('1')['token'])
+        self.assertTrue(self.regional.progress(1)[self.pid]['onsite'])
+        self.assertFalse(self.regional.progress(1)[self.pid]['code'])
+        with self.app.connect_db() as db:
+            self.assertEqual(db.execute('select count(*) from submissions').fetchone()[0], 0)
+
     def test_team_online_is_separate_and_real_ac_is_preserved(self):
         with self.app.connect_db() as db:
             db.execute("insert into handles(owner_type,owner_id,platform,handle,created_at) values ('user','1','qoj','ucup-team-fixture',1)")
@@ -149,6 +168,78 @@ class FlowTests(unittest.TestCase):
         self.assertTrue(p['team']);self.assertFalse(p['personal'])
         self.connect_cf(self.wall.issue_token('1')['token'])
         self.assertTrue(self.regional.progress(1)[self.pid]['code'])
+
+    def test_approval_triggers_profile_import_merge_retry_and_rejudge(self):
+        with self.database.connect() as db:
+            local = db.execute("select local_id from cpc_ids where kind='person' and uid=?",(self.person,)).fetchone()[0]
+            db.execute("insert into member_identities(provider,external_id,member_id) values ('cpcfinder',?,?)",(str(uuid.uuid4()),local))
+        claim=self.wall.request_claim('1','user1',{'person':self.person,'note':'fixture'})
+        self.wall.sync()
+        award={'contestId':62,'contestName':'Fixture contest','teamName':'Fixture team','date':'2024-11-01'}
+        body={**self.evidence(),'cpcfinder_contest_id':62,'contest_name':'Fixture contest','contest_date':'2024-11-01',
+              'problem_labels':[p['index'] for p in self.wall.contests['icpc-2024-杭州']['problems']]}
+        with patch.object(wall_module,'profile_awards',return_value=[award]) as profiles, patch.object(wall_module,'Scoreboards') as boards:
+            boards.return_value.prepare.return_value=body
+            self.wall.sync_onsite()
+            profiles.assert_not_called()
+            self.dlut.review(claim['id'],'approved','admin');self.wall.sync()
+            with self.app.connect_db() as db:
+                db.execute("insert into handles(owner_type,owner_id,platform,handle,created_at) values ('user','1','codeforces','fixture',1)")
+                for problem in ['105657A','105657B']:
+                    db.execute("insert into submissions(owner_type,owner_id,platform,handle,remote_id,problem_id,verdict,submitted_at,created_at) values ('user','1','codeforces','fixture',?,?, 'AC',1,1)",(problem,problem))
+            self.wall.sync_onsite()
+            progress=self.wall.progress('1')
+            self.assertEqual(progress['onsite_sync']['status'],'complete')
+            self.assertTrue(progress['problems'][self.pid]['personal'])
+            self.assertTrue(progress['problems'][self.pid]['onsite'])
+            self.assertEqual(sum(p['personal'] or p['onsite'] for p in progress['problems'].values()),2)
+            self.assertFalse(self.wall.progress('2')['onsite_contests'])
+            self.wall.sync_onsite(force=True)
+            with self.wall.db() as db:self.assertEqual(db.execute('select count(*) from cpc_onsite_history').fetchone()[0],1)
+            boards.return_value.prepare.side_effect=ValueError('upstream unavailable')
+            self.wall.sync_onsite(force=True)
+            self.assertEqual(self.wall.progress('1')['onsite_sync']['status'],'partial')
+            self.assertTrue(self.wall.progress('1')['problems'][self.pid]['onsite'])
+            boards.return_value.prepare.side_effect=None
+            boards.return_value.prepare.return_value={**body,'accepted':[]}
+            self.wall.sync_onsite(force=True)
+            self.assertFalse(self.wall.progress('1')['problems'][self.pid]['onsite'])
+            self.assertTrue(self.wall.progress('1')['problems'][self.pid]['personal'])
+            self.dlut.review(claim['id'],'revoked','admin');self.wall.sync()
+            self.assertFalse(self.wall.progress('1')['onsite_contests'])
+
+    def test_profile_import_retains_contests_outside_current_problem_catalog(self):
+        self.approve()
+        body={**self.evidence(),'contest_id':'cpcfinder-62','cpcfinder_contest_id':62,
+              'contest_name':'Older profile contest','contest_date':'2024-11-01','problem_labels':['A','B']}
+        self.wall.import_auto_onsite(body)
+        progress=self.wall.progress('1')
+        self.assertTrue(progress['problems']['cpcfinder-62:A']['onsite'])
+        self.assertFalse(progress['onsite_contests'][0]['mapped'])
+        self.assertEqual(progress['unmapped_count'],1)
+        self.connect_cf(self.wall.issue_token('1')['token'])
+        with self.cf.db() as db:
+            raw=json.loads(db.execute('select body from cpc_wall_links where user_id=1').fetchone()[0])
+        self.assertTrue(raw['problems']['cpcfinder-62:A']['onsite'])
+
+    def test_legacy_board_without_cpcfinder_profile_is_imported_and_merged(self):
+        self.approve()
+        body={**self.evidence(),'contest_id':'rankland-legacy','contest_name':'Legacy contest',
+              'contest_date':'2024-11-01','problem_labels':['A','B'],
+              'reference_urls':['https://codeforces.com/gym/100001']}
+        with self.app.connect_db() as db:
+            db.execute("insert into handles(owner_type,owner_id,platform,handle,created_at) values ('user','1','codeforces','fixture',1)")
+            db.execute("insert into submissions(owner_type,owner_id,platform,handle,remote_id,problem_id,verdict,submitted_at,created_at) values ('user','1','codeforces','fixture','1','100001A','AC',1,1)")
+        with patch.object(wall_module,'profile_awards') as profiles, patch.object(wall_module,'Scoreboards') as boards:
+            boards.return_value.prepare.return_value=body
+            self.wall.sync_onsite()
+            profiles.assert_not_called()
+        progress=self.wall.progress('1')
+        self.assertEqual(progress['onsite_sync']['status'],'complete')
+        self.assertEqual(len(progress['problems']),1)
+        self.assertTrue(progress['problems']['rankland-legacy:A']['personal'])
+        self.assertTrue(progress['problems']['rankland-legacy:A']['onsite'])
+        self.assertFalse(self.wall.progress('2')['onsite_contests'])
 
     def test_bad_snapshot_and_wrong_authority_preserve_cache(self):
         self.approve();self.wall.import_onsite(self.evidence())

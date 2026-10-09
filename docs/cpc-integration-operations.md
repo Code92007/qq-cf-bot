@@ -149,3 +149,18 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_cpc_flow.py
 服务器回滚点为 `/root/backups/cpc-integration-20261009-173123/`：`manifest.json` 记录原镜像标签/提交/Compose 文件；每个工程保存 `database.sqlite3`、原工作区改动及原环境。上线后另存 `database-after.sqlite3`、`linked.env` 和 `verification.json`，一致备份及 UUID 映射核对通过。该目录包含私密配置，应保持仅管理员可读，不提交 Git。
 
 回滚优先使用备份镜像、原配置和已保存源码，保留当前运行库；新增表可由旧代码忽略。不要用上线前数据库覆盖上线后的新记录。需要完整搬迁时，按第 4 节重新做停写的一致备份，不把本次发布备份当作长期增量备份。
+
+
+## 9. v4.2 自动现场成绩同步
+
+DLUT 原榜单入口统一沿用 `data/contest_ranklists.json`，由 roster 快照发布可选链接和学校别名，OJ Wall 不需要挂载 DLUT 目录。支持 XCPCIO 固定版本的 config/team/run 与 RankLand 原页面 SRK；CPC Finder 用于比赛链接和档案 ID 补充，不按解题总数生成 AC。
+
+认证批准后最多约 5 分钟安排首次抓取；成功每天复核、失败每 5 分钟重试。已有批准认证会在升级后自动补刷。用户点击“更新认证状态”可主动安排重试；管理员补刷命令：
+
+```sh
+docker compose exec -T oj-submission-wall python tools/cpc_admin.py sync
+```
+
+页面“现场比赛通过”列出每场 AC、打星标记、原榜单和同步状态。线上提交表保持原始记录，按题与现场证据取并集；旧比赛未入公共目录时显示题目待映射。匹配失败、封榜或未知逐题状态保留上一份有效成绩并重试。
+
+迁移除原有 SQLite、配置和公共目录外，保留 DLUT 的 `data/contest_ranklists.json` 与 OJ Wall 的整个 `data/cpc_sources/`。新 `cpc_onsite_sync` 表随主库备份，固定版本原始文件和哈希可供复核；无需新增地址耦合或中心服务。

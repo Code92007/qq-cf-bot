@@ -27,6 +27,12 @@ element('cpcMemberSearch').value='不存在';vm.runInContext('cpcMembers()',cont
 assert.match(element('cpcMember').innerHTML,/没有匹配的成员/);
 element('cpcMemberSearch').value='';vm.runInContext('cpcMembers()',context);
 assert.match(element('cpcMember').innerHTML,/张三/);
+vm.runInContext(`cpcData.identity={status:'approved',verified_until:9999999999};cpcData.handles=[];cpcData.onsite_sync={status:'partial',imported:1,listed:2,issues:[{contest:'<另一场>',reason:'<待重试>'}]};cpcData.onsite_contests=[{name:'<旧比赛>',date:'2020-11-01',team:'<打星队>',official:false,accepted:['A','C'],source_url:'https://rl.algoux.cn/ranklist/test',mapped:false}];cpcRender();`,context);
+assert.match(element('cpcOnsiteStatus').textContent,/1\/2 场/);
+assert.match(element('cpcOnsiteContests').innerHTML,/&lt;旧比赛&gt;/);
+assert.match(element('cpcOnsiteContests').innerHTML,/打星/);
+assert.match(element('cpcOnsiteContests').innerHTML,/AC 2 题/);
+assert.match(element('cpcOnsiteContests').innerHTML,/&lt;待重试&gt;/);
 const botContext={document:{addEventListener(){}}};vm.createContext(botContext);
 vm.runInContext(fs.readFileSync(path.join(root,'src/qq_cf_bot/web/regionals.js'),'utf8'),botContext);
 assert.equal(vm.runInContext(`model.view='union';completed({oral:false,code:false,onsite:true})`,botContext),true);
