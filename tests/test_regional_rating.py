@@ -93,7 +93,8 @@ class StandingsRatingTest(unittest.TestCase):
         directory = Path(__file__).resolve().parents[1] / 'src/qq_cf_bot/catalog'
         catalog = json.loads((directory / 'regionals.json').read_text())
         release = json.loads((directory / 'regional_ratings.json').read_text())
-        self.assertEqual(set(release['problems']), {p['id'] for c in catalog['contests'] for p in c['problems']})
+        rated_catalog = [c for c in catalog['contests'] if c['year'] >= 2023]
+        self.assertEqual(set(release['problems']), {p['id'] for c in rated_catalog for p in c['problems']})
         self.assertEqual(len(release['contests']), 33)
         for result in release['problems'].values():
             self.assertLessEqual(result['range'][0], result['rating'])

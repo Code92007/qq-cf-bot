@@ -36,6 +36,10 @@ class RegionalStoreTest(unittest.TestCase):
 
     def test_catalog_recent_seasons_cover_all_qoj_regional_sites(self):
         expected={
+            2019:{'ICPC':{'上海','南京','徐州','沈阳','南昌','银川','香港'},'CCPC':{'哈尔滨','秦皇岛','厦门'}},
+            2020:{'ICPC':{'沈阳','银川','昆明','济南','南京','上海','澳门'},'CCPC':{'秦皇岛','威海','绵阳','长春'}},
+            2021:{'ICPC':{'昆明','澳门','济南','沈阳','上海','南京'},'CCPC':{'广州','哈尔滨','威海','桂林'}},
+            2022:{'ICPC':{'杭州','合肥','香港','济南','南京','沈阳','西安'},'CCPC':{'桂林','威海','广州','绵阳'}},
             2023:{'ICPC':{'杭州','合肥','济南','澳门','南京','沈阳','西安'},'CCPC':{'桂林','哈尔滨','秦皇岛','深圳'}},
             2024:{'ICPC':{'成都','杭州','香港','昆明','南京','上海','沈阳'},'CCPC':{'哈尔滨','济南','郑州','重庆'}},
             2025:{'ICPC':{'成都','香港','南京','上海','沈阳','武汉','西安'},'CCPC':{'哈尔滨','济南','郑州','重庆'}},
@@ -43,9 +47,13 @@ class RegionalStoreTest(unittest.TestCase):
         for year,series in expected.items():
             for name,sites in series.items():
                 self.assertEqual({c['site'] for c in self.store.contests if c['year']==year and c['series']==name},sites)
-        self.assertEqual(len(self.store.problems),426)
-        for p in self.store.problems.values():
-            self.assertIn('qoj:'+str(p['qoj_id']),p['aliases'])
+        self.assertEqual(len(self.store.problems),954)
+        for c in self.store.contests:
+            if c['year'] < 2023: continue
+            for p in c['problems']:
+                self.assertIn('qoj:'+str(p['qoj_id']),p['aliases'])
+        self.assertEqual(self.store.aliases['codeforces:104021N'],'icpc-2019-银川:N')
+        self.assertEqual(self.store.aliases['nowcoder:220447'],'icpc-2020-昆明:H')
 
     def test_nowcoder_pagination_and_result_detection(self):
         page='<table><tr><td><a href="/acm/problem/123">题目</a></td><td>2025-01-02 12:34:56 答案正确</td></tr></table><a data-page="3">末页</a>practice-coding'

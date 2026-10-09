@@ -52,12 +52,16 @@ def main():
     parser.add_argument('--revision', required=True, help='Pinned full board-data commit SHA')
     parser.add_argument('--snapshot', type=Path, required=True)
     parser.add_argument('--download', action='store_true')
+    parser.add_argument('--years', type=int, nargs='+', default=[2023, 2024, 2025], help='Seasons with audited XCPCIO rating data (default: 2023 2024 2025)')
     parser.add_argument('--priors', type=Path, help='Optional existing model ratings, keyed by canonical problem ID')
     parser.add_argument('--output', type=Path, default=ROOT / 'src/qq_cf_bot/catalog/regional_ratings.json')
     args = parser.parse_args()
     if len(args.revision) != 40 or any(c not in '0123456789abcdef' for c in args.revision):
         parser.error('revision must be a full Git commit SHA')
     catalog = json.loads((ROOT / 'src/qq_cf_bot/catalog/regionals.json').read_text())
+    catalog['contests'] = [c for c in catalog['contests'] if c['year'] in args.years]
+    if not catalog['contests']:
+        parser.error('selected seasons have no catalog contests')
     if args.download:
         with ThreadPoolExecutor(max_workers=6) as pool:
             list(pool.map(lambda c: download(args.snapshot, args.revision, c), catalog['contests']))
