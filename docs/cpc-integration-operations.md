@@ -56,6 +56,8 @@ docker compose exec -T dlut-cpc python tools/cpc_admin.py review 申请UUID appr
 
 拒绝用 `rejected`，撤销已批准认领用 `revoked`。确认申请中的账号、成员、校区和联系证明；不根据相同姓名自动批准。批准后 oj-wall 的后台轮询会更新结果，也可手动安排更新。
 
+2026-10-09 的 v4.1 已部署上述网页入口及成员搜索。备份目录为 `/root/backups/cpc-web-review-20261009-205955/`，内有两服务的 SQLite 一致备份、原环境配置、工作区补丁、构建日志、镜像回滚标签清单和上线验证结果；路径标记保存在 `/root/.cpc-web-review-backup`。管理员读取、匿名拒绝与 CSRF 拒绝已在线核验，实际认领没有被代审。
+
 ## 3. 现场榜单导入
 
 先用 oj-wall 的 `rosters` 命令取得稳定 participation UUID。逐场核验榜单队伍行及题序，准备 JSON，例如：
