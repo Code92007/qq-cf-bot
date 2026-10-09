@@ -490,3 +490,9 @@ sudo systemctl status napcat-watchdog --no-pager
 `.gitignore` 已经默认忽略这些文件。
 
 QOJ 区域赛记录可安装 [浏览器同步插件](https://cf-bot.wannafly.cn/regional-qoj-sync.user.js)，连接个人或 ucup-team 团队账号后手动同步，无需编写 CSV / JSON；Gym 直接绑定 Codeforces 账号。口胡内容自动保留每题最新草稿，未提交或判错后均可继续。
+
+### 可选三工程联动
+
+可读取 OJ Wall 的个人/团队线上通过及已认证成员的现场队伍通过，与本站口胡记录按题合并。配置 `CPC_OJWALL_URL`、`CPC_OJWALL_AUTHORITY_ID` 后，用户在区域赛页粘贴本人只读连接码即可；口胡记录仍独立保存。现场成绩只计综合视角，代码和口胡视角保持各自口径。
+
+[技术方案](docs/cpc-cross-project-integration.md)、[版本历史](docs/cpc-integration/CHANGELOG.md)、[启用、审核与迁移说明](docs/cpc-integration-operations.md) 统一保存在本工程。

@@ -26,7 +26,7 @@ const post = (action,body={}) => request("/api/regionals/"+action,body);
 function localGet(key){try{return localStorage.getItem(key);}catch(_){return null;}}
 function localSet(key,value){try{localStorage.setItem(key,value);}catch(_){}}
 function draftKey(pid){return `regional-draft:${model.user}:${pid}`;}
-function completed(p){return model.view==="oral"?p.oral:model.view==="code"?p.code:p.oral||p.code;}
+function completed(p){return model.view==="oral"?p.oral:model.view==="code"?p.code:p.oral||p.code||p.onsite;}
 function attempted(p){return model.view==="oral"?p.oralAttempted:model.view==="code"?p.attempted:p.attempted||p.oralAttempted;}
 function visible(p){return $("filter").value==="all" || ($("filter").value==="unfinished"&&!completed(p)) || ($("filter").value==="draft"&&p.draft) || ($("filter").value==="oralOnly"&&p.oral&&!p.code);}
 function persistFilters(){localSet(`regional-filters:${model.user}`,JSON.stringify({year:$("year").value,series:$("series").value,search:$("search").value,filter:$("filter").value,view:model.view}));}
@@ -41,9 +41,9 @@ function renderWall(){
     const cells=c.problems.map(p=>{
       const status=model.data.progress[p.id]||EMPTY,ok=completed(status),tried=attempted(status),show=visible(status);
       solved+=Number(ok);tries+=Number(tried||(model.view!=="code"&&status.draft));
-      const marks=model.view==="oral"?(status.oral?"口":status.draft?"草稿":status.oralAttempted?"需修改":"") :model.view==="code"?(status.code?"AC":status.attempted?(status.verdict||"已提交"):"") :[status.oral?"口":"",status.code?"码":""].filter(Boolean).join("")||(status.draft?"草稿":tried?"尝试":"");
+      const marks=model.view==="oral"?(status.oral?"口":status.draft?"草稿":status.oralAttempted?"需修改":"") :model.view==="code"?(status.code?"AC":status.attempted?(status.verdict||"已提交"):"") :[status.oral?"口":"",status.code?"码":"",status.onsite?"现":""].filter(Boolean).join("")||(status.draft?"草稿":tried?"尝试":"");
       const diff=model.data.difficulty?.[p.id] || (p.difficulty?{rating:p.difficulty,source:p.difficulty_source}:null);
-      const title=`${difficultyText(diff)}\n${c.name} ${p.index} · ${p.name}\n口胡：${status.oral?"通过":status.oralAttempted?"已尝试":"未通过"}；代码：${status.code?"AC":status.attempted?(status.verdict||"提交过"):"未提交"}${status.draft?"；有草稿":""}${p.unmapped?"；平台题号待核验":""}`;
+      const title=`${difficultyText(diff)}\n${c.name} ${p.index} · ${p.name}\n口胡：${status.oral?"通过":status.oralAttempted?"已尝试":"未通过"}；代码：${status.code?"AC":status.attempted?(status.verdict||"提交过"):"未提交"}${status.onsite?"；现场所在队伍通过":""}${status.wallTeam?"；含绑定团队线上通过":""}${status.draft?"；有草稿":""}${p.unmapped?"；平台题号待核验":""}`;
       return `<td><button class="tile ${difficultyClass(diff?.rating)} ${ok?"done":status.draft&&model.view!=="code"?"draft":tried?"tried":""} ${show?"":"filtered"} ${p.unmapped?"unmapped":""}" data-problem="${esc(p.id)}" title="${esc(title)}" aria-label="${esc(title)}"><i class="rating-circle" aria-hidden="true"></i>${esc(p.index)}<span class="tile-rating" aria-hidden="true">${diff?esc(diff.rating):"—"}</span><span class="tile-mark" aria-hidden="true">${esc(marks)}</span></button></td>`;
     }).join("");
     done+=solved;total+=c.problems.length;
@@ -56,6 +56,8 @@ function renderWall(){
   persistFilters();
 }
 function renderRecords(){
+  const w=model.data.ojWall||{};
+  if($("wallConnectionStatus"))$("wallConnectionStatus").textContent=!w.configured?"管理员尚未启用联动":!w.connected?"尚未关联":`已关联 · ${new Date(w.lastSync*1000).toLocaleString()}${w.stale?" · 缓存过期，等待重新核验":""}${w.error?" · "+w.error:""}`;
   $("qojAccounts").innerHTML=(model.data.qojAccounts||[]).map(a=>`<div class="binding"><strong>QOJ · ${esc(a.uid)}</strong><small>${a.last_sync?"最近收到记录 · "+esc(new Date(a.last_sync).toLocaleString()):"已连接，请在 QOJ 插件中点击同步"}</small><button data-qoj-revoke="${esc(a.uid)}">断开授权</button></div>`).join("")||'<p class="muted small">尚未连接 QOJ 个人或团队账号。</p>';
   const names={codeforces:"Codeforces",vjudge:"VJudge",nowcoder:"牛客"},statuses={queued:"排队中",running:"同步中",idle:"已同步",failed:"同步失败"};
   $("bindings").innerHTML=(model.data.bindings||[]).map(b=>`<div class="binding"><strong>${esc(names[b.platform]||b.platform)} · ${esc(b.handle)}</strong><small>${esc(statuses[b.status]||b.status)} · ${esc(b.message)}${b.last_sync?` · ${esc(new Date(b.last_sync*1000).toLocaleString())}`:""}${b.complete?"":" · 历史未完成"}</small><button data-sync="${b.id}" ${["queued","running"].includes(b.status)?"disabled":""}>同步 / 继续回填</button><button data-unbind="${b.id}">解绑</button></div>`).join("")||'<p class="muted small">尚未绑定账号。绑定后会同步公开提交记录。</p>';
@@ -149,12 +151,15 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("saveDraft").addEventListener("click",()=>run(saveDraft));$("submitOral").addEventListener("click",()=>run(()=>submit('oral')));$("submitCode").addEventListener("click",()=>run(()=>submit('code')));
   $("oralText").addEventListener("input",()=>{if(!model.detail)return;model.dirty=true;$("saveStatus").textContent="尚未同步 · 本机已保留";localSet(draftKey(model.detail.problem.id),JSON.stringify({body:$("oralText").value,dirty:true}));clearTimeout(model.saveTimer);model.saveTimer=setTimeout(()=>saveDraft().catch(e=>message(e.message)),900);});
   window.addEventListener("beforeunload",e=>{if(model.dirty){e.preventDefault();e.returnValue="";}});
+  $("wallConnectForm").addEventListener("submit",e=>{e.preventDefault();const form=e.currentTarget;run(async()=>{await post("wall-connect",{token:new FormData(form).get("token")});form.reset();await refresh();message("已关联 OJ Wall，现场通过计入综合视角。");});});
+  $("wallSync").addEventListener("click",()=>run(async()=>{await post("wall-sync");message("已安排后台更新。");}));
+  $("wallDisconnect").addEventListener("click",()=>run(async()=>{await post("wall-disconnect");await refresh();}));
   $("bindForm").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget);run(async()=>{await post('bind',{platform:f.get('platform'),handle:f.get('handle')});await refresh();});});
   $("bindings").addEventListener("click",e=>{const b=e.target.closest('button');if(!b)return;run(async()=>{if(b.dataset.sync)await post('sync',{bindingId:Number(b.dataset.sync)});if(b.dataset.unbind)await post('unbind',{bindingId:Number(b.dataset.unbind)});await refresh();});});
   $("qojAuthorize").addEventListener("click",()=>run(authorizeQoj));
   $("qojAccounts").addEventListener("click",e=>{const b=e.target.closest("[data-qoj-revoke]");if(b)run(async()=>{await post("qoj-revoke",{uid:b.dataset.qojRevoke});await refresh();message("授权已断开，已有记录和口胡草稿保留。");});});
   $("batches").addEventListener("click",e=>{const b=e.target.closest('[data-revoke]');if(b)run(async()=>{await post('import-revoke',{token:b.dataset.revoke});await refresh();});});
-  setInterval(()=>{if(!model.user||model.busy||document.hidden)return;const syncing=(model.data.bindings||[]).some(b=>['queued','running'].includes(b.status));const due=(model.data.bindings||[]).some(b=>b.status==='idle'&&Date.now()/1000-b.last_sync>(b.complete?900:120));const qojDue=(model.data.qojAccounts||[]).length&&!model.detail&&Date.now()-(model.qojPollAt||0)>15000;if(qojDue)model.qojPollAt=Date.now();if(syncing||due||qojDue)refresh().catch(e=>message(e.message));},5000);
+  setInterval(()=>{if(!model.user||model.busy||document.hidden)return;const syncing=(model.data.bindings||[]).some(b=>['queued','running'].includes(b.status));const due=(model.data.bindings||[]).some(b=>b.status==='idle'&&Date.now()/1000-b.last_sync>(b.complete?900:120));const qojDue=(model.data.qojAccounts||[]).length&&!model.detail&&Date.now()-(model.qojPollAt||0)>15000;if(qojDue)model.qojPollAt=Date.now();if(syncing||due||qojDue||model.data.ojWall?.connected)refresh().catch(e=>message(e.message));},5000);
 });
 
 function qojAuthParams(){

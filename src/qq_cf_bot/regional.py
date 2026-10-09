@@ -135,7 +135,7 @@ class RegionalStore:
         return {key: self.rating_release[key] for key in ('method', 'source_revision', 'scale', 'contests')}
 
     def progress(self, user):
-        result = {pid: {'oral': False, 'code': False, 'attempted': False, 'oralAttempted': False, 'draft': False, 'verdict': ''} for pid in self.problems}
+        result = {pid: {'oral': False, 'code': False, 'attempted': False, 'oralAttempted': False, 'draft': False, 'verdict': '', 'onsite': False} for pid in self.problems}
         with self.connect() as db:
             for r in db.execute('select problem_id,body from regional_drafts where user_id=?', (user,)):
                 if r['problem_id'] in result:
@@ -173,6 +173,8 @@ class RegionalStore:
                     else:
                         p['attempted'] = True
                         p['code'] |= verdict(r['verdict']) == 'AC'
+        if hasattr(self, "wall_connection"):
+            self.wall_connection.merge(user, result)
         return result
 
     def wall(self, user):
@@ -320,6 +322,9 @@ class RegionalApplication:
         self.service = web.service
         self.store = RegionalStore(self.service.store.db_path)
         self.sync = SubmissionSync(self.store, self.service.cf.base_urls)
+        from .cpc_integration import WallConnection
+        self.wall_connection = WallConnection(self.store.path)
+        self.store.wall_connection = self.wall_connection
         self.prepare_lock = threading.Lock()
         from .regional_qoj import QojPlugin
         self.qoj = QojPlugin(self.store)
@@ -327,6 +332,7 @@ class RegionalApplication:
     def state(self,session):
         data = self.store.wall(int(session['user_id']))
         data['qojAccounts'] = self.qoj.accounts(int(session['user_id']))
+        data['ojWall'] = self.wall_connection.state(int(session['user_id']))
         for binding in data['bindings']:
             interval=900 if binding['complete'] else 120
             if binding['status']=='idle' and time.time()-binding['last_sync']>interval:
@@ -338,6 +344,13 @@ class RegionalApplication:
     def post(self,session,action,payload):
         user = int(session['user_id'])
         pid = str(payload.get('problemId') or '')
+        if action == 'wall-connect':
+            return self.wall_connection.sync(user, str(payload.get('token') or ''))
+        if action == 'wall-disconnect':
+            return self.wall_connection.disconnect(user)
+        if action == 'wall-sync':
+            self.wall_connection.wake.set()
+            return {'ok': True}
         if action == 'qoj-authorize':
             return self.qoj.authorize(user,payload.get('uid'))
         if action == 'qoj-revoke':
