@@ -164,3 +164,10 @@ docker compose exec -T oj-submission-wall python tools/cpc_admin.py sync
 页面“现场比赛通过”列出每场 AC、打星标记、原榜单和同步状态。线上提交表保持原始记录，按题与现场证据取并集；旧比赛未入公共目录时显示题目待映射。匹配失败、封榜或未知逐题状态保留上一份有效成绩并重试。
 
 迁移除原有 SQLite、配置和公共目录外，保留 DLUT 的 `data/contest_ranklists.json` 与 OJ Wall 的整个 `data/cpc_sources/`。新 `cpc_onsite_sync` 表随主库备份，固定版本原始文件和哈希可供复核；无需新增地址耦合或中心服务。
+
+
+v4.2 生产验证（2026-10-09）：DLUT CPC `838ca4a`、OJ Wall `a75117e`、主工程方案与验收 `df8713b` 已推送；前两者镜像重建，CF Bot 仅更新方案/验收文件。部署前一致备份和旧镜像标签位于 `/root/backups/cpc-auto-onsite-20261009-231051/`，标记文件 `/root/.cpc-auto-onsite-backup`；两个服务 UUID 保持原值，原有未提交功能保留。
+
+已有认证用户衣泽民的后台同步实测完成 9/9 场，无失败项，保存 36 道现场 AC、17 份原始来源文件；2024 昆明打星队 C/E/H/J/L/M 六道进入当前目录。其余八场 30 道题保留现场历史及逐题证据，待公共目录映射；其中唯一 Gym 重现链接可与现有线上题号合并。本人进度实测个人线上 5 道、现场 36 道、重合 1 道，并集 40 道（含待目录映射的现场题）。原有 114,159 条线上提交全部仍在、无缺失；已有 1 条 CF Bot 连接刷新后收到 36 道现场 AC，身份保持 approved，未生成或更换连接码。
+
+本次通过 DLUT 229 项后端测试（1 项可选依赖跳过）、OJ Wall 33 项、跨三工程 14 项与前端回归；公网页面现场记录入口、匿名进度接口 401、容器健康均实测通过。验证报告在备份目录 `onsite-verification.json`、`cf-onsite-verification.json`、`verification.json`。回滚可用 manifest 中镜像标签恢复前一版本，保留主库及证据文件；只有需要恢复数据库时才停写并使用一致备份，避免覆盖上线后新的真实提交。
