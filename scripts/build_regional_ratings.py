@@ -19,6 +19,13 @@ SITES = dict(zip(
 
 
 def board_path(contest):
+    if 'rating_evidence' in contest:
+        evidence = contest['rating_evidence']
+        if evidence.get('unavailable_reason'):
+            return None
+        return evidence['standings_path']
+    if contest['year'] < 2023:
+        raise ValueError(f"Historical standings source must be verified: {contest['id']}")
     series = contest['series'].lower()
     edition = (contest['year'] - 1975 if series == 'icpc' else contest['year'] - 2014)
     return f"data/{series}/{edition}th/{SITES[contest['site']]}"
@@ -26,6 +33,8 @@ def board_path(contest):
 
 def download(snapshot, revision, contest):
     path = board_path(contest)
+    if path is None:
+        return
     directory = snapshot / path
     directory.mkdir(parents=True, exist_ok=True)
     for name in ('config', 'team', 'run'):

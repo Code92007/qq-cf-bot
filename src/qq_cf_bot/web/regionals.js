@@ -183,5 +183,6 @@ async function authorizeQoj(){
 function renderDifficultyProgress(){
   const ps=model.data.contests.filter(c=>c.year===Number($('year').value)).flatMap(c=>c.problems);
   const count=ps.filter(p=>model.data.difficulty?.[p.id]||p.difficulty).length;
-  $('ratingProgress').textContent=`本年已评级 ${count} / ${ps.length}；按正式队赛时通过数与金银铜牌通过比例校准，非官方 Rating。`;
+  const missing=ps.length-count;
+  $('ratingProgress').textContent=`本年已评级 ${count} / ${ps.length}；按正式队赛时通过数与金银铜牌通过比例校准，非官方 Rating。${missing?` 其余 ${missing} 题尚缺完整校准依据，暂未评级。`:''}`;
 }

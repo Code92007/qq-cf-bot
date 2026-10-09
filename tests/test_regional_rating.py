@@ -1,9 +1,10 @@
 import copy
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
-from qq_cf_bot.regional_rating import rate_problem, summarize_standings
+from qq_cf_bot.regional_rating import build_release, rate_problem, summarize_standings
 
 
 class StandingsRatingTest(unittest.TestCase):
@@ -89,12 +90,49 @@ class StandingsRatingTest(unittest.TestCase):
         hard = rate_problem(unsolved, 800)
         self.assertGreaterEqual(hard['rating'], 3100)
 
-    def test_release_is_complete_auditable_and_obeys_all_intervals(self):
+    def test_report_backed_medals_and_explicit_missing_standings(self):
+        config, teams, runs = self.fixture()
+        config.pop('medal')
+        config['contest_name'] = 'Historical contest'
+        contest = {'id': 'old', 'problems': [{'id': 'old:A', 'index': 'A'}, {'id': 'old:B', 'index': 'B'}],
+                   'rating_evidence': {'medal_override': {'counts': {'gold': 1, 'silver': 1, 'bronze': 1},
+                                                        'source_url': 'https://organizer.example/report.pdf'},
+                                       'expected_summary': {'official_teams': 4}}}
+        unavailable = {'id': 'missing', 'problems': [{'id': 'missing:A', 'index': 'A'}],
+                       'rating_evidence': {'unavailable_reason': 'No verified final standings'}}
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            for name, data in [('config', config), ('team', teams), ('run', runs)]:
+                (directory / (name + '.json')).write_text(json.dumps(data))
+            path_for = lambda c: '' if c['id'] == 'old' else None
+            release = build_release({'contests': [contest, unavailable]}, directory, 'a' * 40, {}, path_for)
+            self.assertEqual(set(release['problems']), {'old:A', 'old:B'})
+            self.assertEqual(release['unrated_contests'], {'missing': 'No verified final standings'})
+            self.assertEqual(release['contests']['old']['medal_source_url'], 'https://organizer.example/report.pdf')
+            contest['rating_evidence']['expected_summary']['official_teams'] = 5
+            with self.assertRaisesRegex(ValueError, 'Official report differs'):
+                build_release({'contests': [contest]}, directory, 'a' * 40, {}, path_for)
+            contest['rating_evidence'].pop('expected_summary')
+            contest['rating_evidence']['medal_override'].pop('source_url')
+            with self.assertRaisesRegex(ValueError, 'override requires a source'):
+                build_release({'contests': [contest]}, directory, 'a' * 40, {}, path_for)
+            unavailable['rating_evidence'].clear()
+            with self.assertRaisesRegex(ValueError, 'exclusion reason'):
+                build_release({'contests': [unavailable]}, directory, 'a' * 40, {}, path_for)
+
+    def test_release_accounts_for_every_contest_and_obeys_all_intervals(self):
         directory = Path(__file__).resolve().parents[1] / 'src/qq_cf_bot/catalog'
         catalog = json.loads((directory / 'regionals.json').read_text())
         release = json.loads((directory / 'regional_ratings.json').read_text())
-        self.assertEqual(set(release['problems']), {p['id'] for c in catalog['contests'] for p in c['problems']})
-        self.assertEqual(len(release['contests']), 33)
+        rated = release['contests']
+        unrated = release['unrated_contests']
+        self.assertFalse(set(rated).intersection(unrated))
+        self.assertEqual(set(rated) | set(unrated), {c['id'] for c in catalog['contests']})
+        self.assertEqual(set(release['problems']), {p['id'] for c in catalog['contests'] if c['id'] in rated for p in c['problems']})
+        self.assertEqual(len(rated), 65)
+        self.assertEqual(len(unrated), 10)
+        self.assertEqual(len(release['problems']), 832)
+        self.assertTrue(all(unrated.values()))
         for result in release['problems'].values():
             self.assertLessEqual(result['range'][0], result['rating'])
             self.assertLessEqual(result['rating'], result['range'][1])

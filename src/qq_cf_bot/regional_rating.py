@@ -71,7 +71,7 @@ def summarize_standings(config, teams, runs):
             score['penalty'] = int(score['penalty'] // 60) * 60
     ordered = sorted(scores, key=lambda tid: (-len(scores[tid]['solved']), scores[tid]['penalty'], scores[tid]['last'], tid))
     effective = sum(bool(s['solved']) for s in scores.values())
-    medal = config['medal']
+    medal = config.get('medal')
     if medal == 'ccpc':
         # Preset uses teams with >= 1 solve, cumulative ceil(10%/30%/60%).
         limits = [math.ceil(effective * x) for x in (0.1, 0.3, 0.6)]
@@ -172,12 +172,30 @@ def rate_problem(stats, prior=None):
 
 def build_release(catalog, snapshot, revision, priors, path_for_contest):
     release = {'method': METHOD, 'source_revision': revision, 'scale': 'CF 风格经验分数，非官方 Rating',
-               'contests': {}, 'problems': {}}
+               'contests': {}, 'problems': {}, 'unrated_contests': {}}
     for contest in catalog['contests']:
         path = path_for_contest(contest)
+        evidence = contest.get('rating_evidence', {})
+        if path is None:
+            reason = evidence.get('unavailable_reason')
+            if not reason:
+                raise ValueError(f"Missing standings exclusion reason: {contest['id']}")
+            release['unrated_contests'][contest['id']] = reason
+            continue
         files = {name: (snapshot / path / (name + '.json')).read_bytes() for name in ('config', 'team', 'run')}
         config, teams, runs = (json.loads(files[name]) for name in ('config', 'team', 'run'))
+        override = evidence.get('medal_override')
+        if override:
+            if config.get('medal') is not None or not override.get('source_url'):
+                raise ValueError('Medal override requires a source and missing upstream rules')
+            config['medal'] = {'official': override['counts']}
         summary = summarize_standings(config, teams, runs)
+        for key, expected in evidence.get('expected_summary', {}).items():
+            if summary[key] != expected:
+                raise ValueError(f"Official report differs: {contest['id']} {key}")
+        if override:
+            summary['medal_rule'] = '主办方报告：金银铜分别枚数，累计为名次分界'
+            summary['medal_source_url'] = override['source_url']
         if set(summary['problems']) != {p['index'] for p in contest['problems']}:
             raise ValueError(f"Contest problem labels differ: {contest['id']}")
         for problem in contest['problems']:

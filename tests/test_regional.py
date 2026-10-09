@@ -34,8 +34,12 @@ class RegionalStoreTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             problem_key('cf','https://evil.example/105657A')
 
-    def test_catalog_recent_seasons_cover_all_qoj_regional_sites(self):
+    def test_catalog_seasons_cover_all_qoj_regional_sites(self):
         expected={
+            2019:{'ICPC':{'香港','南京','上海','徐州','银川','南昌','沈阳'},'CCPC':{'厦门','哈尔滨','秦皇岛'}},
+            2020:{'ICPC':{'济南','澳门','南京','上海','沈阳','银川','昆明'},'CCPC':{'威海','绵阳','秦皇岛','长春'}},
+            2021:{'ICPC':{'济南','昆明','澳门','南京','上海','沈阳'},'CCPC':{'广州','桂林','哈尔滨','威海'}},
+            2022:{'ICPC':{'杭州','香港','济南','南京','沈阳','西安','合肥'},'CCPC':{'威海','广州','桂林','绵阳'}},
             2023:{'ICPC':{'杭州','合肥','济南','澳门','南京','沈阳','西安'},'CCPC':{'桂林','哈尔滨','秦皇岛','深圳'}},
             2024:{'ICPC':{'成都','杭州','香港','昆明','南京','上海','沈阳'},'CCPC':{'哈尔滨','济南','郑州','重庆'}},
             2025:{'ICPC':{'成都','香港','南京','上海','沈阳','武汉','西安'},'CCPC':{'哈尔滨','济南','郑州','重庆'}},
@@ -43,9 +47,14 @@ class RegionalStoreTest(unittest.TestCase):
         for year,series in expected.items():
             for name,sites in series.items():
                 self.assertEqual({c['site'] for c in self.store.contests if c['year']==year and c['series']==name},sites)
-        self.assertEqual(len(self.store.problems),426)
+        self.assertEqual(len(self.store.contests),75)
+        self.assertEqual(len(self.store.problems),954)
         for p in self.store.problems.values():
-            self.assertIn('qoj:'+str(p['qoj_id']),p['aliases'])
+            if p.get('qoj_id'):
+                self.assertIn('qoj:'+str(p['qoj_id']),p['aliases'])
+            self.assertTrue(p['aliases'] or p.get('unmapped'))
+        self.assertIn('nowcoder:220443', self.store.aliases)
+        self.assertNotIn('codeforces:102769C', self.store.aliases)
 
     def test_nowcoder_pagination_and_result_detection(self):
         page='<table><tr><td><a href="/acm/problem/123">题目</a></td><td>2025-01-02 12:34:56 答案正确</td></tr></table><a data-page="3">末页</a>practice-coding'
@@ -262,9 +271,18 @@ class RegionalDifficultyTest(unittest.TestCase):
         self.app.handle_get(public, '/api/regional-catalog')
         self.assertEqual(public.status, 200)
         payload = public.json()
-        self.assertEqual(len(payload['difficulty']), 426)
+        self.assertEqual(len(payload['difficulty']), 832)
         self.assertEqual(payload['difficulty'][pid]['rating'], 900)
         self.assertEqual(payload['difficulty'][pid]['accepted_teams'], 320)
+        self.assertEqual(payload['years'], list(range(2025, 2018, -1)))
+        self.assertEqual(len(payload['contests']), 75)
+        self.assertIn('icpc-2019-上海', payload['ratingRelease']['unrated_contests'])
+        self.assertNotIn('icpc-2019-上海:A', payload['difficulty'])
+        historical = payload['difficulty']['icpc-2022-香港:A']
+        self.assertEqual(historical['official_teams'], 115)
+        self.assertEqual(historical['accepted_teams'], 92)
+        self.assertEqual(payload['ratingRelease']['contests']['icpc-2022-香港']['medal_rank_limits'],
+                         {'gold': 11, 'silver': 33, 'bronze': 67})
         self.assertNotIn('progress', payload)
         self.assertEqual(regional.store.wall(1)['difficulty'], payload['difficulty'])
 

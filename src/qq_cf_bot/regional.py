@@ -132,7 +132,7 @@ class RegionalStore:
         return {pid: value for pid, value in self.rating_release['problems'].items() if pid in self.problems}
 
     def rating_metadata(self):
-        return {key: self.rating_release[key] for key in ('method', 'source_revision', 'scale', 'contests')}
+        return {key: self.rating_release.get(key, {}) for key in ('method', 'source_revision', 'scale', 'contests', 'unrated_contests')}
 
     def progress(self, user):
         result = {pid: {'oral': False, 'code': False, 'attempted': False, 'oralAttempted': False, 'draft': False, 'verdict': '', 'onsite': False} for pid in self.problems}

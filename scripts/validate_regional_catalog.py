@@ -22,7 +22,8 @@ def main():
             assert pid not in problems and problem['index'] not in indices, f'Duplicate problem: {pid}'
             problems.add(pid)
             indices.add(problem['index'])
-            assert problem['name'] and problem['aliases'], f'Incomplete problem: {pid}'
+            assert problem['name'], f'Missing problem name: {pid}'
+            assert problem['aliases'] or (problem.get('unmapped') and problem.get('mapping_status') == 'pending' and contest.get('ranklist_url')), f'Unexplained missing mapping: {pid}'
             if problem.get('qoj_id'):
                 assert 'qoj:' + str(problem['qoj_id']) in problem['aliases'], pid
             if problem.get('cf_contest_id'):
