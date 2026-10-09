@@ -43,7 +43,11 @@ CF Bot 已通过 `env_file` 接收配置。重启后用户可在区域赛页连�
 
 ## 2. 成员审核
 
-用户登录 oj-wall，进入 `/regionals`，选择真实成员并填写核验说明。管理员在 dlut-cpc 执行：
+用户登录 oj-wall，进入 `/regionals`，输入部分姓名或学校/校区搜索成员，选择真实成员并填写核验说明。
+
+管理员打开 [DLUT CPC 管理后台](https://dlut-cpc.wannafly.cn/admin)，用原管理员账号登录，进入“成员认证”。默认列出待审核申请，核对账号、成员、校区与核验说明后点击“通过”或“拒绝”并确认。切换到“已通过”可撤销认证；“全部状态”可查历史。审核者自动记录为当前管理员，核验材料只对管理员可见。现有后台密码及配置继续使用，迁移时连同原运行配置保存。
+
+需要命令行时，在 dlut-cpc 执行：
 
 ```sh
 docker compose exec -T dlut-cpc python tools/cpc_admin.py list
