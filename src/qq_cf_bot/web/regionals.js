@@ -26,7 +26,7 @@ const post = (action,body={}) => request("/api/regionals/"+action,body);
 function localGet(key){try{return localStorage.getItem(key);}catch(_){return null;}}
 function localSet(key,value){try{localStorage.setItem(key,value);}catch(_){}}
 function draftKey(pid){return `regional-draft:${model.user}:${pid}`;}
-function completed(p){return model.view==="oral"?p.oral:model.view==="code"?p.code:p.oral||p.code||p.onsite;}
+function completed(p){return Boolean(model.view==="oral"?p.oral:model.view==="code"?p.code:p.oral||p.code||p.onsite);}
 function attempted(p){return model.view==="oral"?p.oralAttempted:model.view==="code"?p.attempted:p.attempted||p.oralAttempted;}
 function visible(p){return $("filter").value==="all" || ($("filter").value==="unfinished"&&!completed(p)) || ($("filter").value==="draft"&&p.draft) || ($("filter").value==="oralOnly"&&p.oral&&!p.code);}
 function persistFilters(){localSet(`regional-filters:${model.user}`,JSON.stringify({year:$("year").value,series:$("series").value,search:$("search").value,filter:$("filter").value,view:model.view}));}
