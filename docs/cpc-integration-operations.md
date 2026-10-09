@@ -2,6 +2,8 @@
 
 方案：[内部使用简化版](cpc-cross-project-integration.md)。历史：[迭代记录](cpc-integration/CHANGELOG.md)。
 
+各工程也有独立说明：[DLUT CPC](https://github.com/Code92007/dlut-cpc/blob/main/docs/cpc-integration.md)、[OJ Wall](https://github.com/Code92007/oj-submission-wall/blob/main/docs/cpc-integration.md)。
+
 本文命令在对应工程目录执行。服务先更新代码并保留实时运行库，再按以下步骤配置；命令不会用本地 seed 覆盖生产库。启用前分别用 SQLite 备份 API 或停写备份，保存原环境配置。
 
 ## 1. 配置和启用
@@ -115,3 +117,29 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_cpc_flow.py
 | 交付检查 | 三工程差异无空白错误；两个区域赛脚本语法通过；目录与协议辅助代码副本一致 |
 
 流程入口为 `scripts/test_cpc_flow.py`，前端入口为 `tests/test_cpc_frontend.cjs`。部署启用仍按本文第 1–3 节执行，线上榜单可信度依赖管理员实际核验。
+
+## 7. 生产部署记录（2026-10-09）
+
+三工程代码已分别推送到 `origin/main`，部署在原服务器 `/root/` 下的同名目录。各工程新增自己的联动说明；服务器原有未提交的模型、浏览器同步等功能在合并时保留，并保存了 Git stash 和文件备份。
+
+| 工程 | 本次代码提交 | 生产验证 |
+| --- | --- | --- |
+| qq-cf-bot | `1b01005` | 容器运行、`/health` 与区域赛页面正常；容器可通过 HTTPS 访问 OJ Wall；既有离线评级数据保留 |
+| dlut-cpc | `1b2a1e5` | 容器 healthy；同步接口核对发布方 UUID；错误服务凭据返回 403 |
+| oj-submission-wall | `90cc879` | 容器运行、`/api/health` 与区域赛页面正常；首次名单/认证同步完成；匿名读取本人进度返回 401 |
+
+当前启用地址为 `https://dlut-cpc.wannafly.cn` → `https://oj-train-wall.wannafly.cn` → `https://cf-bot.wannafly.cn`。服务间同步凭据已配置并仅保存在服务器；用户本人连接码仍由用户在页面生成。
+
+首次同步包含 284 名成员、318 条已确认参赛记录。部署未代替管理员进行真人审核或现场逐题榜单核验；用户可开始提交成员申请、生成连接码，现场成绩按第 3 节逐场导入。
+
+| 生产发布方 | 持久 UUID（仅作本次部署核验记录） |
+| --- | --- |
+| dlut-cpc | `ecd45fa0-814d-44f2-afa9-40966e39a57f` |
+| oj-submission-wall | `e2f792c3-4536-45ef-9b6e-bfd497c0f346` |
+| qq-cf-bot | `c1c166cf-112c-4b1a-a75e-fddb83d08501` |
+
+部署前后数据数量一致：CF Bot 5 个网站账号、75 条原提交；DLUT CPC 284 名成员、359 条成绩、954 条成员参赛关联；OJ Wall 17 个账号、95 条平台绑定、114123 条提交。未删除旧记录。
+
+服务器回滚点为 `/root/backups/cpc-integration-20261009-173123/`：`manifest.json` 记录原镜像标签/提交/Compose 文件；每个工程保存 `database.sqlite3`、原工作区改动及原环境。上线后另存 `database-after.sqlite3`、`linked.env` 和 `verification.json`，一致备份及 UUID 映射核对通过。该目录包含私密配置，应保持仅管理员可读，不提交 Git。
+
+回滚优先使用备份镜像、原配置和已保存源码，保留当前运行库；新增表可由旧代码忽略。不要用上线前数据库覆盖上线后的新记录。需要完整搬迁时，按第 4 节重新做停写的一致备份，不把本次发布备份当作长期增量备份。
