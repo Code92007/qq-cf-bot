@@ -204,3 +204,11 @@ docker compose exec oj-submission-wall python tools/configure_codeforces.py --ow
 ```
 
 授权文件在持久卷 `/data/codeforces-auth.json`，权限 0600；迁移时与原 Wall 数据库及 data 卷一起复制。Key 只保存在 Wall，其他两服务不接收该凭据。
+
+本人授权实测与修正：签名 `user.status` 返回 5,320 条，补入 310 条此前不可见记录，但不包含 MANAGER。Gym 104076 的签名 `contest.status` 默认仍为 31 条，显式 `asManager=true` 后返回 49 条，新增 18 条 MANAGER，其中五条 AC 与用户截图的 ID 一致。故 OJ Wall `d0a95bf` 改为个人接口与已知 Gym 本人 Coach 接口合并，后续 `15bf006` 把不可用比赛的失败隔离到单场，避免历史 Gym 的 HTTP 400 阻塞其他场次。Gym 全部分页成功、逐条核对 author.members 与比赛 ID 后才合入；失败场次保留原数据并显示待核验警告，每轮重试。user.status 仍按首次回补、后续增量执行。
+
+最终版本 `15bf006` 已推送并部署；48 项 Wall 回归通过，其中 13 项覆盖授权、Coach、失败隔离和归属校验。备份 `/root/backups/cpc-coach-manager-final-20261010-223036/`，标记 `/root/.cpc-coach-manager-final-backup`。后台补拉 100 场已知 Gym 后新增 170 条真实 MANAGER 提交；济南实际为 8/13：A/C/D/E/G/J/K/M，五条补题 AC ID 226567874、226606494、226606542、226715410、226752209 全部入库，G 的两次 AC 按题去重。原 4 道团队 VP 均保留，升级前 115,106 条提交缺失 0，完成后 115,276 条。
+
+另有 26 场 Gym 的 Coach 记录暂不可读；这些场次已有的公开提交仍保留，last_error 显示待核验并继续重试，不影响济南等成功比赛。完整核验报告在最终备份的 `backfill-verification.json`，不含 API Key/secret。此前“等待本人授权”的状态已解除，济南四道补题已实际导入。
+
+CF Bot 的两条既有连接均已刷新；本人连接（CF user 1 → Wall owner 3）在快照和合并后的区域赛进度均显示济南 8/13，现场 36 AC、认证 approved 保留。另一条连接仍按其自己的 Wall owner 5 统计，济南为其自身的 7/13、现场 21 AC，未混入本人的私有 J。CF 原提交 91、代码 1、口胡尝试 4、草稿 1、区域赛证据 910 均保留、缺失 0；三个服务健康检查均为 200。报告保存在同一最终备份的 `cf-verification.json`。
