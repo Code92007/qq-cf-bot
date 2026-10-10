@@ -183,3 +183,24 @@ CF Bot `7ca496a`、OJ Wall `8e21e32` 已推送并重建部署；DLUT CPC 无需�
 部署前的 114,160 条线上提交均在、缺失 0。已有两个 CF Bot 连接分别收到 36/21 道现场 AC，当前目录可显示 31/21 道，身份均保持 approved；原有口胡、代码、草稿和导入记录未减少。验证报告位于备份目录 `verification.json`、`onsite-verification.json`、`cf-onsite-verification.json`。
 
 本次通过目录校验、CF Bot 区域赛/评级 26 项及认证相关 16 项、OJ Wall 榜单/认证 14 项和前端回归。浏览器检查七年菜单、团队开关、现场表格、窄屏表格容器滚动。老赛 7 场线上题号待核验，不猜测平台题号；现场 AC 已可按规范题目 ID 展示，既有评级产物保持不变。
+
+当日目录对齐复核：CF Bot `00c8440`、OJ Wall `fab5f9a` 已推送并重建，保留同期独立迭代的历史评级和原工作区功能。两份目录 SHA-256 为 `2b0dfa9343fde10e9a7e99262e3fa7a9c2c14e04c6630b0900f7229770a04dd5`；新增 528 题中 488 题具有核验后的线上别名、40 题仍待映射。秦皇岛重现 Gym 缺少 C 时不再推导不存在的线上别名，现场 C 的真实成绩继续保留。OJ Wall 不展示 rating。
+
+此次备份在 `/root/backups/cpc-regional-align-20261010-132112/`，标记 `/root/.cpc-regional-align-backup`。现场补刷再次完成 9/9 场、36 AC，其中当前目录 31 AC、7 场已映射；两个既有 CF Bot 连接的现场缓存分别为 36/21 AC，目录内为 31/21 AC。核对备份中 114,767 条线上提交全部保留、缺失 0；CF Bot 原提交、代码、草稿及导入证据均未减少。两服务 UUID 保持原值，公网页面及匿名接口鉴权通过。验证报告存于本次备份；区域赛/评级 27 项、OJ Wall 联动 15 项及前端回归通过。
+
+## 11. Coach 补题授权同步（2026-10-10）
+
+Gym 104076（济南 2022）公开 VP 的 A/E/K/M 已在 OJ Wall，后续截图中的 C/D/G/J 不在匿名个人接口、按 handle 的比赛接口或该比赛全部 40,007 条公开提交中。用户确认开过 Coach，需本人授权核验非公开 MANAGER 提交。截图不作为直接导入依据。
+
+OJ Wall `a2f8d34` 增加可选的官方签名 API 与交互配置命令，按 Wall 正式用户 ID 和 CF handle 双重匹配；首次授权自动回补十年窗口内历史，之后增量同步，分页失败不提交半份数据或推进回补标记。MANAGER 的真实 AC 进入线上进度，与团队 VP 和现场通过按题合并，但不生成参赛成绩或计入赛中对战。CF Bot 仍只读取 Wall 的进度接口，DLUT CPC 的职责不变。具体配置与迁移说明在 OJ Wall `docs/cpc-integration.md`。
+
+已重建部署，备份 `/root/backups/cpc-coach-auth-20261010-172954/`，标记 `/root/.cpc-coach-auth-backup`；服务健康、原 114,767 条提交缺失 0、Wall UUID 保留，服务器原未提交功能通过 autostash 保留并恢复。新增签名与历史回补等 8 项测试、原有 Wall 测试共 43 项通过，前端回归通过。模拟数据验证目标 8/13；真实四道补题暂未导入，等待本人配置 API Key/secret 后复核并补刷。
+
+在 CF API 设置生成本人 Key/secret 后，服务器交互输入，不把凭据写进命令历史或聊天：
+
+```sh
+cd /root/oj-submission-wall
+docker compose exec oj-submission-wall python tools/configure_codeforces.py --owner-id 3 --handle Yzm007
+```
+
+授权文件在持久卷 `/data/codeforces-auth.json`，权限 0600；迁移时与原 Wall 数据库及 data 卷一起复制。Key 只保存在 Wall，其他两服务不接收该凭据。
