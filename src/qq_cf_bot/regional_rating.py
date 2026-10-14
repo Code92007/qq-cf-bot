@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import hashlib
+import ast
 import json
 import math
+import re
 
 METHOD = 'standings-medal-v1'
 ACCEPTED = {'ACCEPTED', 'CORRECT', 'OK', 'AC'}
@@ -11,6 +13,122 @@ REJECTED = {'WRONG_ANSWER', 'TIME_LIMIT_EXCEEDED', 'RUNTIME_ERROR', 'MEMORY_LIMI
             'OUTPUT_LIMIT_EXCEEDED', 'IDLENESS_LIMIT_EXCEEDED', 'NO_OUTPUT', 'REJECTED'}
 IGNORED = {'COMPILATION_ERROR', 'PRESENTATION_ERROR', 'CONFIGURATION_ERROR', 'SYSTEM_ERROR',
            'CANCELED', 'SKIPPED'}
+
+
+def rankland_state(raw):
+    if raw.lstrip().startswith(b'{'):
+        return json.loads(raw)
+    # RankLand embeds JSON as a quoted JavaScript string, never executable code.
+    match = re.search(r'window\.__INITIAL_STATE__\s*=\s*(.*?)\s*</script>', raw.decode('utf-8'), re.S)
+    if not match:
+        raise ValueError('RankLand structured standings missing')
+    state = json.loads(ast.literal_eval(match[1].strip().removesuffix(';')))
+    return state['ranklistData']
+
+
+def rankland_snapshot(raw):
+    data = rankland_state(raw)
+    # View counters and page rendering change independently of the archived result.
+    return json.dumps({'info': {'uniqueKey': data['info']['uniqueKey']}, 'srk': data['srk']},
+                      ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+
+
+def summarize_rankland(raw, expected_key):
+    data = rankland_state(raw)
+    if data['info']['uniqueKey'] != expected_key:
+        raise ValueError('RankLand contest identity differs')
+    srk = data['srk']
+    if srk['type'] not in {'general', 'static'} or srk['sorter']['algorithm'] != 'ICPC':
+        raise ValueError('Unsupported RankLand standings')
+
+    def seconds(value):
+        number, unit = value
+        scale = {'ms': .001, 's': 1, 'min': 60, 'h': 3600}.get(unit)
+        if scale is None or isinstance(number, bool) or not isinstance(number, (int, float)) or not math.isfinite(number):
+            raise ValueError('Invalid RankLand time')
+        return number * scale
+
+    duration = seconds(srk['contest']['duration'])
+    if not 0 < duration <= 86400:
+        raise ValueError('Invalid RankLand duration')
+    labels = [p['alias'] for p in srk['problems']]
+    if len(set(labels)) != len(labels):
+        raise ValueError('Duplicate RankLand problem labels')
+    rows, seen = [], set()
+    for row in srk['rows']:
+        user = row['user']
+        if type(user.get('official')) is not bool or str(user['id']) in seen:
+            raise ValueError('Missing official status or duplicate RankLand team')
+        seen.add(str(user['id']))
+        if len(row['statuses']) != len(labels):
+            raise ValueError('Incomplete RankLand problem columns')
+        accepted = set()
+        for label, status in zip(labels, row['statuses']):
+            result = status.get('result')
+            if result not in {None, 'AC', 'FB', 'RJ'}:
+                raise ValueError('Unresolved/unknown RankLand verdict')
+            if result in {'AC', 'FB'}:
+                if not 0 <= seconds(status['time']) <= duration:
+                    raise ValueError('RankLand accepted time outside contest')
+                accepted.add(label)
+        if len(accepted) != row['score']['value']:
+            raise ValueError('RankLand solve count differs from problem results')
+        if user['official']:
+            rows.append({'id': str(user['id']), 'accepted': accepted,
+                         'markers': set(user.get('markers', [user['marker']] if user.get('marker') else [])),
+                         'key': (-len(accepted), seconds(row['score']['time']))})
+    rows.sort(key=lambda r: r['key'])
+    if not rows:
+        raise ValueError('No explicitly official RankLand teams')
+    cohorts = {m: [] for m in ('gold', 'silver', 'bronze')}
+    groups, covered = [], set()
+    for series in srk['series']:
+        if [s.get('style') for s in series.get('segments', [])] != list(cohorts):
+            continue
+        rule = series['rule']
+        options = rule.get('options', {})
+        counts = options.get('count', {}).get('value')
+        if rule.get('preset') != 'ICPC' or not isinstance(counts, list) or len(counts) != 3 or any(type(n) is not int or n <= 0 for n in counts):
+            raise ValueError('Missing verified RankLand medal rules')
+        filters = options.get('filter', {})
+        if set(filters) - {'byMarker'}:
+            raise ValueError('Unsupported RankLand medal filter')
+        marker = filters.get('byMarker')
+        members = [r for r in rows if not marker or marker in r['markers']]
+        if covered.intersection(r['id'] for r in members):
+            raise ValueError('Overlapping RankLand medal groups')
+        covered.update(r['id'] for r in members)
+        limits = [sum(counts[:i]) for i in (1, 2, 3)]
+        if limits[-1] > len(members):
+            raise ValueError('Invalid RankLand medal boundaries')
+        previous, rank = None, 0
+        for pos, row in enumerate(members, 1):
+            if options.get('count', {}).get('noTied') or row['key'] != previous:
+                rank = pos
+            previous = row['key']
+            if row['accepted']:
+                for medal, limit in zip(cohorts, limits):
+                    if rank <= limit:
+                        cohorts[medal].append(row)
+                        break
+        groups.append({'marker': marker, 'counts': dict(zip(cohorts, counts)),
+                       'rank_limits': dict(zip(cohorts, limits)),
+                       'no_tied': bool(options.get('count', {}).get('noTied'))})
+    if not groups or any(not members for members in cohorts.values()) or len(covered) != len(rows):
+        raise ValueError('Incomplete RankLand medal groups')
+    boundaries = {}
+    for medal, members in cohorts.items():
+        last = max(members, key=lambda r: r['key'])
+        boundaries[medal] = {'teams': len(members), 'last_solved': len(last['accepted']),
+                              'last_penalty_minutes': int(last['key'][1] // 60)}
+    problems = {label: {'accepted_teams': sum(label in r['accepted'] for r in rows),
+                       'official_teams': len(rows),
+                       'medal_accepted': {m: sum(label in r['accepted'] for r in members) for m, members in cohorts.items()},
+                       'medal_teams': {m: len(members) for m, members in cohorts.items()}} for label in labels}
+    return {'official_teams': len(rows), 'effective_teams': sum(bool(r['accepted']) for r in rows),
+            'excluded_teams': len(srk['rows']) - len(rows), 'duration_seconds': duration,
+            'medal_rule': 'RankLand SRK 显式金银铜分别枚数及分组规则', 'medal_groups': groups,
+            'medal_boundaries': boundaries, 'problems': problems}
 
 
 def summarize_standings(config, teams, runs):
@@ -182,14 +300,29 @@ def build_release(catalog, snapshot, revision, priors, path_for_contest):
                 raise ValueError(f"Missing standings exclusion reason: {contest['id']}")
             release['unrated_contests'][contest['id']] = reason
             continue
-        files = {name: (snapshot / path / (name + '.json')).read_bytes() for name in ('config', 'team', 'run')}
-        config, teams, runs = (json.loads(files[name]) for name in ('config', 'team', 'run'))
+        rankland = evidence.get('provider') == 'rankland'
+        if rankland:
+            files = {'rankland': (snapshot / path).read_bytes()}
+            expected_hash = evidence.get('sha256')
+            if expected_hash != hashlib.sha256(files['rankland']).hexdigest():
+                raise ValueError('RankLand snapshot hash differs')
+            data = rankland_state(files['rankland'])
+            summary = summarize_rankland(files['rankland'], evidence['rankland_key'])
+            title = data['srk']['contest']['title']
+            source_name = title if isinstance(title, str) else title.get('zh-CN', title.get('fallback', title.get('en')))
+            source_url = evidence['source_url']
+        else:
+            files = {name: (snapshot / path / (name + '.json')).read_bytes() for name in ('config', 'team', 'run')}
+            config, teams, runs = (json.loads(files[name]) for name in ('config', 'team', 'run'))
+            source_name = config['contest_name']
+            source_url = f'https://github.com/xcpcio/board-data/tree/{revision}/{path}'
         override = evidence.get('medal_override')
         if override:
-            if config.get('medal') is not None or not override.get('source_url'):
+            if rankland or config.get('medal') is not None or not override.get('source_url'):
                 raise ValueError('Medal override requires a source and missing upstream rules')
             config['medal'] = {'official': override['counts']}
-        summary = summarize_standings(config, teams, runs)
+        if not rankland:
+            summary = summarize_standings(config, teams, runs)
         for key, expected in evidence.get('expected_summary', {}).items():
             if summary[key] != expected:
                 raise ValueError(f"Official report differs: {contest['id']} {key}")
@@ -202,11 +335,11 @@ def build_release(catalog, snapshot, revision, priors, path_for_contest):
             pid = problem['id']
             result = rate_problem(summary['problems'][problem['index']], priors.get(pid))
             result.update({'contest': contest['id'], 'method': METHOD,
-                           'standings_url': 'https://board.xcpcio.com/' + path.removeprefix('data/') + '/'})
+                           'standings_url': source_url if rankland else 'https://board.xcpcio.com/' + path.removeprefix('data/') + '/'})
             release['problems'][pid] = result
         summary.pop('problems')
-        summary.update({'source_name': config['contest_name'],
-                        'source_url': f'https://github.com/xcpcio/board-data/tree/{revision}/{path}',
+        summary.update({'source_name': source_name,
+                        'source_url': source_url,
                         'sha256': {name: hashlib.sha256(raw).hexdigest() for name, raw in files.items()}})
         release['contests'][contest['id']] = summary
     return release

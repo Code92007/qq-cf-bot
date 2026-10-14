@@ -36,6 +36,17 @@ def download(snapshot, revision, contest):
     if path is None:
         return
     directory = snapshot / path
+    evidence = contest.get('rating_evidence', {})
+    if evidence.get('provider') == 'rankland':
+        directory.parent.mkdir(parents=True, exist_ok=True)
+        if not directory.exists():
+            with urlopen(Request(evidence['source_url'], headers={'User-Agent': 'regional-rating-builder/1.0'}), timeout=25) as response:
+                raw = response.read()
+            from qq_cf_bot.regional_rating import summarize_rankland, rankland_snapshot
+            summarize_rankland(raw, evidence['rankland_key'])
+            directory.write_bytes(rankland_snapshot(raw))
+        print('downloaded', contest['id'], flush=True)
+        return
     directory.mkdir(parents=True, exist_ok=True)
     for name in ('config', 'team', 'run'):
         target = directory / (name + '.json')
@@ -71,10 +82,15 @@ def main():
         with ThreadPoolExecutor(max_workers=6) as pool:
             list(pool.map(lambda c: download(args.snapshot, args.revision, c), catalog['contests']))
     from qq_cf_bot.regional_rating import build_release
-    priors = json.loads(args.priors.read_text()) if args.priors else {}
+    previous = json.loads(args.priors.read_text()) if args.priors else {}
+    priors = previous
     if 'problems' in priors:
         priors = {pid: p['model_rating'] for pid, p in priors['problems'].items() if p.get('model_rating') is not None}
     release = build_release(catalog, args.snapshot, args.revision, priors, board_path)
+    # Keep published entries in place so adding contests produces a reviewable diff.
+    for section in ('contests', 'problems', 'unrated_contests'):
+        keys = dict.fromkeys([*previous.get(section, {}), *release[section]])
+        release[section] = {key: release[section][key] for key in keys if key in release[section]}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(release, ensure_ascii=False, indent=2) + '\n')
     print(f"Published artifact: {len(release['contests'])} contests, {len(release['problems'])} ratings -> {args.output}")

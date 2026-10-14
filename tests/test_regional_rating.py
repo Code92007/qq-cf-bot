@@ -1,10 +1,11 @@
 import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
 import unittest
 
-from qq_cf_bot.regional_rating import build_release, rate_problem, summarize_standings
+from qq_cf_bot.regional_rating import build_release, rate_problem, summarize_standings, summarize_rankland, rankland_snapshot
 
 
 class StandingsRatingTest(unittest.TestCase):
@@ -129,9 +130,9 @@ class StandingsRatingTest(unittest.TestCase):
         self.assertFalse(set(rated).intersection(unrated))
         self.assertEqual(set(rated) | set(unrated), {c['id'] for c in catalog['contests']})
         self.assertEqual(set(release['problems']), {p['id'] for c in catalog['contests'] if c['id'] in rated for p in c['problems']})
-        self.assertEqual(len(rated), 65)
-        self.assertEqual(len(unrated), 24)
-        self.assertEqual(len(release['problems']), 832)
+        self.assertEqual(len(rated), 77)
+        self.assertEqual(len(unrated), 12)
+        self.assertEqual(len(release['problems']), 984)
         self.assertTrue(all(unrated.values()))
         for result in release['problems'].values():
             self.assertLessEqual(result['range'][0], result['rating'])
@@ -143,3 +144,63 @@ class StandingsRatingTest(unittest.TestCase):
                                       'standings_url': result['standings_url']})
         for contest in release['contests'].values():
             self.assertTrue(all(len(h) == 64 for h in contest['sha256'].values()))
+
+
+class RanklandRatingTest(unittest.TestCase):
+    def fixture(self):
+        rows = []
+        for group in ['undergraduate', 'hv']:
+            for i in range(4):
+                statuses = [{'result': 'AC', 'time': [i + 1, 'min']},
+                            {'result': 'FB', 'time': [10, 'min']} if i == 0 else {'result': 'RJ'}]
+                rows.append({'user': {'id': group + str(i), 'official': True, 'markers': [group]},
+                             'score': {'value': 2 if i == 0 else 1, 'time': [20 + i, 'min']}, 'statuses': statuses})
+        rows.append({'user': {'id': 'star', 'official': False}, 'score': {'value': 2, 'time': [1, 'min']},
+                     'statuses': [{'result': 'AC', 'time': [1, 'min']}] * 2})
+        series = [{'segments': [{'style': m} for m in ['gold', 'silver', 'bronze']],
+                   'rule': {'preset': 'ICPC', 'options': {'filter': {'byMarker': g}, 'count': {'value': [1, 1, 1]}}}}
+                  for g in ['undergraduate', 'hv']]
+        return {'info': {'uniqueKey': 'ccpc-test'}, 'srk': {'type': 'general', 'sorter': {'algorithm': 'ICPC'},
+                'contest': {'title': 'Test', 'duration': [5, 'h']}, 'problems': [{'alias': 'A'}, {'alias': 'B'}],
+                'rows': rows, 'series': series}}
+
+    def test_grouped_medals_exclude_starred_and_keep_separate_cohorts(self):
+        summary = summarize_rankland(json.dumps(self.fixture()).encode(), 'ccpc-test')
+        self.assertEqual(summary['official_teams'], 8)
+        self.assertEqual(summary['excluded_teams'], 1)
+        self.assertEqual(summary['problems']['B']['accepted_teams'], 2)
+        self.assertEqual(summary['problems']['B']['medal_accepted'], {'gold': 2, 'silver': 0, 'bronze': 0})
+        self.assertEqual(summary['problems']['A']['medal_teams'], {'gold': 2, 'silver': 2, 'bronze': 2})
+
+    def test_frozen_missing_medals_ambiguous_teams_and_wrong_scores_rejected(self):
+        for mutate in [lambda d: d['srk']['rows'][0]['statuses'][0].update(result='FZ'),
+                       lambda d: d['srk']['rows'][0]['score'].update(value=1),
+                       lambda d: d['srk']['rows'][0]['user'].update(official=1),
+                       lambda d: d['srk']['series'][0]['rule']['options']['count'].update(value=[0, 0, 0]),
+                       lambda d: d['info'].update(uniqueKey='another-contest')]:
+            data = self.fixture()
+            mutate(data)
+            with self.assertRaises(ValueError):
+                summarize_rankland(json.dumps(data).encode(), 'ccpc-test')
+
+    def test_published_snapshot_is_pinned_and_page_counters_do_not_affect_it(self):
+        data = self.fixture()
+        for row in data['srk']['rows']:
+            if row['user']['id'].endswith('1'):
+                row['statuses'][1] = {'result': 'AC', 'time': [10, 'min']}
+                row['score']['value'] = 2
+        first = rankland_snapshot(json.dumps(data).encode())
+        data['info']['viewCnt'] = 123
+        self.assertEqual(rankland_snapshot(json.dumps(data).encode()), first)
+        contest = {'id': 'test', 'problems': [{'id': 'test:A', 'index': 'A'}, {'id': 'test:B', 'index': 'B'}],
+                   'rating_evidence': {'provider': 'rankland', 'rankland_key': 'ccpc-test',
+                                       'source_url': 'https://rl.algoux.cn/ranklist/ccpc-test',
+                                       'sha256': hashlib.sha256(first).hexdigest()}}
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / 'standings.json').write_bytes(first)
+            release = build_release({'contests': [contest]}, directory, 'a' * 40, {}, lambda c: 'standings.json')
+            self.assertEqual(release['problems']['test:B']['accepted_teams'], 4)
+            (directory / 'standings.json').write_bytes(first + b' ')
+            with self.assertRaisesRegex(ValueError, 'hash differs'):
+                build_release({'contests': [contest]}, directory, 'a' * 40, {}, lambda c: 'standings.json')

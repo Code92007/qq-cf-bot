@@ -64,8 +64,11 @@ class RegionalStoreTest(unittest.TestCase):
         self.store.save_draft(1,self.pid,'保留原来的草稿',0)
         self.store.add_evidence(1,'sync',[normalize_record({'platform':'vjudge','problem_id':'Gym-103861A','verdict':'AC'})])
         self.store.add_evidence(1,'qoj',[normalize_record({'platform':'qoj','problem_id':'6501','verdict':'AC'})])
+        self.store.add_evidence(1,'qoj',[normalize_record({'platform':'qoj','problem_id':'9837','verdict':'AC'})])
         self.assertTrue(self.store.progress(1)[pid]['code'])
         self.assertTrue(self.store.progress(1)['ccpc-2022-Final:A']['code'])
+        self.assertTrue(self.store.progress(1)['ccpc-2021-Final:A']['code'])
+        self.assertEqual(self.store.aliases['qoj:9837'], self.store.aliases['codeforces:103860A'])
         self.assertEqual(self.store.detail(1,self.pid)['draft']['body'],'保留原来的草稿')
 
     def test_nowcoder_pagination_and_result_detection(self):
@@ -283,7 +286,7 @@ class RegionalDifficultyTest(unittest.TestCase):
         self.app.handle_get(public, '/api/regional-catalog')
         self.assertEqual(public.status, 200)
         payload = public.json()
-        self.assertEqual(len(payload['difficulty']), 832)
+        self.assertEqual(len(payload['difficulty']), 984)
         self.assertEqual(payload['difficulty'][pid]['rating'], 900)
         self.assertEqual(payload['difficulty'][pid]['accepted_teams'], 320)
         self.assertEqual(payload['years'], list(range(2025, 2018, -1)))
