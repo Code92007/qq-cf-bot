@@ -177,6 +177,10 @@ function showAuth() {
 }
 
 function showApp(data) {
+  if (new URLSearchParams(location.search).get("next") === "pool") {
+    location.replace("/pool");
+    return;
+  }
   if (new URLSearchParams(location.search).get("next") === "regionals") {
     const target = new URLSearchParams(location.search).get("qojReturn") || "";
     location.replace(target.startsWith("/regionals?") && !target.includes("\\") ? target : "/regionals");

@@ -55,11 +55,20 @@ class WebApplication:
         self._locks_guard = threading.Lock()
         from .regional import RegionalApplication
         self.regionals = RegionalApplication(self)
+        from .problem_pool import ProblemPool
+        self.pool = ProblemPool(self)
 
     def handle_get(self, handler, path: str) -> bool:
         if not self.config.web_enabled:
             return False
         try:
+            if path == "/api/pool":
+                session = self._require_session(handler)
+                self._json(handler, self.pool.get(handler, session))
+                return True
+            if path in {"/pool", "/pool/"}:
+                self._static(handler, "pool.html", "text/html; charset=utf-8", no_cache=True)
+                return True
             if path == "/api/regional-catalog":
                 store = self.regionals.store
                 self._json(handler, {"difficulty": store.difficulties(), "ratingRelease": store.rating_metadata(), "contests": store.contests, "years": sorted({c["year"] for c in store.contests}, reverse=True), "verifiedAt": store.catalog.get("verified_at")})
@@ -86,6 +95,8 @@ class WebApplication:
                 self._static(handler, "index.html", "text/html; charset=utf-8", no_cache=True)
                 return True
             static_files = {
+                "/pool.js": ("pool.js", "text/javascript; charset=utf-8"),
+                "/pool.css": ("pool.css", "text/css; charset=utf-8"),
                 "/regional-qoj-sync.user.js": ("regional-qoj-sync.user.js", "text/javascript; charset=utf-8"),
                 "/regionals.js": ("regionals.js", "text/javascript; charset=utf-8"),
                 "/regionals.css": ("regionals.css", "text/css; charset=utf-8"),
@@ -126,7 +137,9 @@ class WebApplication:
             if not lock.acquire(blocking=False):
                 raise ChallengeError("operation_in_progress", "上一个操作还在处理中。", 409)
             try:
-                if path.startswith("/api/regionals/"):
+                if path.startswith("/api/pool/"):
+                    self._json(handler, self.pool.post(session, path.rsplit("/", 1)[-1], payload))
+                elif path.startswith("/api/regionals/"):
                     self._json(handler, self.regionals.post(session, path.rsplit("/", 1)[-1], payload))
                 elif path == "/api/challenges":
                     self._new_challenge(handler, session, payload)
@@ -242,6 +255,7 @@ class WebApplication:
         if active is None:
             active = self.service.give_up(actor.scope_id)
             self.service.store.record_web_giveup(actor.leaderboard_id, actor.user_id, active)
+        self.pool.record_giveup(session, active.problem.cf_id)
         self.service.store.clear_web_challenge_controls(actor.scope_id)
         self._json(
             handler,
@@ -684,6 +698,7 @@ class WebApplication:
         if deadline is None or datetime.now(timezone.utc) < deadline:
             return None
         self.service.store.record_web_giveup(actor.leaderboard_id, actor.user_id, active, automatic=True)
+        self.pool.record_giveup(session, active.problem.cf_id)
         self.service.store.clear_active_problem(actor.scope_id)
         self.service.store.clear_web_challenge_controls(actor.scope_id)
         return active

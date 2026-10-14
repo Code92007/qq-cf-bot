@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>口胡池 · CF Bot</title>
+  <link rel="stylesheet" href="/styles.css?v=pool-1">
+  <link rel="stylesheet" href="/pool.css?v=1">
+  <script src="/pool.js?v=2" defer></script>
+</head>
+<body class="pool-page">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark small">CF</span><strong>CF Bot</strong></a>
+    <nav class="pool-nav" aria-label="网站导航"><a href="/">单题 / VP</a><a href="/regionals">区域赛墙</a><a href="/pool" aria-current="page">口胡池</a></nav>
+    <span id="userName" class="pool-user"></span>
+  </header>
+  <main class="pool-main">
+    <section class="pool-hero" aria-labelledby="poolTitle">
+      <div class="pool-hero-copy">
+        <p class="eyebrow">随手投一道，随缘捞一道</p>
+        <h1 id="poolTitle">好题，别沉底。</h1>
+        <p class="pool-lead">群里看到的好题，丢进来。<br>哪天有空，捞一题口胡；没缘分，就让它漂走。</p>
+        <div class="pool-hero-actions"><button id="draw" class="primary" type="button" disabled>随机捞一瓶 ↗</button><button id="openToss" class="quiet" type="button" disabled>＋ 投一道题</button></div>
+        <p id="drawHint" class="pool-small">正在看看池子里有什么…</p>
+      </div>
+      <div class="pool-water" aria-hidden="true">
+        <span class="water-caption">口 胡 池</span>
+        <svg viewBox="0 0 460 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="232" cy="182" rx="174" ry="32" class="water-ripple"/>
+          <ellipse cx="232" cy="182" rx="125" ry="20" class="water-ripple"/>
+          <path d="M0 165 Q58 145 115 165 T230 165 T345 165 T460 165 V240 H0Z" class="water-fill"/>
+          <g class="bottle-main" transform="rotate(18 235 132)">
+            <path d="M213 61 H257 V84 L273 101 V173 Q273 187 259 187 H211 Q197 187 197 173 V101 L213 84Z" class="bottle-glass"/>
+            <rect x="211" y="49" width="48" height="17" rx="3" class="bottle-cork"/>
+            <rect x="211" y="111" width="48" height="53" rx="3" class="bottle-paper"/>
+            <path d="M223 125 H247 M223 135 H247 M223 145 H239" class="bottle-lines"/>
+            <path d="M204 107 V151" class="bottle-shine"/>
+          </g>
+          <g transform="translate(85 123) rotate(-22)"><path d="M0 0 H18 V14 L26 24 V64 Q26 72 18 72 H0 Q-8 72 -8 64 V24 L0 14Z" class="bottle-small"/><path d="M0 0 H18" class="bottle-lines"/></g>
+          <path d="M304 94 H321 M312 86 V103 M138 54 H150 M144 48 V60" class="water-spark"/>
+          <circle cx="356" cy="130" r="5" class="water-ripple"/><circle cx="171" cy="94" r="3" class="water-ripple"/>
+          <path d="M134 193 Q153 199 174 193 M302 204 Q319 210 340 204" class="water-ripple"/>
+        </svg>
+        <span class="water-footnote">不用立 flag，也没有截止日期。</span>
+      </div>
+    </section>
+    <p id="notice" class="pool-notice" role="status" aria-live="polite"></p>
+    <section id="loginRequired" class="pool-empty" hidden><h2>登录后，一起捞题。</h2><p>每个人都有自己的待做、放弃和 AC 记录。</p><a class="pool-link-button primary" href="/?next=pool">前往登录 ↗</a></section>
+    <section id="poolView" hidden aria-label="口胡池题单">
+      <div class="pool-section-heading"><div><p class="eyebrow">漂来的题目</p><h2>这一池，慢慢捞。</h2></div><button id="refresh" class="quiet" type="button">刷新池子</button></div>
+      <div id="statusTabs" class="pool-tabs" role="group" aria-label="个人题目状态">
+        <button data-status="new" aria-pressed="true">新瓶子 <span id="count-new">0</span></button>
+        <button data-status="picked" aria-pressed="false">已捞待做 <span id="count-picked">0</span></button>
+        <button data-status="ac" aria-pressed="false">我的 AC <span id="count-ac">0</span></button>
+        <button data-status="skipped" aria-pressed="false">已放弃 <span id="count-skipped">0</span></button>
+        <button data-status="all" aria-pressed="false">全部 <span id="count-all">0</span></button>
+      </div>
+      <form id="filters" class="pool-filters">
+        <label class="pool-search">搜索<input name="q" type="search" placeholder="题号、标题、推荐语…" maxlength="100"></label>
+        <label>OJ<select name="platform"><option value="all">所有平台</option><option value="codeforces">CF / Gym</option><option value="luogu">洛谷</option><option value="qoj">QOJ</option><option value="atcoder">AtCoder</option><option value="nowcoder">牛客</option><option value="vjudge">VJudge</option></select></label>
+        <label>标签<select id="tagFilter" name="tag"><option value="">所有标签</option></select></label>
+        <label>最低难度<input name="minRating" type="number" min="0" max="4000" step="1" placeholder="不限"></label>
+        <label>最高难度<input name="maxRating" type="number" min="0" max="4000" step="1" placeholder="不限"></label>
+        <label>排序<select name="sort"><option value="newest">最新投递</option><option value="oldest">最早投递</option><option value="rating">难度从低到高</option><option value="updated">最近记录</option></select></label>
+        <label class="pool-mine"><input name="mine" type="checkbox">我投的题</label>
+        <button id="clearFilters" class="quiet" type="button">重置</button>
+      </form>
+      <div class="pool-list-meta"><span id="summary"></span><span>参考难度有上下限时，不包含未评级题。</span></div>
+      <div id="problemList" class="pool-cards"></div>
+      <div id="empty" class="pool-empty" hidden><span class="empty-wave" aria-hidden="true">≈</span><h3>水面很平静。</h3><p id="emptyText">暂时没有符合条件的题目，换个筛选试试。</p><button id="emptyToss" class="quiet" type="button">投下第一瓶</button></div>
+      <div id="pagination" class="pool-pagination"><button id="previous" class="quiet" type="button">← 上一页</button><span id="pageLabel"></span><button id="next" class="quiet" type="button">下一页 →</button></div>
+      <p class="pool-footer">题目大家共享，进度只属于你。已捞的瓶子留在待做里；放弃和 AC 的题不会再随机出现，主动放回后除外。</p>
+    </section>
+  </main>
+  <dialog id="tossDialog" class="pool-dialog" aria-labelledby="tossTitle">
+    <header><div><p class="eyebrow">给池子添点新东西</p><h2 id="tossTitle">投一道题</h2></div><button class="quiet" data-close="tossDialog" type="button" aria-label="关闭投题窗口">✕</button></header>
+    <form id="tossForm">
+      <label>题号或链接 <span class="pool-small">必填</span><input name="problemId" required maxlength="500" placeholder="1704F、P1001、abc350_f 或题目链接" autocomplete="off"></label>
+      <label>OJ 平台<select name="platform"><option value="auto">自动识别（纯数字题号请选择平台）</option><option value="codeforces">CF / Gym</option><option value="luogu">洛谷</option><option value="qoj">QOJ</option><option value="atcoder">AtCoder</option><option value="nowcoder">牛客</option><option value="vjudge">VJudge</option></select></label>
+      <details class="pool-optional"><summary>再写两句？<span class="pool-small">标题、标签、推荐语 · 都可选</span></summary>
+        <label>题目标题<input name="title" maxlength="160" placeholder="留空时使用题库信息或题号"></label>
+        <div class="pool-form-row"><label>参考难度<input name="rating" type="number" min="0" max="4000" step="1" placeholder="CF 分数，可留空"></label><label>标签<input name="tags" maxlength="409" placeholder="思维，贪心，适合口胡"></label></div>
+        <label>推荐语<textarea name="note" rows="3" maxlength="500" placeholder="为什么推荐？也可以留一句群友的原话。"></textarea></label>
+      </details>
+      <p class="pool-small">直接入池，无需审核。同一平台题号自动去重，CF 与其洛谷 / VJudge 镜像也会合并。</p>
+      <p id="tossError" class="pool-inline-error" role="alert"></p>
+      <button class="primary wide" type="submit">让它漂起来 ↗</button>
+    </form>
+  </dialog>
+  <dialog id="bottleDialog" class="pool-dialog bottle-dialog" aria-labelledby="bottleTitle">
+    <header><p id="bottleEyebrow" class="eyebrow">捞到一瓶</p><button class="quiet" data-close="bottleDialog" type="button" aria-label="关闭题目窗口">✕</button></header>
+    <div id="bottleBody"></div>
+    <p id="bottleError" class="pool-inline-error" role="alert"></p>
+    <footer><span class="pool-small">没有做题义务，随时可以离开。</span><button id="drawAgain" class="primary" type="button">再捞一个 ↗</button></footer>
+  </dialog>
+</body>
+</html>
