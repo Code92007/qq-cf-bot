@@ -30,6 +30,18 @@ function completed(p){return Boolean(model.view==="oral"?p.oral:model.view==="co
 function attempted(p){return model.view==="oral"?p.oralAttempted:model.view==="code"?p.attempted:p.attempted||p.oralAttempted;}
 function visible(p){return $("filter").value==="all" || ($("filter").value==="unfinished"&&!completed(p)) || ($("filter").value==="draft"&&p.draft) || ($("filter").value==="oralOnly"&&p.oral&&!p.code);}
 function persistFilters(){localSet(`regional-filters:${model.user}`,JSON.stringify({year:$("year").value,series:$("series").value,search:$("search").value,filter:$("filter").value,view:model.view}));}
+function regionalSourceLinks(problem,contest){
+  const links=(problem.aliases||[]).flatMap(key=>{
+    const [oj,id]=key.split(':');
+    if(oj==="codeforces"&&problem.cf_contest_id)return [{url:`https://codeforces.com/gym/${problem.cf_contest_id}/problem/${problem.index}`,label:"Codeforces 原题"}];
+    if(oj==="qoj")return [{url:`https://qoj.ac/problem/${id}`,label:"QOJ 原题"}];
+    return [];
+  });
+  if(contest?.source_url)links.push({url:contest.source_url,label:contest.source_label||"比赛题单"});
+  links.push(...(contest?.source_links||[]));
+  const seen=new Set();
+  return links.filter(link=>{if(seen.has(link.url))return false;seen.add(link.url);return true;}).map(link=>`<a href="${esc(link.url)}" target="_blank" rel="noopener noreferrer">${esc(link.label)} ↗</a>`).join(" ");
+}
 function renderWall(){
   if(!model.data)return;
   const rows=model.data.contests.filter(c=>(!$("year").value||c.year===Number($("year").value))&&($("series").value==="all"||c.series===$("series").value)&&(!$("search").value||c.name.toLowerCase().includes($("search").value.toLowerCase())));
@@ -47,7 +59,7 @@ function renderWall(){
       return `<td><button class="tile ${difficultyClass(diff?.rating)} ${ok?"done":status.draft&&model.view!=="code"?"draft":tried?"tried":""} ${show?"":"filtered"} ${p.unmapped?"unmapped":""}" data-problem="${esc(p.id)}" title="${esc(title)}" aria-label="${esc(title)}"><i class="rating-circle" aria-hidden="true"></i>${esc(p.index)}<span class="tile-rating" aria-hidden="true">${diff?esc(diff.rating):"—"}</span><span class="tile-mark" aria-hidden="true">${esc(marks)}</span></button></td>`;
     }).join("");
     done+=solved;total+=c.problems.length;
-    return `<tr><th scope="row"><a class="site-name" href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer"><span class="series-badge">${esc(c.series)}</span>${esc(c.year)} · ${esc(c.site)}站</a></th><td>${model.view==="code"?`AC ${solved} / ${c.problems.length}<br>提交过 ${tries}`:`完成 ${solved} / ${c.problems.length}<br>尝试过 ${tries}`}</td>${cells}${"<td></td>".repeat(max-c.problems.length)}</tr>`;
+    return `<tr><th scope="row"><a class="site-name" href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer"><span class="series-badge">${esc(c.series)}</span>${esc(c.year)} · ${esc(c.site)}${c.stage==="final"?"":"站"}</a></th><td>${model.view==="code"?`AC ${solved} / ${c.problems.length}<br>提交过 ${tries}`:`完成 ${solved} / ${c.problems.length}<br>尝试过 ${tries}`}</td>${cells}${"<td></td>".repeat(max-c.problems.length)}</tr>`;
   }).join("")||`<tr><td colspan="${max+2}">没有匹配的比赛，试试其他年份或赛站。</td></tr>`;
   $("summary").textContent=`${rows.length} 场比赛 · ${model.user?`${done} / ${total} 题完成`:`${total} 题已收录`}`;
   $("coverage").textContent=`目录核验于 ${model.data.verifiedAt||"—"}。来源：Codeforces、QOJ 等公开目录；虚线题格表示平台映射待核验。账号历史未回填完时，未着色不代表从未做过。`;
@@ -109,7 +121,7 @@ async function openProblem(pid){
   $("problemNav").innerHTML=contest.problems.map(p=>`<button data-problem="${esc(p.id)}" class="${p.id===pid?"selected":""}">${esc(p.index)}</button>`).join("");
   const s=d.statement;
   $("statementBody").innerHTML=s?`${s.description}${s.input?`<h3>输入格式</h3>${s.input}`:""}${s.output?`<h3>输出格式</h3>${s.output}`:""}${s.samples.map((sample,i)=>`<h3>样例 ${i+1}</h3><pre>${esc(sample.input)}</pre><pre>${esc(sample.output)}</pre>`).join("")}${s.hint?`<h3>样例说明</h3>${s.hint}`:""}`:`<p>${esc(d.statementError)}</p>`;
-  $("sourceLinks").innerHTML=(d.problem.aliases||[]).map(key=>{const [oj,id]=key.split(':');let url=oj==="codeforces"?`https://codeforces.com/gym/${d.problem.cf_contest_id}/problem/${d.problem.index}`:oj==="qoj"?`https://qoj.ac/problem/${id}`:null;return url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(oj)} 原题 ↗</a>`:"";}).join("");
+  $("sourceLinks").innerHTML=regionalSourceLinks(d.problem,contest);
   if(diff?.standings_url)$("sourceLinks").innerHTML+=` <a href="${esc(diff.standings_url)}" target="_blank" rel="noopener noreferrer">赛时榜单 ↗</a>`;
   $("attempts").innerHTML=d.attempts.map(a=>`<div class="attempt"><strong>${esc(a.verdict)}</strong> <small class="muted">${esc(new Date(a.created_at).toLocaleString())}</small><p>${esc(a.reason)}</p><details><summary>查看当时的${a.kind==="oral"?"做法":"代码"}</summary><pre>${esc(a.body)}</pre></details></div>`).join("")+d.evidence.map(e=>`<div class="attempt"><strong>${esc(e.verdict)}</strong> · ${esc(e.platform)} · ${esc(e.handle)}<br><small class="muted">${e.submitted_at?esc(new Date(e.submitted_at*1000).toLocaleString()):"时间未知"} · ${e.origin.startsWith("import:")?"导入记录":"账号同步"}</small></div>`).join("");
   if(!d.attempts.length&&!d.evidence.length)$("attempts").textContent="还没有练习记录。";

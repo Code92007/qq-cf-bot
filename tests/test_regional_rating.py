@@ -130,7 +130,7 @@ class StandingsRatingTest(unittest.TestCase):
         self.assertEqual(set(rated) | set(unrated), {c['id'] for c in catalog['contests']})
         self.assertEqual(set(release['problems']), {p['id'] for c in catalog['contests'] if c['id'] in rated for p in c['problems']})
         self.assertEqual(len(rated), 65)
-        self.assertEqual(len(unrated), 10)
+        self.assertEqual(len(unrated), 24)
         self.assertEqual(len(release['problems']), 832)
         self.assertTrue(all(unrated.values()))
         for result in release['problems'].values():

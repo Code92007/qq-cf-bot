@@ -46,15 +46,27 @@ class RegionalStoreTest(unittest.TestCase):
         }
         for year,series in expected.items():
             for name,sites in series.items():
-                self.assertEqual({c['site'] for c in self.store.contests if c['year']==year and c['series']==name},sites)
-        self.assertEqual(len(self.store.contests),75)
-        self.assertEqual(len(self.store.problems),954)
+                self.assertEqual({c['site'] for c in self.store.contests if c['year']==year and c['series']==name and c.get('stage')!='final'},sites)
+                finals=[c for c in self.store.contests if c['year']==year and c['series']==name and c.get('stage')=='final']
+                self.assertEqual(len(finals),1)
+                self.assertTrue(all(p['aliases'] for p in finals[0]['problems']))
+        self.assertEqual(len(self.store.contests),89)
+        self.assertEqual(len(self.store.problems),1132)
         for p in self.store.problems.values():
             if p.get('qoj_id'):
                 self.assertIn('qoj:'+str(p['qoj_id']),p['aliases'])
             self.assertTrue(p['aliases'] or p.get('unmapped'))
         self.assertIn('nowcoder:220443', self.store.aliases)
         self.assertNotIn('codeforces:102769C', self.store.aliases)
+
+    def test_final_platform_evidence_merges_with_existing_practice(self):
+        pid='icpc-2021-ECFinal:A'
+        self.store.save_draft(1,self.pid,'保留原来的草稿',0)
+        self.store.add_evidence(1,'sync',[normalize_record({'platform':'vjudge','problem_id':'Gym-103861A','verdict':'AC'})])
+        self.store.add_evidence(1,'qoj',[normalize_record({'platform':'qoj','problem_id':'6501','verdict':'AC'})])
+        self.assertTrue(self.store.progress(1)[pid]['code'])
+        self.assertTrue(self.store.progress(1)['ccpc-2022-Final:A']['code'])
+        self.assertEqual(self.store.detail(1,self.pid)['draft']['body'],'保留原来的草稿')
 
     def test_nowcoder_pagination_and_result_detection(self):
         page='<table><tr><td><a href="/acm/problem/123">题目</a></td><td>2025-01-02 12:34:56 答案正确</td></tr></table><a data-page="3">末页</a>practice-coding'
@@ -275,7 +287,7 @@ class RegionalDifficultyTest(unittest.TestCase):
         self.assertEqual(payload['difficulty'][pid]['rating'], 900)
         self.assertEqual(payload['difficulty'][pid]['accepted_teams'], 320)
         self.assertEqual(payload['years'], list(range(2025, 2018, -1)))
-        self.assertEqual(len(payload['contests']), 75)
+        self.assertEqual(len(payload['contests']), 89)
         self.assertIn('icpc-2019-上海', payload['ratingRelease']['unrated_contests'])
         self.assertNotIn('icpc-2019-上海:A', payload['difficulty'])
         historical = payload['difficulty']['icpc-2022-香港:A']
