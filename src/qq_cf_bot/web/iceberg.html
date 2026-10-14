@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="从第一份 AC 到深海里的算法：按八个深度探索算法竞赛知识，查找 OI Wiki 与更多学习资料。">
+  <title>算法竞赛冰山 · CF Bot</title>
+  <link rel="stylesheet" href="/styles.css?v=iceberg-1">
+  <link rel="stylesheet" href="/iceberg.css?v=3">
+  <script src="/iceberg.js?v=5" defer></script>
+</head>
+<body class="iceberg-page">
+  <a class="skip-link" href="#explore">跳到知识地图</a>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark small">CF</span><strong>CF Bot</strong></a>
+    <nav class="iceberg-nav" aria-label="网站导航"><a href="/">单题 / VP</a><a href="/regionals">区域赛墙</a><a href="/pool">口胡池</a><a href="/iceberg" aria-current="page">算法冰山</a></nav>
+    <span class="nav-caption">保持好奇，继续下潜。</span>
+  </header>
+  <main class="iceberg-main">
+    <section class="iceberg-hero" aria-labelledby="icebergTitle">
+      <div class="hero-copy">
+        <p class="atlas-kicker"><span></span> CF BOT KNOWLEDGE ATLAS <i>VOL. 01</i></p>
+        <h1 id="icebergTitle">你看见的，<br>只是<span>冰山一角。</span></h1>
+        <p class="hero-lead">从第一份 AC，到从未听过的算法。<br>沿着这座冰山，看看算法竞赛的水下世界。</p>
+        <div class="hero-actions"><a href="#explore" class="primary explore-link">开始下潜 <span aria-hidden="true">↓</span></a><button id="randomTopic" class="random-button" type="button" disabled><span aria-hidden="true">⤨</span> 随机遇见一个知识点</button></div>
+        <div class="atlas-stats"><span><strong id="topicCount">—</strong> 个知识点</span><span><strong>08</strong> 层深度</span><span><strong>09</strong> 个领域</span></div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <span class="art-coordinate">EXPLORING THE UNKNOWN / 01—08</span>
+        <svg class="iceberg-illustration" viewBox="0 0 520 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="sea" x1="260" y1="165" x2="260" y2="413" gradientUnits="userSpaceOnUse"><stop stop-color="#e0ece5"/><stop offset="1" stop-color="#cbded3" stop-opacity=".15"/></linearGradient>
+            <linearGradient id="ice" x1="212" y1="160" x2="293" y2="378" gradientUnits="userSpaceOnUse"><stop stop-color="#9cbeaa"/><stop offset="1" stop-color="#3d7059"/></linearGradient>
+            <pattern id="chartGrid" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M34 0H0V34" stroke="#dbe4db" stroke-width=".7"/></pattern>
+          </defs>
+          <rect x="28" y="22" width="464" height="370" fill="url(#chartGrid)"/>
+          <path d="M28 164H492V392H28Z" fill="url(#sea)"/>
+          <ellipse cx="264" cy="166" rx="203" ry="15" stroke="#aec7b6" stroke-width=".8"/>
+          <path d="M162 164 194 121 215 124 260 57 298 112 320 100 366 164Z" fill="#f8fbf5" stroke="#9db6a1" stroke-width="1.2"/>
+          <path d="M162 164 215 124 260 57 244 164Z" fill="#e5eee1"/>
+          <path d="M260 57 298 112 320 100 285 164 244 164Z" fill="#d2e1cf"/>
+          <path d="M320 100 366 164 285 164Z" fill="#b9d0bb"/>
+          <path d="M162 164 120 209 147 279 206 315 265 378 328 325 363 269 404 210 366 164Z" fill="url(#ice)" stroke="#5e9278" stroke-width="1"/>
+          <path d="M162 164 244 164 211 244 147 279 120 209Z" fill="#b1cbb8"/>
+          <path d="M244 164 285 164 328 234 265 378 211 244Z" fill="#7fa98f"/>
+          <path d="M285 164 366 164 404 210 328 234Z" fill="#94b69f"/>
+          <path d="M147 279 211 244 265 378 206 315Z" fill="#69967c"/>
+          <path d="M328 234 404 210 363 269 328 325 265 378Z" fill="#48795f"/>
+          <path d="M28 164H492" stroke="#52856a" stroke-width="1.2"/>
+          <path d="M28 246H492M28 324H492" stroke="#a7bfb0" stroke-width=".8" stroke-dasharray="3 5"/>
+          <path d="M260 57 244 164 211 244 265 378M320 100 285 164 328 234 265 378M120 209 211 244 328 234 404 210" stroke="#e0ecde" stroke-opacity=".4"/>
+          <path d="M392 80H441V125M85 310H59V350" stroke="#92ad97" stroke-width=".8"/>
+          <circle cx="392" cy="80" r="2.5" fill="#52856a"/><circle cx="85" cy="310" r="2.5" fill="#52856a"/>
+          <text x="39" y="155" class="svg-caption">水面 / THE KNOWN</text>
+          <text x="381" y="239" class="svg-caption">06 / 无光带</text>
+          <text x="337" y="363" class="svg-caption">08 / 海沟</text>
+          <text x="39" y="407" class="svg-footnote">越往深处，越多未曾相遇的知识。</text>
+        </svg>
+        <span class="art-annotation">仍有未知，值得好奇。</span>
+      </div>
+    </section>
+
+    <section id="explore" class="explore" aria-labelledby="exploreTitle">
+      <div class="explore-heading"><div><p class="atlas-kicker">THE EXPEDITION</p><h2 id="exploreTitle">算法竞赛冰山</h2></div><p>点击名称阅读资料 <span>·</span> 点击 <span class="info-example">i</span> 了解概念</p></div>
+      <form id="atlasFilters" class="atlas-controls" role="search">
+        <div class="search-row">
+          <label class="atlas-search"><span class="sr-only">搜索知识点</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5"/></svg><input id="topicSearch" type="search" placeholder="搜索知识点 / 缩写，如 NTT、树、生成函数…" maxlength="100" autocomplete="off"></label>
+          <label class="difficulty-filter"><span>理解门槛</span><select id="difficultyFilter"><option value="all">全部难度</option><option value="1">1 · 入门</option><option value="2">2 · 基础</option><option value="3">3 · 进阶</option><option value="4">4 · 困难</option><option value="5">5 · 挑战</option></select></label>
+          <div class="view-toggle" role="group" aria-label="展示方式"><button type="button" data-view="iceberg" aria-pressed="true">冰山图</button><button type="button" data-view="list" aria-pressed="false">知识清单</button></div>
+        </div>
+        <div id="categoryFilters" class="category-filters" role="group" aria-label="知识领域"></div>
+      </form>
+      <div class="map-meta"><p id="resultSummary" role="status" aria-live="polite">正在绘制知识地图…</p><div class="map-legend"><span><i></i> OI Wiki</span><span><i class="extra-dot"></i> 拓展阅读</span><button id="resetFilters" type="button" hidden>清除筛选 ↺</button></div></div>
+      <div class="iceberg-layout">
+        <aside class="depth-sidebar" aria-label="深度导航"><p>下潜深度 <span>↓</span></p><nav id="depthNav"></nav><a class="back-to-surface" href="#icebergTitle">回到水面 ↑</a></aside>
+        <div class="map-column">
+          <div id="icebergMap" class="iceberg-ocean" aria-label="分层知识图"><div class="map-loading">水下世界，正在展开…</div></div>
+          <div id="noResults" class="atlas-empty" hidden><span aria-hidden="true">∅</span><h3>这片水域，暂时没有发现。</h3><p>换个关键词，或清除筛选继续探索。</p><button id="emptyReset" class="quiet" type="button">清除筛选</button></div>
+          <div id="loadError" class="atlas-empty" hidden role="alert"><h3>知识地图暂时没有加载成功。</h3><p>请重新加载，再来下潜。</p><button id="retryLoad" class="primary" type="button">重新加载</button></div>
+          <div class="ocean-bottom"><span>YOU HAVE REACHED THE TRENCH</span><p>知道得越多，海就越深。</p><a href="#icebergTitle">回到水面 ↑</a></div>
+        </div>
+      </div>
+    </section>
+    <footer class="atlas-footer"><div><span class="footer-index">关于这张地图 / 01</span><p>层级综合了竞赛中的常见程度与理解门槛，是一份可调整的编辑判断。冷门的知识也可能很好懂；越深，通常越需要背景知识。它是一张探索地图，不是学习顺序或选手评级。</p></div><div><span class="footer-index">资料来源 / 02</span><p>以 <a href="https://oi-wiki.org/" target="_blank" rel="noopener noreferrer">OI Wiki</a> 为主体，补充 <a href="https://cp-algorithms.com/" target="_blank" rel="noopener noreferrer">cp-algorithms</a>、<a href="https://github.com/kth-competitive-programming/kactl" target="_blank" rel="noopener noreferrer">KACTL</a>、<a href="https://noshi91.github.io/Library/" target="_blank" rel="noopener noreferrer">noshi91 Library</a>、<a href="https://usaco.guide/" target="_blank" rel="noopener noreferrer">USACO Guide</a> 和作者专题。另合并 <a href="https://github.com/Zhonghe-zhao/codeforces-go" target="_blank" rel="noopener noreferrer">codeforces-go</a>（灵茶山艾府模板库）的实现参考。名称直达资料，说明卡片可继续查看模板与延伸阅读。</p><span class="atlas-edition">第一版 · 2026.10</span></div></footer>
+  </main>
+  <dialog id="topicDialog" class="topic-dialog" aria-labelledby="dialogTitle"><button id="closeTopic" class="close-topic" type="button" aria-label="关闭知识点说明">×</button><div id="topicDetails"></div></dialog>
+  <noscript><p class="noscript-note">请启用 JavaScript 查看交互冰山图，也可以直接访问 <a href="https://oi-wiki.org/">OI Wiki 目录</a>。</p></noscript>
+</body>
+</html>

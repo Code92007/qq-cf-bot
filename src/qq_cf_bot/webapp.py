@@ -62,6 +62,9 @@ class WebApplication:
         if not self.config.web_enabled:
             return False
         try:
+            if path in {"/iceberg", "/iceberg/"}:
+                self._static(handler, "iceberg.html", "text/html; charset=utf-8", no_cache=True)
+                return True
             if path == "/api/pool":
                 session = self._require_session(handler)
                 self._json(handler, self.pool.get(handler, session))
@@ -95,6 +98,9 @@ class WebApplication:
                 self._static(handler, "index.html", "text/html; charset=utf-8", no_cache=True)
                 return True
             static_files = {
+                "/iceberg.js": ("iceberg.js", "text/javascript; charset=utf-8"),
+                "/iceberg.css": ("iceberg.css", "text/css; charset=utf-8"),
+                "/iceberg-data.json": ("iceberg-data.json", "application/json; charset=utf-8"),
                 "/pool.js": ("pool.js", "text/javascript; charset=utf-8"),
                 "/pool.css": ("pool.css", "text/css; charset=utf-8"),
                 "/regional-qoj-sync.user.js": ("regional-qoj-sync.user.js", "text/javascript; charset=utf-8"),

@@ -47,6 +47,8 @@ a { color: var(--blue); }
 
 .auth-brand h1 { margin: 26px 0 6px; font-size: clamp(46px, 7vw, 86px); line-height: 1; }
 .auth-brand p { margin: 0; color: #aebdb6; font-size: 20px; }
+.auth-atlas-link { display: inline-block; margin-top: 24px; color: #83b59b; font-size: 13px; text-decoration: none; }
+.auth-atlas-link:hover { color: #b0e3c7; text-decoration: underline; text-underline-offset: 4px; }
 .brand-mark {
   display: grid;
   place-items: center;

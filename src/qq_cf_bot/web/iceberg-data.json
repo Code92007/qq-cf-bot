@@ -1,0 +1,5327 @@
+{
+  "version": 3,
+  "updatedAt": "2026-10-15",
+  "categories": [
+    {
+      "id": "basic",
+      "name": "基础与技巧",
+      "color": "#a9c79a"
+    },
+    {
+      "id": "search",
+      "name": "搜索",
+      "color": "#d8b67a"
+    },
+    {
+      "id": "dp",
+      "name": "动态规划",
+      "color": "#93b8d5"
+    },
+    {
+      "id": "ds",
+      "name": "数据结构",
+      "color": "#8ac3b0"
+    },
+    {
+      "id": "graph",
+      "name": "图论",
+      "color": "#b4a6d3"
+    },
+    {
+      "id": "string",
+      "name": "字符串",
+      "color": "#d6a6ae"
+    },
+    {
+      "id": "math",
+      "name": "数学",
+      "color": "#c4c881"
+    },
+    {
+      "id": "geometry",
+      "name": "计算几何",
+      "color": "#8cbfc7"
+    },
+    {
+      "id": "misc",
+      "name": "其他专题",
+      "color": "#b3b9ae"
+    }
+  ],
+  "tiers": [
+    {
+      "id": 1,
+      "name": "浮出水面",
+      "english": "SURFACE",
+      "tagline": "写下第一份 AC 的地方。",
+      "description": "从枚举、排序到前缀和，先把最常见的工具拿稳。"
+    },
+    {
+      "id": 2,
+      "name": "浅水区",
+      "english": "SHALLOWS",
+      "tagline": "你开始有自己的工具箱。",
+      "description": "常用搜索、基础 DP 和数据结构，撑起大多数入门比赛。"
+    },
+    {
+      "id": 3,
+      "name": "水面之下",
+      "english": "BELOW THE SURFACE",
+      "tagline": "模板之外，开始连接知识。",
+      "description": "树、图、字符串和状态设计逐渐相遇。"
+    },
+    {
+      "id": 4,
+      "name": "暮光带",
+      "english": "TWILIGHT",
+      "tagline": "能看见轮廓，需要再想一层。",
+      "description": "常见进阶专题：组合工具，也理解工具的适用边界。"
+    },
+    {
+      "id": 5,
+      "name": "深水区",
+      "english": "DEEP WATER",
+      "tagline": "一道题，可能通向一整片海。",
+      "description": "进入需要专门推导与练习的算法家族。"
+    },
+    {
+      "id": 6,
+      "name": "无光带",
+      "english": "MIDNIGHT",
+      "tagline": "熟悉的套路，开始不够用了。",
+      "description": "低频专题与更精细的代数、图论和优化。"
+    },
+    {
+      "id": 7,
+      "name": "深渊",
+      "english": "THE ABYSS",
+      "tagline": "在这里，名字也可能是新知识。",
+      "description": "竞赛中偶有出场，却能打开另一种视角的工具。"
+    },
+    {
+      "id": 8,
+      "name": "海沟",
+      "english": "THE TRENCH",
+      "tagline": "继续往下，还有整片未知。",
+      "description": "少数特殊题目背后的结构，以及算法竞赛与理论的交界。"
+    }
+  ],
+  "topics": [
+    {
+      "id": "basic-complexity",
+      "title": "时间与空间复杂度",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "估算程序需要多少时间和内存。",
+      "aliases": "大O Big O",
+      "url": "https://oi-wiki.org/basic/complexity/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-enumerate",
+      "title": "枚举",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "把候选答案逐一检查，思考怎样少枚举一点。",
+      "aliases": "暴力 brute force",
+      "url": "https://oi-wiki.org/basic/enumerate/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-simulate",
+      "title": "模拟",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "按规则还原过程，细节本身就是算法。",
+      "aliases": "大模拟",
+      "url": "https://oi-wiki.org/basic/simulate/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-sort-intro",
+      "title": "排序",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "给数据建立顺序，让后续处理更简单。",
+      "aliases": "sort",
+      "url": "https://oi-wiki.org/basic/sort-intro/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-prefix-sum",
+      "title": "前缀和与差分",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "把区间求和或批量增减变成端点操作。",
+      "aliases": "前缀和 差分",
+      "url": "https://oi-wiki.org/basic/prefix-sum/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-binary",
+      "title": "二分查找",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "在有序或单调的范围里不断缩小答案。",
+      "aliases": "lower_bound upper_bound binary search",
+      "url": "https://oi-wiki.org/basic/binary/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-greedy",
+      "title": "贪心",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "为局部选择找到能保证全局正确的理由。",
+      "aliases": "greedy",
+      "url": "https://oi-wiki.org/basic/greedy/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-divide-and-conquer",
+      "title": "递归与分治",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "把问题拆小，再组合子问题的答案。",
+      "aliases": "递归",
+      "url": "https://oi-wiki.org/basic/divide-and-conquer/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-two-pointer",
+      "title": "双指针",
+      "category": "misc",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "用两个移动位置维护一段有效区间。",
+      "aliases": "滑动窗口 尺取 sliding window",
+      "url": "https://oi-wiki.org/misc/two-pointer/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-discrete",
+      "title": "离散化",
+      "category": "misc",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "保留大小关系，把大数值映射到紧凑下标。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/discrete/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-stack",
+      "title": "栈",
+      "category": "ds",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "用后进先出的顺序处理嵌套与回退。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/stack/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-queue",
+      "title": "队列",
+      "category": "ds",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "用先进先出的顺序安排待处理状态。",
+      "aliases": "双端队列 deque 普通队列",
+      "url": "https://oi-wiki.org/ds/queue/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-hash",
+      "title": "哈希表",
+      "category": "ds",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "通过键快速定位数据，留意冲突与最坏情况。",
+      "aliases": "unordered_map hash table",
+      "url": "https://oi-wiki.org/ds/hash/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "string-basic",
+      "title": "字符串基础",
+      "category": "string",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "熟悉字符、子串和字符串的常见操作。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/string/basic/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-bit",
+      "title": "位运算",
+      "category": "math",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "把整数视作二进制位的集合来处理。",
+      "aliases": "bitwise 位操作",
+      "url": "https://oi-wiki.org/math/bit/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-gcd",
+      "title": "最大公约数",
+      "category": "math",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "用欧几里得算法求整数的公共因子。",
+      "aliases": "gcd lcm 辗转相除",
+      "url": "https://oi-wiki.org/math/number-theory/gcd/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L336",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-number-theory-prime",
+      "title": "素数与试除法",
+      "category": "math",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "判断整数能否被更小的整数整除。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/prime/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-binary-exponentiation",
+      "title": "快速幂",
+      "category": "math",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "利用二进制拆分，把重复乘法加速。",
+      "aliases": "qpow fast power",
+      "url": "https://oi-wiki.org/math/binary-exponentiation/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-mod-arithmetic",
+      "title": "模运算",
+      "category": "math",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "在余数的世界里进行运算，并注意除法。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/mod-arithmetic/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-numeral-sys-base",
+      "title": "进位制",
+      "category": "math",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "在不同数位表示之间转换数字。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/numeral-sys/base/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-combinatorics-combination",
+      "title": "排列组合",
+      "category": "math",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "分清顺序与重复，再数清选择的数量。",
+      "aliases": "杨辉三角 多重集组合数 二项式定理",
+      "url": "https://oi-wiki.org/math/combinatorics/combination/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-combinatorics-drawer-principle",
+      "title": "抽屉原理",
+      "category": "math",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "用数量上的矛盾证明某种重复必然存在。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/combinatorics/drawer-principle/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-save",
+      "title": "图的存储",
+      "category": "graph",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "用邻接表或邻接矩阵表示点与边。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/save/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L305",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "search-dfs",
+      "title": "深度优先搜索",
+      "category": "search",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "沿一条路径深入，再回溯到其他分支。",
+      "aliases": "DFS",
+      "url": "https://oi-wiki.org/search/dfs/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L356",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "search-bfs",
+      "title": "广度优先搜索",
+      "category": "search",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "逐层扩展状态，寻找无权图中的最短路。",
+      "aliases": "BFS",
+      "url": "https://oi-wiki.org/search/bfs/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L579",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "search-backtracking",
+      "title": "回溯与剪枝",
+      "category": "search",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "撤销选择重新尝试，并提前排除无效分支。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/search/backtracking/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-basic",
+      "title": "动态规划",
+      "category": "dp",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "找出重复子问题，用状态和转移组织计算。",
+      "aliases": "DP 最优子结构 无后效性 状态转移 填表法 刷表法 填坑DP",
+      "url": "https://oi-wiki.org/dp/basic/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-memo",
+      "title": "记忆化搜索",
+      "category": "dp",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "保存递归结果，避免同一状态重复求解。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/dp/memo/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-knapsack-basic",
+      "title": "背包 DP",
+      "category": "dp",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "在容量限制下选择物品，辨别不同枚举顺序。",
+      "aliases": "01背包 完全背包 多重背包",
+      "url": "https://oi-wiki.org/dp/knapsack/basic/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1191",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-dsu",
+      "title": "并查集",
+      "category": "ds",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "维护集合的合并，以及两个元素是否连通。",
+      "aliases": "DSU union find",
+      "url": "https://oi-wiki.org/ds/dsu/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/union_find.go#L95",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-binary-heap",
+      "title": "堆与优先队列",
+      "category": "ds",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "随时取出当前最小或最大的元素。",
+      "aliases": "heap priority_queue",
+      "url": "https://oi-wiki.org/ds/binary-heap/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/heap.go#L109",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-monotonic-stack",
+      "title": "单调栈",
+      "category": "ds",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "寻找左右第一个更大或更小的元素。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/monotonic-stack/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-monotonic-queue",
+      "title": "单调队列",
+      "category": "ds",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "维护滑动窗口内的最值。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/monotonic-queue/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-fenwick",
+      "title": "树状数组",
+      "category": "ds",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "用二进制分块维护前缀信息。",
+      "aliases": "BIT Fenwick 树状数组求第k大 树状数组求第k小",
+      "url": "https://oi-wiki.org/ds/fenwick/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-sparse-table",
+      "title": "ST 表",
+      "category": "ds",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "预处理静态区间的可重复贡献信息。",
+      "aliases": "Sparse Table RMQ",
+      "url": "https://oi-wiki.org/ds/sparse-table/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-seg",
+      "title": "线段树",
+      "category": "ds",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "把区间层层划分，维护查询与修改。",
+      "aliases": "segment tree 懒标记 lazy ZKW线段树 zkw线段树 带标记线段树 propagation",
+      "url": "https://oi-wiki.org/ds/seg/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/segment_tree.go#L191",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-hash",
+      "title": "字符串哈希",
+      "category": "string",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "用数值摘要快速比较字符串片段。",
+      "aliases": "哈希求border border rolling-hash 滚动哈希",
+      "url": "https://oi-wiki.org/string/hash/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L90",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-trie",
+      "title": "字典树",
+      "category": "string",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "按字符路径存储字符串，复用公共前缀。",
+      "aliases": "Trie",
+      "url": "https://oi-wiki.org/string/trie/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-tree-basic",
+      "title": "树的基础",
+      "category": "graph",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "理解根、子树、父子关系和树上的路径。",
+      "aliases": "树的遍历 DFS序 dfn 括号序 Euler序",
+      "url": "https://oi-wiki.org/graph/tree-basic/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-topo",
+      "title": "拓扑排序",
+      "category": "graph",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "给有向无环图安排满足依赖的处理顺序。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/topo/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L3455",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-shortest-path",
+      "title": "最短路",
+      "category": "graph",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "根据边权条件选择合适的路径算法。",
+      "aliases": "Dijkstra Floyd Bellman Ford SPFA 倍增Floyd Floyd倍增 最短路径 Dijkstra算法 SPFA算法",
+      "url": "https://oi-wiki.org/graph/shortest-path/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L1572",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-mst",
+      "title": "最小生成树",
+      "category": "graph",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "以最小代价连接所有顶点。",
+      "aliases": "Kruskal Prim MST Boruvka Borůvka算法 Prim算法 Kruskal算法",
+      "url": "https://oi-wiki.org/graph/mst/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2258",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "basic-binary-lifting",
+      "title": "倍增",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "预处理指数长度的跳跃，快速跨过许多步骤。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/basic/binary-lifting/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-sieve",
+      "title": "埃氏筛与线性筛",
+      "category": "math",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "批量求素数，并一起计算积性函数。",
+      "aliases": "Eratosthenes Euler sieve",
+      "url": "https://oi-wiki.org/math/number-theory/sieve/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L870",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-number-theory-inverse",
+      "title": "模逆元",
+      "category": "math",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "在满足条件时，把模意义的除法转成乘法。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/inverse/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-fermat",
+      "title": "费马小定理与欧拉定理",
+      "category": "math",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "利用模幂的周期性质化简指数。",
+      "aliases": "扩展欧拉定理 欧拉降幂",
+      "url": "https://oi-wiki.org/math/number-theory/fermat/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-construction",
+      "title": "构造",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "从目标条件倒推，直接造出满足要求的对象。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/basic/construction/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-bignum",
+      "title": "高精度计算",
+      "category": "math",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "用多个数位表示超出机器整数范围的数。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/bignum/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-interval",
+      "title": "区间 DP",
+      "category": "dp",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "按区间长度递推，组合更小区间的结果。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/dp/interval/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1697",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "dp-tree",
+      "title": "树形 DP",
+      "category": "dp",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "沿树的结构合并子树信息。",
+      "aliases": "换根 rerooting 树上DP 换根DP 树形dp",
+      "url": "https://oi-wiki.org/dp/tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-state",
+      "title": "状压 DP",
+      "category": "dp",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "用位集合表示有限规模的组合状态。",
+      "aliases": "bitmask 状态压缩DP 轮廓线DP",
+      "url": "https://oi-wiki.org/dp/state/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-number",
+      "title": "数位 DP",
+      "category": "dp",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "按数位构造数字，统计满足限制的整数。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/dp/number/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2444",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "dp-dag",
+      "title": "DAG 上的 DP",
+      "category": "dp",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "沿拓扑序传播最优值或方案数。",
+      "aliases": "拓扑序DP 图上DP",
+      "url": "https://oi-wiki.org/dp/dag/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-knapsack-advanced",
+      "title": "背包进阶",
+      "category": "dp",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "处理分组、依赖和更复杂的容量约束。",
+      "aliases": "树形背包 分组背包 混合背包 多维背包 多重背包 二进制优化",
+      "url": "https://oi-wiki.org/dp/knapsack/advanced/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1399",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-kmp",
+      "title": "KMP 与前缀函数",
+      "category": "string",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "复用已匹配前缀，在线性时间内匹配。",
+      "aliases": "Knuth Morris Pratt 失配树 failure树 fail树 border树 前缀函数",
+      "url": "https://oi-wiki.org/string/kmp/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L211",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-z-func",
+      "title": "Z 函数",
+      "category": "string",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "计算每个后缀与整串前缀的最长公共部分。",
+      "aliases": "扩展KMP exKMP 扩展kmp",
+      "url": "https://oi-wiki.org/string/z-func/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L321",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-manacher",
+      "title": "Manacher",
+      "category": "string",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "利用回文对称性，线性求出回文半径。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/string/manacher/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L484",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-ac-automaton",
+      "title": "AC 自动机",
+      "category": "string",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "把多模式匹配组织成字典树上的自动机。",
+      "aliases": "Aho Corasick",
+      "url": "https://oi-wiki.org/string/ac-automaton/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-lca",
+      "title": "最近公共祖先",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "找出树上两点最深的公共祖先。",
+      "aliases": "LCA",
+      "url": "https://oi-wiki.org/graph/lca/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L1058",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-tree-diameter",
+      "title": "树的直径",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "寻找树上最长路径，并利用它的结构。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/tree-diameter/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L454",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-tree-centroid",
+      "title": "树的重心",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "找到删除后最大连通块尽可能小的点。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/tree-centroid/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L630",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-scc",
+      "title": "强连通分量",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "把相互可达的点缩成一个点。",
+      "aliases": "Tarjan Kosaraju SCC 缩点",
+      "url": "https://oi-wiki.org/graph/scc/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L3652",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-cut",
+      "title": "割点与桥",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "找出删除后会破坏连通性的点或边。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/cut/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L1003",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-bi-graph",
+      "title": "二分图",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "把顶点分成两侧，识别奇环与匹配结构。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/bi-graph/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-graph-matching-bigraph-match",
+      "title": "二分图最大匹配",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "通过交替路不断增加互不冲突的配对。",
+      "aliases": "匈牙利算法 Kuhn 二分图增广路",
+      "url": "https://oi-wiki.org/graph/graph-matching/bigraph-match/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L3154",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-euler",
+      "title": "欧拉路与欧拉回路",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "寻找恰好经过每条边一次的路线。",
+      "aliases": "Hierholzer",
+      "url": "https://oi-wiki.org/graph/euler/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-diff-constraints",
+      "title": "差分约束",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "把变量之差的限制转换成图上的边。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/diff-constraints/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-decompose",
+      "title": "分块",
+      "category": "ds",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "在整块处理和零散处理之间平衡代价。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/decompose/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-treap",
+      "title": "Treap",
+      "category": "ds",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "用随机优先级维持二叉搜索树的平衡。",
+      "aliases": "FHQ treap 平衡树 fhq-Treap fhqtreap 无旋Treap",
+      "url": "https://oi-wiki.org/ds/treap/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-bezouts",
+      "title": "扩展欧几里得",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "求解整数系数的一次不定方程。",
+      "aliases": "exgcd 裴蜀",
+      "url": "https://oi-wiki.org/math/number-theory/bezouts/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-euler-totient",
+      "title": "欧拉函数",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "计算与给定整数互质的正整数数量。",
+      "aliases": "phi",
+      "url": "https://oi-wiki.org/math/number-theory/euler-totient/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L937",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-combinatorics-inclusion-exclusion-principle",
+      "title": "容斥原理",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "用交替加减处理集合重叠造成的重复计数。",
+      "aliases": "容斥原理",
+      "url": "https://oi-wiki.org/math/combinatorics/inclusion-exclusion-principle/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-linear-algebra-matrix",
+      "title": "矩阵快速幂",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "把线性转移写成矩阵，再快速跳过多步。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/linear-algebra/matrix/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-game-theory-impartial-game",
+      "title": "Nim 与 SG 函数",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "把公平组合游戏映射为可异或的局面值。",
+      "aliases": "Sprague Grundy mex 博弈论 SG函数 公平组合博弈",
+      "url": "https://oi-wiki.org/math/game-theory/impartial-game/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-2d",
+      "title": "向量与叉积",
+      "category": "geometry",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "用代数运算判断方向、位置和相交关系。",
+      "aliases": "点积 叉积 极角序 线段相交 交点 二维计算几何",
+      "url": "https://oi-wiki.org/geometry/2d/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-combinatorics-catalan",
+      "title": "卡特兰数",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "识别合法括号、树形结构等经典计数模型。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/combinatorics/catalan/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-hld",
+      "title": "树链剖分",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "把树上路径拆成少量连续区间。",
+      "aliases": "HLD 重链剖分",
+      "url": "https://oi-wiki.org/graph/hld/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L1648",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-dsu-on-tree",
+      "title": "树上启发式合并",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "保留大子树的信息，降低重复合并成本。",
+      "aliases": "DSU on tree sack 树的启发式合并 dsu-on-tree",
+      "url": "https://oi-wiki.org/graph/dsu-on-tree/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L1997",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-virtual-tree",
+      "title": "虚树",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "仅保留关键点及其必要祖先，压缩树上问题。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/virtual-tree/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L1502",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-tree-divide",
+      "title": "点分治",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "选重心拆树，统计跨子树的路径贡献。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/tree-divide/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L685",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-bcc",
+      "title": "双连通分量",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "按割点或桥分解无向图的连通结构。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/bcc/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L1142",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-2-sat",
+      "title": "2-SAT",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "用蕴含图求解每个子句含两个文字的布尔约束。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/2-sat/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L3750",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-flow-max-flow",
+      "title": "最大流",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "在容量限制下寻找能送达终点的最大流量。",
+      "aliases": "Dinic ISAP EK算法 Edmonds-Karp SAP Dinic算法",
+      "url": "https://oi-wiki.org/graph/flow/max-flow/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L4433",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-flow-min-cut",
+      "title": "最小割",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "用最小代价切断源汇联系，建立选择模型。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/flow/min-cut/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-flow-min-cost",
+      "title": "费用流",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "在流量约束下优化沿边运输的总费用。",
+      "aliases": "最小费用最大流 最小费用可行流 ZKW费用流",
+      "url": "https://oi-wiki.org/graph/flow/min-cost/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L4903",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-persistent-seg",
+      "title": "可持久化线段树",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "共享未修改节点，保留多个历史版本。",
+      "aliases": "主席树 persistent segment tree",
+      "url": "https://oi-wiki.org/ds/persistent-seg/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/segment_tree.go#L765",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-splay",
+      "title": "Splay",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "通过伸展操作调整树形，维护动态序列。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/splay/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-li-chao-tree",
+      "title": "李超线段树",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "维护直线集合在查询位置的最优值。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/li-chao-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-seg-merge-split",
+      "title": "线段树合并与分裂",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "按值域组织集合，递归拼接或拆分节点。",
+      "aliases": "线段树合并 线段树分裂",
+      "url": "https://oi-wiki.org/ds/seg-merge-split/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/segment_tree.go#L669",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-cartesian-tree",
+      "title": "笛卡尔树",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "同时保持下标顺序和堆序，连接区间与树。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/cartesian-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-mo-algo",
+      "title": "莫队算法",
+      "category": "misc",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "重排离线区间查询，让区间边界少移动。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/mo-algo/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/mo.go#L53",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "misc-cdq-divide",
+      "title": "CDQ 分治",
+      "category": "misc",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "按一维分治，处理跨分界的偏序贡献。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/cdq-divide/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-parallel-binsearch",
+      "title": "整体二分",
+      "category": "misc",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "把许多二分查询一起递归处理。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/parallel-binsearch/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-odt",
+      "title": "珂朵莉树",
+      "category": "misc",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "按等值区间存储序列，注意数据分布和复杂度前提。",
+      "aliases": "ODT 颜色段均摊",
+      "url": "https://oi-wiki.org/misc/odt/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-probability",
+      "title": "概率与期望 DP",
+      "category": "dp",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "沿状态转移累计概率，或列出期望方程。",
+      "aliases": "期望DP 概率DP",
+      "url": "https://oi-wiki.org/dp/probability/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-count",
+      "title": "计数 DP",
+      "category": "dp",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "用状态设计控制方案的重复与遗漏。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/dp/count/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-opt-monotonic-queue-stack",
+      "title": "单调队列优化 DP",
+      "category": "dp",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "把一段候选转移压缩成单调结构。",
+      "aliases": "单调栈优化 单调队列优化",
+      "url": "https://oi-wiki.org/dp/opt/monotonic-queue-stack/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-opt-slope",
+      "title": "斜率优化",
+      "category": "dp",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "把转移改写为直线的最优值查询。",
+      "aliases": "CHT convex hull trick",
+      "url": "https://oi-wiki.org/dp/opt/slope/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2870",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-sa",
+      "title": "后缀数组",
+      "category": "string",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "将所有后缀排序，用 LCP 描述公共前缀。",
+      "aliases": "SA height LCP",
+      "url": "https://oi-wiki.org/string/sa/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L703",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-linear-algebra-basis",
+      "title": "线性基",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "维护异或空间的一组独立向量。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/linear-algebra/basis/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math_matrix.go#L414",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-numerical-gauss",
+      "title": "高斯消元",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "通过行变换求解线性方程组。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/numerical/gauss/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math_matrix.go#L278",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-number-theory-crt",
+      "title": "中国剩余定理",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "合并若干个模数下的同余条件。",
+      "aliases": "CRT exCRT 扩展中国剩余定理",
+      "url": "https://oi-wiki.org/math/number-theory/crt/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2402",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-number-theory-lucas",
+      "title": "Lucas 定理",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "在素数模数下按数位拆分组合数。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/lucas/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-sqrt-decomposition",
+      "title": "数论分块",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "利用整除结果相同的连续区间加速求和。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/sqrt-decomposition/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-convex-hull",
+      "title": "凸包",
+      "category": "geometry",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "寻找包住所有点的最小凸多边形。",
+      "aliases": "二维凸包 凸包快速操作",
+      "url": "https://oi-wiki.org/geometry/convex-hull/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/geometry.go#L946",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "geometry-scanning",
+      "title": "扫描线",
+      "category": "geometry",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "把二维几何事件按一维顺序处理。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/geometry/scanning/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-rotating-calipers",
+      "title": "旋转卡壳",
+      "category": "geometry",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "沿凸包同步移动支撑线，求极值或距离。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/geometry/rotating-calipers/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/geometry.go#L970",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-sam",
+      "title": "后缀自动机",
+      "category": "string",
+      "tier": 5,
+      "difficulty": 4,
+      "popularity": 3,
+      "summary": "用状态压缩一个字符串的所有子串。",
+      "aliases": "SAM suffix automaton",
+      "url": "https://oi-wiki.org/string/sam/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "string-pam",
+      "title": "回文树",
+      "category": "string",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "以不同回文串为节点，在线维护回文信息。",
+      "aliases": "PAM eertree 回文自动机",
+      "url": "https://oi-wiki.org/string/pam/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "string-general-sam",
+      "title": "广义后缀自动机",
+      "category": "string",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "把多个字符串的子串信息纳入同一自动机。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/string/general-sam/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "string-seq-automaton",
+      "title": "序列自动机",
+      "category": "string",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "快速判断与定位子序列匹配。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/string/seq-automaton/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L417",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-minimal-string",
+      "title": "最小表示法",
+      "category": "string",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "在线性时间内寻找最小的循环位移。",
+      "aliases": "Booth",
+      "url": "https://oi-wiki.org/string/minimal-string/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L379",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-lct",
+      "title": "Link-Cut Tree",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 4,
+      "popularity": 3,
+      "summary": "动态维护森林上的连边、断边与路径信息。",
+      "aliases": "LCT 动态树 LinkCutTree Link-Cut-Tree",
+      "url": "https://oi-wiki.org/ds/lct/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-seg-beats",
+      "title": "Segment Tree Beats",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 4,
+      "popularity": 3,
+      "summary": "结合次极值和均摊分析处理区间最值修改。",
+      "aliases": "吉司机线段树",
+      "url": "https://oi-wiki.org/ds/seg-beats/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-kdt",
+      "title": "K-D Tree",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "按维度划分空间，处理多维点集查询。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/kdt/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-seg-in-bit",
+      "title": "树状数组套线段树",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "在多个维度上组合索引结构。",
+      "aliases": "树套树 树状数组套权值线段树",
+      "url": "https://oi-wiki.org/ds/seg-in-bit/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-leftist-tree",
+      "title": "左偏树",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "让堆支持高效合并。",
+      "aliases": "左偏堆 可并堆",
+      "url": "https://oi-wiki.org/ds/leftist-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-block-forest",
+      "title": "圆方树",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "把点双连通结构转成便于查询的树。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/block-forest/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L1334",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-flow-bound",
+      "title": "上下界网络流",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用流量平衡转换处理每条边的上下限。",
+      "aliases": "有源汇上下界最大流 有源汇上下界最小流 无源汇上下界可行流",
+      "url": "https://oi-wiki.org/graph/flow/bound/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-graph-matching-bigraph-weight-match",
+      "title": "KM 算法",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "维护可行顶标，求二分图最大权匹配。",
+      "aliases": "Kuhn Munkres Hungarian",
+      "url": "https://oi-wiki.org/graph/graph-matching/bigraph-weight-match/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L3335",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-matrix-tree",
+      "title": "矩阵树定理",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用拉普拉斯矩阵的余子式统计生成树。",
+      "aliases": "基尔霍夫矩阵 基尔霍夫定理 Kirchhoff Laplacian 拉普拉斯矩阵 矩阵树定理",
+      "url": "https://oi-wiki.org/graph/matrix-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-prufer",
+      "title": "Prüfer 序列",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "在标号树与整数序列之间建立一一对应。",
+      "aliases": "Prufer 普吕弗序列 Prüfer序列",
+      "url": "https://oi-wiki.org/graph/prufer/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L2110",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-kth-path",
+      "title": "k 短路",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "枚举或维护多条按长度排序的路径。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/kth-path/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-mod-shortest-path",
+      "title": "同余最短路",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "以余数为状态，表示可达整数的边界。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/mod-shortest-path/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-opt-wqs-binary-search",
+      "title": "WQS 二分",
+      "category": "dp",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "为选取次数引入代价，在满足凸性等条件时恢复答案。",
+      "aliases": "带权二分 Aliens trick",
+      "url": "https://oi-wiki.org/dp/opt/wqs-binary-search/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2931",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "dp-opt-quadrangle",
+      "title": "四边形不等式优化",
+      "category": "dp",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "利用决策单调性减少 DP 的候选转移。",
+      "aliases": "Knuth 决策单调性DP Knuth优化",
+      "url": "https://oi-wiki.org/dp/opt/quadrangle/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-fft",
+      "title": "FFT",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用复数单位根快速计算卷积。",
+      "aliases": "快速傅里叶变换",
+      "url": "https://oi-wiki.org/math/poly/fft/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-ntt",
+      "title": "NTT",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 4,
+      "popularity": 4,
+      "summary": "在有限域中完成快速卷积。",
+      "aliases": "快速数论变换",
+      "url": "https://oi-wiki.org/math/poly/ntt/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-fwt",
+      "title": "FWT",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "加速按位与、或、异或卷积。",
+      "aliases": "快速沃尔什变换",
+      "url": "https://oi-wiki.org/math/poly/fwt/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-ogf",
+      "title": "普通生成函数",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用形式幂级数编码序列，让运算表达计数关系。",
+      "aliases": "OGF",
+      "url": "https://oi-wiki.org/math/poly/ogf/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-mobius",
+      "title": "莫比乌斯反演",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "在整除关系上反演求和，拆开公约数限制。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/mobius/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-dirichlet",
+      "title": "狄利克雷卷积",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用因子求和组合数论函数。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/dirichlet/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-discrete-logarithm",
+      "title": "BSGS",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用大步小步相遇的方法求离散对数。",
+      "aliases": "exBSGS 扩展BSGS 大步小步 离散对数",
+      "url": "https://oi-wiki.org/math/number-theory/discrete-logarithm/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2476",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-number-theory-pollard-rho",
+      "title": "Miller–Rabin 与 Pollard–Rho",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "快速判素并分解较大的整数。",
+      "aliases": "MR 质因数分解",
+      "url": "https://oi-wiki.org/math/number-theory/pollard-rho/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-numerical-interp",
+      "title": "拉格朗日插值",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "由若干点值恢复多项式或求指定位置的值。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/numerical/interp/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-half-plane",
+      "title": "半平面交",
+      "category": "geometry",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "求一组有向直线约束共同围出的区域。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/geometry/half-plane/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/geometry.go#L1042",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "geometry-nearest-points",
+      "title": "平面最近点对",
+      "category": "geometry",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "通过分治或扫描寻找距离最近的两点。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/geometry/nearest-points/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-modifiable-mo-algo",
+      "title": "带修改莫队",
+      "category": "misc",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "把修改时间作为另一维一起移动。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/modifiable-mo-algo/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/mo.go#L123",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "misc-mo-algo-on-tree",
+      "title": "树上莫队",
+      "category": "misc",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用欧拉序把树上路径查询转为区间问题。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/mo-algo-on-tree/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/mo.go#L318",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "dp-plug",
+      "title": "插头 DP",
+      "category": "dp",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "用轮廓线状态表达网格上的连通关系。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/dp/plug/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2291",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "dp-dynamic",
+      "title": "动态 DP",
+      "category": "dp",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "把可合并转移矩阵化，支持局部修改。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/dp/dynamic/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-opt-slope-trick",
+      "title": "Slope Trick",
+      "category": "dp",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "用斜率变化表示分段线性凸函数。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/dp/opt/slope-trick/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-newton",
+      "title": "多项式牛顿迭代",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "逐次倍增精度，求逆元等形式幂级数运算。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/poly/newton/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-elementary-func",
+      "title": "多项式 ln / exp",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "把形式幂级数的对数与指数运算转化为求导、积分、卷积和牛顿迭代。",
+      "aliases": "多项式对数 多项式指数 多项式ln 多项式exp",
+      "url": "https://oi-wiki.org/math/poly/elementary-func/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-egf",
+      "title": "指数生成函数",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "用阶乘加权编码带标号对象的组合关系。",
+      "aliases": "EGF",
+      "url": "https://oi-wiki.org/math/poly/egf/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-lagrange-inversion",
+      "title": "拉格朗日反演",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "从隐式函数关系中直接提取系数。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/poly/lagrange-inversion/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-linear-recurrence",
+      "title": "Bostan–Mori",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "通过分离奇偶项快速提取有理生成函数的系数。",
+      "aliases": "常系数线性递推 常系数齐次线性递推",
+      "url": "https://oi-wiki.org/math/poly/linear-recurrence/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-berlekamp-massey",
+      "title": "Berlekamp–Massey",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "从有限序列推断满足它的最短线性递推。",
+      "aliases": "BM",
+      "url": "https://oi-wiki.org/math/berlekamp-massey/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-hyperbola",
+      "title": "杜教筛",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "通过卷积关系递归求数论函数前缀和。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/hyperbola/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L3292",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-number-theory-min-25",
+      "title": "Min_25 筛",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "分离素数贡献与合数递推，处理积性函数求和。",
+      "aliases": "min-25筛 Min25筛",
+      "url": "https://oi-wiki.org/math/number-theory/min-25/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-euclidean",
+      "title": "类欧几里得算法",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "通过递归降参求带取整的数论和式。",
+      "aliases": "floor sum",
+      "url": "https://oi-wiki.org/math/number-theory/euclidean/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-quad-residue",
+      "title": "二次剩余与 Cipolla",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "判断并求解模素数意义下的平方根。",
+      "aliases": "二次剩余 Cipolla算法 勒让德符号 Legendre",
+      "url": "https://oi-wiki.org/math/number-theory/quad-residue/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2539",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-number-theory-primitive-root",
+      "title": "原根与阶",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "理解模乘群中的周期和生成元。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/primitive-root/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2106",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-combinatorics-stirling",
+      "title": "斯特林数",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "连接集合划分、排列轮换与多项式基底。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/combinatorics/stirling/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2895",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-combinatorics-polya",
+      "title": "Burnside 与 Pólya 计数",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "把对称性纳入计数，区分等价对象。",
+      "aliases": "Burnside定理 Burnside引理 Polya定理 Pólya定理 波利亚计数 轨道计数",
+      "url": "https://oi-wiki.org/math/combinatorics/polya/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-combinatorics-graph-enumeration",
+      "title": "图论计数",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "利用结构分解和生成函数统计图对象。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/combinatorics/graph-enumeration/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-dmst",
+      "title": "最小树形图",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "在有向图中寻找以给定结点为根、能从根到达所有顶点的最小权生成结构。",
+      "aliases": "朱刘算法 Chu Liu Edmonds 快速最小树形图 Tarjan 有向最小生成树 Directed MST O(ElogV)",
+      "url": "https://oi-wiki.org/graph/dmst/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2859",
+          "kind": "implementation"
+        },
+        {
+          "title": "快速实现 · KACTL · O(E log V)",
+          "url": "https://github.com/kth-competitive-programming/kactl/blob/main/content/graph/DirectedMST.h",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-steiner-tree",
+      "title": "斯坦纳树",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "允许借助其他点，以最小代价连通指定点集。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/steiner-tree/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2161",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-graph-matching-general-match",
+      "title": "带花树",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "收缩奇环，在一般图上寻找增广匹配。",
+      "aliases": "Blossom Edmonds",
+      "url": "https://oi-wiki.org/graph/graph-matching/general-match/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-stoer-wagner",
+      "title": "全局最小割",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "不预先指定源汇，寻找无向图的最小割。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/stoer-wagner/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-lgv",
+      "title": "LGV 引理",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "用路径计数矩阵的行列式统计不交路径。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/lgv/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-dominator-tree",
+      "title": "支配树",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "描述从入口出发必经的节点关系。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/dominator-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-dynamic-tree-divide",
+      "title": "动态点分治",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "在点分树上组织动态路径信息。",
+      "aliases": "动态树分治 动态点分治 点分树",
+      "url": "https://oi-wiki.org/graph/dynamic-tree-divide/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L892",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "string-lyndon",
+      "title": "Lyndon 分解",
+      "category": "string",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "把字符串分解为字典序性质良好的基本块。",
+      "aliases": "Duval Lyndon分解 Duval算法",
+      "url": "https://oi-wiki.org/string/lyndon/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-ett",
+      "title": "Euler Tour Tree",
+      "category": "ds",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "用动态欧拉序维护森林的连通与子树信息。",
+      "aliases": "ETT",
+      "url": "https://oi-wiki.org/ds/ett/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-sqrt-tree",
+      "title": "Sqrt Tree",
+      "category": "ds",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "递归分块，实现静态区间聚合的快速查询。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/sqrt-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-3d",
+      "title": "三维凸包",
+      "category": "geometry",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "在三维空间中维护包围点集的凸多面体。",
+      "aliases": "三维计算几何 三维凸包",
+      "url": "https://oi-wiki.org/geometry/3d/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-smallest-enclosing-circle",
+      "title": "最小圆覆盖",
+      "category": "geometry",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "用随机增量构造覆盖所有点的最小圆。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/geometry/smallest-enclosing-circle/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/geometry.go#L719",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "misc-rollback-mo-algo",
+      "title": "回滚莫队",
+      "category": "misc",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "只做容易的增量维护，再用回滚撤销临时操作。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/rollback-mo-algo/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/mo.go#L233",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "misc-frac-programming",
+      "title": "分数规划",
+      "category": "misc",
+      "tier": 6,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "把比值最优化转化为带参数的判定问题。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/frac-programming/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-top-tree",
+      "title": "Top Tree",
+      "category": "ds",
+      "tier": 7,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "用可合并的树簇组织动态树上的复杂信息。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/top-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-global-bst",
+      "title": "全局平衡二叉树",
+      "category": "ds",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "为整棵树建立可维护的平衡递归结构。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/global-bst/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-divide-combine",
+      "title": "析合树",
+      "category": "ds",
+      "tier": 7,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "刻画排列公共区间的嵌套与组合关系。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/divide-combine/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-kinetic-tournament-tree",
+      "title": "Kinetic Tournament Tree",
+      "category": "ds",
+      "tier": 7,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "跟踪随参数变化的优胜者及失效事件。",
+      "aliases": "KTT",
+      "url": "https://oi-wiki.org/ds/kinetic-tournament-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-cat-tree",
+      "title": "猫树",
+      "category": "ds",
+      "tier": 7,
+      "difficulty": 3,
+      "popularity": 1,
+      "summary": "用分治预处理支持静态区间的快速合并查询。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/cat-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "string-suffix-tree",
+      "title": "后缀树",
+      "category": "string",
+      "tier": 7,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "用压缩字典树表示所有后缀。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/string/suffix-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "string-main-lorentz",
+      "title": "Main–Lorentz",
+      "category": "string",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "通过分治寻找字符串中的重复结构。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/string/main-lorentz/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "string-suffix-bst",
+      "title": "后缀平衡树",
+      "category": "string",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "动态维护后缀的字典序关系。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/string/suffix-bst/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-czt",
+      "title": "Chirp Z 变换",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "在等比数列位置上快速求多项式点值。",
+      "aliases": "CZT",
+      "url": "https://oi-wiki.org/math/poly/czt/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-multipoint-eval-interpolation",
+      "title": "多点求值与快速插值",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "借助乘积树和多项式除法处理许多点值。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/poly/multipoint-eval-interpolation/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-shift",
+      "title": "多项式与连续点值平移",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把平移后的系数或一段连续点值批量算出。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/poly/shift/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-symbolic-method",
+      "title": "符号化方法",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把组合类的构造规则翻译成生成函数方程。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/poly/symbolic-method/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-powerful-number",
+      "title": "Powerful Number 筛",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把积性函数求和归结到强力数的贡献。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/powerful-number/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-prime-counting",
+      "title": "素数计数",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "无需枚举全部素数，计算给定范围内的素数数量。",
+      "aliases": "Lehmer pi(x)",
+      "url": "https://oi-wiki.org/math/number-theory/prime-counting/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-pell-equation",
+      "title": "Pell 方程",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "利用连分数寻找不定方程的整数解。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/pell-equation/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-combinatorics-bernoulli",
+      "title": "伯努利数",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "连接幂和公式、生成函数与组合恒等式。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/combinatorics/bernoulli/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-combinatorics-eulerian",
+      "title": "欧拉数",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 3,
+      "popularity": 1,
+      "summary": "统计排列的上升或下降等局部结构。",
+      "aliases": "Eulerian number",
+      "url": "https://oi-wiki.org/math/combinatorics/eulerian/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-combinatorics-partition",
+      "title": "整数分拆",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "统计把整数写成无序正整数之和的方法。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/combinatorics/partition/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-young-tableau",
+      "title": "杨表与钩长公式",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "通过格子形状理解排列与标准杨表计数。",
+      "aliases": "Young tableau hook length",
+      "url": "https://oi-wiki.org/math/young-tableau/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-simplex",
+      "title": "单纯形法",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "沿可行多面体的顶点改进线性目标函数。",
+      "aliases": "单纯形法",
+      "url": "https://oi-wiki.org/math/simplex/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-matroid",
+      "title": "拟阵",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "用独立集公理解释一类贪心为什么正确。",
+      "aliases": "matroid",
+      "url": "https://oi-wiki.org/math/matroid/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-graph-matching-general-weight-match",
+      "title": "一般图最大权匹配",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "在奇环与权值共同作用下维护最优匹配。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/graph-matching/general-weight-match/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-chord",
+      "title": "弦图与完美消除序",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "利用特殊顶点顺序处理团、着色等问题。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/chord/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-tree-ahu",
+      "title": "AHU 树同构",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 3,
+      "popularity": 1,
+      "summary": "用子树的规范化编码比较树的结构。",
+      "aliases": "树同构 AHU",
+      "url": "https://oi-wiki.org/graph/tree-ahu/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-rings-count",
+      "title": "三元环与四元环计数",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "按度数或分治组织环的统计。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/graph/rings-count/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-inverse",
+      "title": "反演几何",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 3,
+      "popularity": 1,
+      "summary": "把点和圆作反演变换，化简几何关系。",
+      "aliases": "圆反演 几何反演",
+      "url": "https://oi-wiki.org/geometry/inverse/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-mo-algo-secondary-offline",
+      "title": "莫队二次离线",
+      "category": "misc",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "再次重排莫队的转移事件，批量计算贡献。",
+      "aliases": "Sweepline Mo Offline Again 扫描线莫队",
+      "url": "https://oi-wiki.org/misc/mo-algo-secondary-offline/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-garsia-wachs",
+      "title": "Garsia–Wachs",
+      "category": "misc",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "求解保持原有次序的最优合并问题。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/misc/garsia-wachs/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "search-dlx",
+      "title": "Dancing Links",
+      "category": "search",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "以可快速撤销的双向链表求解精确覆盖。",
+      "aliases": "DLX Algorithm X DLX算法 精确覆盖 舞蹈链",
+      "url": "https://oi-wiki.org/search/dlx/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-algebra-schreier-sims",
+      "title": "Schreier–Sims",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "通过稳定化子链计算置换群的结构与阶。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/algebra/schreier-sims/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-pq-tree",
+      "title": "PQ 树",
+      "category": "ds",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "维护元素排列中的连续性约束。",
+      "aliases": "consecutive ones 连续1性质",
+      "url": "https://oi-wiki.org/ds/pq-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-finger-tree",
+      "title": "Finger Tree",
+      "category": "ds",
+      "tier": 8,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "通过可合并序列结构支持端点与局部访问。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/ds/finger-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-comp-rev",
+      "title": "形式幂级数复合与复合逆",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "计算级数代入，以及它在复合运算下的逆。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/poly/comp-rev/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-zhou",
+      "title": "洲阁筛",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "综合分解与筛法处理特定积性函数求和。",
+      "aliases": "洲阁筛 淋阁筛",
+      "url": "https://oi-wiki.org/math/number-theory/zhou/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-number-theory-quadratic",
+      "title": "二次域",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把含二次根式的数放进统一的代数结构。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/number-theory/quadratic/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-algebra-field-theory",
+      "title": "有限域",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "在有限元素构成的域中研究代数运算与扩张。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/algebra/field-theory/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-linear-algebra-jordan",
+      "title": "Jordan 标准型",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "把线性变换分解为描述特征结构的块。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/linear-algebra/jordan/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-combinatorics-entringer",
+      "title": "Entringer 数",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "细分计数交错排列，联系三角形递推。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/combinatorics/entringer/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-game-theory-partizan-game",
+      "title": "非公平组合博弈",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "研究双方合法行动不同的局面与博弈值。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/game-theory/partizan-game/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-order-theory",
+      "title": "序理论与格",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "用偏序、上下界和格描述抽象的比较结构。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/math/order-theory/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "string-sa-optimal-inplace",
+      "title": "原地线性后缀排序",
+      "category": "string",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "同时追求线性时间与严格的额外空间边界。",
+      "aliases": "",
+      "url": "https://oi-wiki.org/string/sa-optimal-inplace/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "wavelet-matrix",
+      "title": "Wavelet Matrix",
+      "category": "ds",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "逐层按位划分值域，支持静态序列上的排名与分位数查询。",
+      "aliases": "小波矩阵 波列矩阵",
+      "url": "https://noshi91.github.io/Library/data_structure/wavelet_matrix.cpp.html",
+      "source": "noshi91 Library",
+      "kind": "implementation"
+    },
+    {
+      "id": "smawk",
+      "title": "SMAWK",
+      "category": "dp",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "利用完全单调矩阵的结构，在线性次数的访问中找到各行最值。",
+      "aliases": "全单调矩阵 totally monotone",
+      "url": "https://noshi91.github.io/Library/algorithm/smawk.cpp.html",
+      "source": "noshi91 Library",
+      "kind": "implementation"
+    },
+    {
+      "id": "gomory-hu",
+      "title": "Gomory–Hu 树",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把无向图任意两点间的最小割信息压缩到一棵树。",
+      "aliases": "最小割树 cut tree GomoryHu Gomory–Hu",
+      "url": "https://github.com/kth-competitive-programming/kactl/blob/main/content/graph/GomoryHu.h",
+      "source": "KACTL",
+      "kind": "implementation"
+    },
+    {
+      "id": "fcb-lca",
+      "title": "Farach–Colton–Bender",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "利用欧拉序与微块类型，实现线性预处理、常数查询的 LCA。",
+      "aliases": "FCB LCA 线性RMQ 四毛子 线性预处理常数查询RMQ O(n)/O(1) RMQ",
+      "url": "https://cp-algorithms.com/graph/lca_farachcoltonbender.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "montgomery",
+      "title": "Montgomery 乘法",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "变换数值表示，减少大量模乘时昂贵的除法操作。",
+      "aliases": "蒙哥马利 模乘",
+      "url": "https://cp-algorithms.com/algebra/montgomery_multiplication.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "garner",
+      "title": "Garner 算法",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "用混合进制形式逐步恢复互质模数下的同余解。",
+      "aliases": "混合进制 CRT",
+      "url": "https://cp-algorithms.com/algebra/garners-algorithm.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "mpm-flow",
+      "title": "MPM 最大流",
+      "category": "graph",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "在分层网络中按顶点势推进阻塞流。",
+      "aliases": "Malhotra Pramodh Kumar Maheshwari",
+      "url": "https://cp-algorithms.com/graph/mpm.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "delaunay",
+      "title": "Delaunay 与 Voronoi",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "连接空圆三角剖分与最近邻区域的对偶结构。",
+      "aliases": "德劳内 泰森多边形 沃罗诺伊",
+      "url": "https://cp-algorithms.com/geometry/delaunay.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "minkowski",
+      "title": "Minkowski 和",
+      "category": "geometry",
+      "tier": 6,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "把两个点集的逐点相加转化为凸多边形边的有序合并。",
+      "aliases": "闵可夫斯基和",
+      "url": "https://cp-algorithms.com/geometry/minkowski.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "online-bridges",
+      "title": "在线维护桥",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "随加边更新连通与双连通结构，维护当前桥的数量。",
+      "aliases": "增量桥 online bridge",
+      "url": "https://cp-algorithms.com/graph/bridge-searching-online.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "basic-function",
+      "title": "函数与参数传递",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "将重复逻辑封装成函数，理解参数、返回值和作用域。",
+      "aliases": "函数 C++函数",
+      "url": "https://oi-wiki.org/lang/func/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-pointer-reference",
+      "title": "指针与引用",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "理解对象的地址与别名，判断数据何时被复制、共享或修改。",
+      "aliases": "指针 引用 pointer reference",
+      "url": "https://oi-wiki.org/lang/pointer/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-struct-class",
+      "title": "结构体与类",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "把相关字段和操作组织在一起，方便表示图边、状态与自定义数据结构。",
+      "aliases": "结构体 类 struct class",
+      "url": "https://oi-wiki.org/lang/struct/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-stl-sequence",
+      "title": "STL 序列容器",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "使用动态数组、双端队列等容器管理顺序数据，并关注访问和插入的代价。",
+      "aliases": "vector deque list STL",
+      "url": "https://oi-wiki.org/lang/csl/sequence-container/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-stl-associative",
+      "title": "STL 关联容器",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "用有序集合和映射维护键值、查找前驱后继以及处理重复元素。",
+      "aliases": "set map multiset multimap",
+      "url": "https://oi-wiki.org/lang/csl/associative-container/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-stl-unordered",
+      "title": "STL 无序关联容器",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "用哈希容器实现平均常数时间的集合与映射操作，同时留意冲突和最坏情况。",
+      "aliases": "unordered_set unordered_map",
+      "url": "https://oi-wiki.org/lang/csl/unordered-container/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-bitset",
+      "title": "bitset 与位集优化",
+      "category": "ds",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "把布尔数组压成机器字，用批量位运算加速集合运算和部分 DP 转移。",
+      "aliases": "bitset 位集 位压缩",
+      "url": "https://oi-wiki.org/lang/csl/bitset/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-pbds",
+      "title": "GNU pb_ds",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "使用策略数据结构提供的有序统计树等工具，处理排名与第 k 小查询。",
+      "aliases": "pbds pb_ds policy-based data structures",
+      "url": "https://oi-wiki.org/lang/pb-ds/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-selection-sort",
+      "title": "选择排序",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 3,
+      "summary": "反复把剩余元素中的最小值放到前面，理解最直接的比较排序。",
+      "aliases": "selection sort",
+      "url": "https://oi-wiki.org/basic/selection-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-bubble-sort",
+      "title": "冒泡排序",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 3,
+      "summary": "通过交换相邻逆序元素逐步排好序，观察逆序对与交换次数的关系。",
+      "aliases": "bubble sort",
+      "url": "https://oi-wiki.org/basic/bubble-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-insertion-sort",
+      "title": "插入排序",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 3,
+      "summary": "逐个把新元素插入已排序的前缀，适合小规模或接近有序的数据。",
+      "aliases": "insertion sort",
+      "url": "https://oi-wiki.org/basic/insertion-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-quick-sort",
+      "title": "快速排序",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "围绕枢轴划分序列后递归排序，理解随机化和退化情况。",
+      "aliases": "quicksort quick sort",
+      "url": "https://oi-wiki.org/basic/quick-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-merge-sort",
+      "title": "归并排序",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "先分别排好两半，再线性合并有序序列，也能顺便统计逆序对。",
+      "aliases": "merge sort",
+      "url": "https://oi-wiki.org/basic/merge-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-counting-sort",
+      "title": "计数排序",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "利用较小的值域统计每个值的出现次数，绕开逐对比较。",
+      "aliases": "counting sort",
+      "url": "https://oi-wiki.org/basic/counting-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-radix-sort",
+      "title": "基数排序",
+      "category": "basic",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "按数位执行稳定排序，用多轮局部排序得到整体顺序。",
+      "aliases": "radix sort",
+      "url": "https://oi-wiki.org/basic/radix-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-bucket-sort",
+      "title": "桶排序",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "把数据分配到有序的值域桶中，再分别排序与拼接。",
+      "aliases": "bucket sort",
+      "url": "https://oi-wiki.org/basic/bucket-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-heap-sort",
+      "title": "堆排序",
+      "category": "basic",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 2,
+      "summary": "用堆反复取出当前最大值，在原数组中完成排序。",
+      "aliases": "heap sort",
+      "url": "https://oi-wiki.org/basic/heap-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-shell-sort",
+      "title": "希尔排序",
+      "category": "basic",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 1,
+      "summary": "先对跨步子序列做插入排序，再逐步缩小步长直到整个数组有序。",
+      "aliases": "Shell sort",
+      "url": "https://oi-wiki.org/basic/shell-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-recurrence",
+      "title": "递推",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "从已知的较小规模答案推导后续结果，先明确初值和依赖顺序。",
+      "aliases": "递推式 recurrence",
+      "url": "https://oi-wiki.org/dp/basic/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-submask",
+      "title": "子集与超集枚举",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "用位掩码表示集合，按位枚举子集、超集和集合划分。",
+      "aliases": "枚举子集 枚举超集 submask supermask",
+      "url": "https://oi-wiki.org/math/binary-set/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-inversions",
+      "title": "逆序对",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "统计序列中顺序颠倒的数对，常用归并排序或树状数组加速。",
+      "aliases": "逆序数 inversion",
+      "url": "https://oi-wiki.org/basic/merge-sort/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-ternary-search",
+      "title": "三分搜索",
+      "category": "misc",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "利用单峰或单谷性质缩小最优值所在区间，使用前先证明目标函数的形状。",
+      "aliases": "三分法 ternary search",
+      "url": "https://cp-algorithms.com/num_methods/ternary_search.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "misc-stress-test",
+      "title": "对拍",
+      "category": "misc",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "用随机数据比较目标算法与可信的暴力解，找出能重现错误的反例。",
+      "aliases": "stress testing 随机测试",
+      "url": "https://oi-wiki.org/contest/common-tricks/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "basic-fast-io",
+      "title": "读入与输出优化",
+      "category": "basic",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "在大量输入输出时控制解析和缓冲开销，让实现更接近算法本身的复杂度。",
+      "aliases": "读入优化 快读 快写 常数优化",
+      "url": "https://oi-wiki.org/contest/io/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "search-iterative",
+      "title": "迭代加深搜索",
+      "category": "search",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "逐步增大深度上限，兼顾深度优先的空间开销与浅层答案的优先性。",
+      "aliases": "迭代加深DFS IDDFS",
+      "url": "https://oi-wiki.org/search/iterative/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "search-astar",
+      "title": "A* 搜索",
+      "category": "search",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用已花费代价与剩余代价估计共同安排扩展顺序，启发函数决定正确性条件。",
+      "aliases": "A星 A* Astar",
+      "url": "https://oi-wiki.org/search/astar/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "search-idastar",
+      "title": "IDA* 搜索",
+      "category": "search",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "按估价函数的阈值迭代加深，用较少内存搜索启发式最短解。",
+      "aliases": "IDA* IDA星",
+      "url": "https://oi-wiki.org/search/idastar/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "search-meet-in-middle",
+      "title": "折半搜索",
+      "category": "search",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "把指数规模的枚举拆成两半，再通过排序、哈希或双指针匹配结果。",
+      "aliases": "meet in the middle MITM 双向搜索",
+      "url": "https://oi-wiki.org/search/bidirectional/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-hill-climbing",
+      "title": "爬山算法",
+      "category": "misc",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "不断尝试邻近方案中的改进，用多次随机起点缓解陷入局部最优的问题。",
+      "aliases": "hill climbing 局部搜索",
+      "url": "https://oi-wiki.org/misc/hill-climbing/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-simulated-annealing",
+      "title": "模拟退火",
+      "category": "misc",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "按逐渐降温的概率接受较差方案，在探索范围与局部改进之间做权衡。",
+      "aliases": "SA simulated annealing",
+      "url": "https://oi-wiki.org/misc/simulated-annealing/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "misc-genetic",
+      "title": "遗传算法",
+      "category": "misc",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "维护一组候选解，通过选择、交叉与变异探索解空间；通常不保证全局最优。",
+      "aliases": "genetic algorithm 进化算法",
+      "url": "https://www.cs.colostate.edu/~genitor/MiscPubs/tutorial.pdf",
+      "source": "Darrell Whitley",
+      "kind": "article"
+    },
+    {
+      "id": "dp-linear",
+      "title": "线性 DP",
+      "category": "dp",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "沿序列处理状态，找到足够描述未来转移的信息并避免重复计算。",
+      "aliases": "线性dp 序列DP",
+      "url": "https://oi-wiki.org/dp/basic/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-unicyclic",
+      "title": "基环树 DP",
+      "category": "dp",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "将唯一的环与挂在环上的树分别处理，再合并边界状态。",
+      "aliases": "基环树上DP 环上DP",
+      "url": "https://oi-wiki.org/dp/tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-automaton",
+      "title": "自动机 DP",
+      "category": "dp",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "把匹配自动机的状态加入 DP，统计满足或避开特定模式的字符串。",
+      "aliases": "AC自动机DP 自动机上DP",
+      "url": "https://oi-wiki.org/string/ac-automaton/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-divide-conquer",
+      "title": "分治优化 DP",
+      "category": "dp",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "利用最优决策的单调性，递归缩小每个状态需要检查的转移区间。",
+      "aliases": "分治DP 决策单调性 divide and conquer DP",
+      "url": "https://cp-algorithms.com/dynamic_programming/divide-and-conquer-dp.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "dp-data-structure-opt",
+      "title": "数据结构优化 DP",
+      "category": "dp",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "把状态转移变成区间查询或动态集合查询，用数据结构维护已计算的状态。",
+      "aliases": "线段树优化DP 树状数组优化DP",
+      "url": "https://oi-wiki.org/dp/opt/dp-opt/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-of-dp",
+      "title": "DP 套 DP",
+      "category": "dp",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把一层 DP 的状态或转移结果作为另一层 DP 的对象，处理更复杂的计数与约束。",
+      "aliases": "dp套dp",
+      "url": "https://oi-wiki.org/dp/dp-of-dp/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-linked-list",
+      "title": "链表",
+      "category": "ds",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "用指针或数组下标连接元素，按节点位置完成插入、删除与拼接。",
+      "aliases": "单链表 双向链表 循环链表 linked list",
+      "url": "https://oi-wiki.org/ds/linked-list/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-double-heap",
+      "title": "对顶堆",
+      "category": "ds",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "分别维护较小和较大两部分元素，调整堆顶以查询动态中位数或分位点。",
+      "aliases": "双堆 median heap",
+      "url": "https://oi-wiki.org/ds/heap/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/heap.go#L139",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-fibonacci-heap",
+      "title": "斐波那契堆",
+      "category": "ds",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "通过延迟合并和级联调整获得高效的摊还减键操作，理论分析比二叉堆更精细。",
+      "aliases": "Fibonacci heap F-heap",
+      "url": "https://arxiv.org/abs/1407.5750",
+      "source": "原始论文",
+      "kind": "article"
+    },
+    {
+      "id": "ds-scapegoat",
+      "title": "替罪羊树",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "当子树过于失衡时整体重建，以均摊代价维护有序集合。",
+      "aliases": "Scapegoat Tree 替罪羊平衡树",
+      "url": "https://oi-wiki.org/ds/sgt/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-avl",
+      "title": "AVL 树",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "通过旋转限制左右子树的高度差，使查找和更新保持对数复杂度。",
+      "aliases": "AVL平衡树",
+      "url": "https://oi-wiki.org/ds/avl/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-sbt",
+      "title": "Size Balanced Tree",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 1,
+      "summary": "根据子树大小维护平衡，支持有序集合及顺序统计操作。",
+      "aliases": "SBT 大小平衡树",
+      "url": "https://oi-wiki.org/ds/sbt/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-rbtree",
+      "title": "红黑树",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "用颜色与局部旋转约束树高，是常见有序关联容器背后的平衡树方案。",
+      "aliases": "red black tree RBTree",
+      "url": "https://oi-wiki.org/ds/rbtree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-persistent-balanced",
+      "title": "可持久化平衡树",
+      "category": "ds",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "通过复制更新路径保留历史版本，支持查询旧版本的有序集合。",
+      "aliases": "可持久化Treap persistent balanced tree",
+      "url": "https://oi-wiki.org/ds/persistent-balanced/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-persistent-dsu",
+      "title": "可持久化并查集",
+      "category": "ds",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "保留并查集的历史版本，在不同版本中查询元素所在集合及连通关系。",
+      "aliases": "persistent DSU persistent union find",
+      "url": "https://oi-wiki.org/ds/persistent/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/union_find.go#L472",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-weighted-dsu",
+      "title": "带权并查集",
+      "category": "ds",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "在父子连接上记录差值、奇偶或相对关系，合并集合时同时维护约束。",
+      "aliases": "势能并查集 weighted DSU potential union find",
+      "url": "https://oi-wiki.org/ds/dsu/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-rollback-dsu",
+      "title": "可回滚并查集",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "记录合并操作的修改历史，按后进先出的顺序撤销，以配合离线分治。",
+      "aliases": "撤销并查集 rollback DSU",
+      "url": "https://cp-algorithms.com/data_structures/deleting_in_log_n.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "ds-seg-in-seg",
+      "title": "线段树套线段树",
+      "category": "ds",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "在外层线段树的节点内维护另一棵线段树，处理二维范围上的动态信息。",
+      "aliases": "树套树 二维线段树",
+      "url": "https://oi-wiki.org/ds/seg-in-seg/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-seg-in-balanced",
+      "title": "线段树套平衡树",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "在区间节点内维护有序集合，支持区间排名、前驱后继等动态查询。",
+      "aliases": "树套树 区间顺序统计",
+      "url": "https://oi-wiki.org/ds/balanced-in-seg/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-multidimensional-bit",
+      "title": "多维树状数组",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "把树状数组逐维推广，用多个低位跳转处理矩形修改与查询。",
+      "aliases": "二维树状数组 动态高维前缀和",
+      "url": "https://oi-wiki.org/ds/fenwick/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-tree-block",
+      "title": "树分块",
+      "category": "ds",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "把树按规模或路径结构拆成块，用块内直接处理与块间摘要平衡复杂度。",
+      "aliases": "树上分块 tree sqrt decomposition",
+      "url": "https://oi-wiki.org/ds/tree-decompose/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L2073",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "ds-dividing",
+      "title": "划分树 / Wavelet Tree",
+      "category": "ds",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "按值域划分序列并保存分流信息，加速静态区间第 k 小查询。",
+      "aliases": "partition tree Wavelet Tree 小波树 波列树",
+      "url": "https://oi-wiki.org/ds/dividing/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Wavelet Tree · USACO Guide",
+          "url": "https://usaco.guide/adv/wavelet",
+          "kind": "article"
+        }
+      ]
+    },
+    {
+      "id": "ds-binary-trie",
+      "title": "01 Trie",
+      "category": "ds",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "沿二进制位建立字典树，处理整数集合与最大异或等查询。",
+      "aliases": "01Trie树 二进制Trie 01字典树 binary trie",
+      "url": "https://oi-wiki.org/string/trie/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-edge-divide",
+      "title": "边分治",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "按平衡分割边递归拆树，分别统计跨过这条边的路径贡献。",
+      "aliases": "树上边分治 edge centroid decomposition",
+      "url": "https://oi-wiki.org/graph/tree-divide/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-tree-hash",
+      "title": "树哈希",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "将子树结构编码成哈希值，用于比较树形结构并注意随机碰撞风险。",
+      "aliases": "树的哈希 tree hashing",
+      "url": "https://oi-wiki.org/graph/tree-hash/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L61",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-kruskal-reconstruction",
+      "title": "Kruskal 重构树",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "把按边权合并连通块的过程建成树，将阈值连通查询转为祖先查询。",
+      "aliases": "Kruskal重构树 Kruskal reconstruction tree",
+      "url": "https://oi-wiki.org/graph/mst/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-shortest-path-tree",
+      "title": "最短路径树",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "选择各点的一条最短路前驱边，把单源最短路结果组织成树。",
+      "aliases": "最短路树 shortest path tree",
+      "url": "https://oi-wiki.org/graph/shortest-path/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-transitive-closure",
+      "title": "传递闭包",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "计算任意两点是否可达，常用布尔 Floyd 或位集批量传播。",
+      "aliases": "可达性闭包 transitive closure",
+      "url": "https://oi-wiki.org/graph/shortest-path/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2001",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-offline-dynamic-connectivity",
+      "title": "离线动态连通性",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "把每条边存在的时间区间放入时间线段树，配合可回滚并查集处理加边删边。",
+      "aliases": "动态图连通性 动态图连通性 线段树分治 时间分治 dynamic connectivity",
+      "url": "https://cp-algorithms.com/data_structures/deleting_in_log_n.html",
+      "source": "cp-algorithms",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/union_find.go#L554",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-cactus",
+      "title": "仙人掌图",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "利用每条边至多属于一个简单环的结构，把图上的问题拆成树与简单环。",
+      "aliases": "仙人掌 cactus graph",
+      "url": "https://oi-wiki.org/graph/bcc/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-tournament",
+      "title": "竞赛图",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "研究完全图每条边定向后的结构，利用哈密顿路径等性质解决排序和可达性问题。",
+      "aliases": "tournament graph 锦标赛图",
+      "url": "https://oi-wiki.org/graph/concept/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-exlucas",
+      "title": "扩展 Lucas 定理",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "将组合数的合数模数拆成素数幂部分处理，再用中国剩余定理合并。",
+      "aliases": "exLucas ex-Lucas 扩展卢卡斯",
+      "url": "https://oi-wiki.org/math/number-theory/lucas/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-higher-residue",
+      "title": "高次剩余与单位根",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "研究模意义下的幂方程与单位根，将求根问题联系到原根和离散对数。",
+      "aliases": "N次剩余 n次剩余 高次剩余 离散根 discrete root",
+      "url": "https://oi-wiki.org/math/number-theory/residue/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-arbitrary-mod-convolution",
+      "title": "任意模数卷积",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "在多个适合 NTT 的模数下计算卷积，再通过 CRT 与系数范围恢复目标模数下的结果。",
+      "aliases": "任意模数NTT 任意模NTT 三模数NTT MTT arbitrary modulus convolution",
+      "url": "https://cp-algorithms.com/algebra/fft.html#multiplication-with-arbitrary-modulus",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "math-divide-conquer-convolution",
+      "title": "分治 FFT / NTT",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "按照递推依赖分治计算已知区间对后续区间的卷积贡献，而不是只做一次多项式乘法。",
+      "aliases": "分治NTT 分治FFT CDQ卷积 在线卷积",
+      "url": "https://oi-wiki.org/math/combinatorics/graph-enumeration/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-inverse",
+      "title": "多项式求逆",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "在常数项可逆时，求出与给定幂级数相乘后模 x 的指定次幂等于 1 的截断级数。",
+      "aliases": "幂级数求逆 polynomial inverse",
+      "url": "https://oi-wiki.org/math/poly/elementary-func/#多项式求逆",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-division",
+      "title": "多项式除法与取模",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "反转多项式后利用求逆快速计算商，再由减法得到余式。",
+      "aliases": "多项式除法 多项式取模 polynomial division",
+      "url": "https://oi-wiki.org/math/poly/elementary-func/#多项式除法--取模",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-poly-sqrt",
+      "title": "多项式开根",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "在首项与模数满足条件时，用牛顿迭代求形式幂级数的平方根。",
+      "aliases": "多项式开方 多项式开根号 多项式sqrt FPS sqrt",
+      "url": "https://oi-wiki.org/math/poly/elementary-func/#多项式开方",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-subset-transform",
+      "title": "SOS DP / 快速子集变换",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "逐位累加子集或超集贡献，把所有掩码上的子集求和变成高维前缀和。",
+      "aliases": "FMT FST SOSDP 快速子集变换 子集zeta变换 高维前缀和",
+      "url": "https://usaco.guide/plat/dp-sos",
+      "source": "USACO Guide",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2228",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-binomial-inversion",
+      "title": "二项式反演",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用带符号的二项式系数变换，在累计选择数与恰好选择数之间恢复原序列。",
+      "aliases": "binomial inversion 二项式反演",
+      "url": "https://oi-wiki.org/math/combinatorics/combination/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-minmax-inclusion",
+      "title": "min–max 容斥",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "将一组量的最小值与不同子集的最大值联系起来，常用于期望与计数。",
+      "aliases": "minmax容斥 min-max容斥 最大最小值容斥",
+      "url": "https://oi-wiki.org/math/combinatorics/inclusion-exclusion-principle/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-fibonacci",
+      "title": "斐波那契数列",
+      "category": "math",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "研究相邻两项相加的递推及其恒等式，使用快速倍增或矩阵快速幂求远处的项。",
+      "aliases": "Fibonacci 斐波那契数列",
+      "url": "https://oi-wiki.org/math/combinatorics/fibonacci/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-derangement",
+      "title": "错位排列",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "统计没有任何元素留在原位置的排列，用递推或容斥得到答案。",
+      "aliases": "错排问题 derangement",
+      "url": "https://oi-wiki.org/math/combinatorics/derangement/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-bell",
+      "title": "贝尔数",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "统计一个集合被划分成若干非空无标号部分的方案数。",
+      "aliases": "Bell数 Bell number",
+      "url": "https://oi-wiki.org/math/combinatorics/bell/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2957",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-probability-basic",
+      "title": "概率基础",
+      "category": "math",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "建立样本空间与事件模型，区分等可能计数、概率和随机变量。",
+      "aliases": "概率论 样本空间",
+      "url": "https://oi-wiki.org/math/probability/basic-conception/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-conditional-probability",
+      "title": "条件概率与独立性",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "在已知部分信息时更新概率，并判断多个事件能否独立相乘。",
+      "aliases": "条件概率 贝叶斯 独立事件",
+      "url": "https://oi-wiki.org/math/probability/conditional-probability/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-linearity-expectation",
+      "title": "期望的线性性",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "将复杂随机量拆成若干容易计算的贡献，即使这些贡献并不独立也能对期望求和。",
+      "aliases": "期望线性性 linearity of expectation",
+      "url": "https://oi-wiki.org/math/probability/exp-var/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-determinant",
+      "title": "行列式",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用消元与代数性质计算矩阵的行列式，连接可逆性、体积和图论计数。",
+      "aliases": "det determinant",
+      "url": "https://oi-wiki.org/math/linear-algebra/determinant/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math_matrix.go#L337",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-matrix-inverse",
+      "title": "矩阵求逆",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "对增广矩阵做消元，在矩阵可逆时得到其逆矩阵。",
+      "aliases": "matrix inverse Gauss Jordan",
+      "url": "https://oi-wiki.org/math/numerical/gauss/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math_matrix.go#L220",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-eigen",
+      "title": "特征值与特征向量",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "寻找在线性变换下只改变尺度的方向，理解对角化及其适用条件。",
+      "aliases": "eigenvalue eigenvector 对角化",
+      "url": "https://oi-wiki.org/math/linear-algebra/diagonalization/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-permutation",
+      "title": "置换与循环分解",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "把排列看作双射并分解成互不相交的循环，研究复合、幂与循环结构。",
+      "aliases": "置换 轮换 permutation cycle",
+      "url": "https://oi-wiki.org/math/permutation/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-best",
+      "title": "BEST 定理",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "将有向欧拉图的欧拉回路计数转为根向生成树计数和各点出边排列。",
+      "aliases": "BEST定理 有向欧拉回路计数",
+      "url": "https://oi-wiki.org/graph/matrix-tree/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-root-unity-filter",
+      "title": "单位根反演",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "利用单位根幂和消去不满足同余条件的项，从生成函数中提取指定下标类别。",
+      "aliases": "单位根筛 roots of unity filter",
+      "url": "https://oi-wiki.org/math/number-theory/residue/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-linear-programming",
+      "title": "线性规划",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "用线性目标函数与线性约束描述优化问题，理解可行域、最优解与对偶。",
+      "aliases": "LP linear programming",
+      "url": "https://oi-wiki.org/math/linear-programming/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-polygon-point",
+      "title": "点与多边形位置关系",
+      "category": "geometry",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "利用叉积、射线或凸多边形上的二分，判断点在多边形内、外或边界上。",
+      "aliases": "多边形包含 点在多边形内 point in polygon",
+      "url": "https://cp-algorithms.com/geometry/point-in-convex-polygon.html",
+      "source": "cp-algorithms",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/geometry.go#L1094",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "geometry-circle-intersection",
+      "title": "圆的相交",
+      "category": "geometry",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "通过圆心距离和弦所在直线求交点，并分别处理相切、相离与重合。",
+      "aliases": "圆圆交点 圆交点 circle intersection",
+      "url": "https://cp-algorithms.com/geometry/circle-circle-intersection.html",
+      "source": "cp-algorithms",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/geometry.go#L615",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "geometry-circle-tangent",
+      "title": "圆的公切线",
+      "category": "geometry",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "把切线到圆心的距离条件化为几何方程，枚举两圆内外公切线。",
+      "aliases": "圆切线 公切线 circle tangent",
+      "url": "https://cp-algorithms.com/geometry/tangents-to-two-circles.html",
+      "source": "cp-algorithms",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/geometry.go#L676",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "geometry-point-location",
+      "title": "平面点定位",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "在预处理后的平面细分中，快速找到给定点落在哪个区域。",
+      "aliases": "点定位 planar point location",
+      "url": "https://cp-algorithms.com/geometry/point-location.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-pick",
+      "title": "Pick 定理",
+      "category": "geometry",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "把简单格点多边形的面积与内部格点、边界格点数量联系起来。",
+      "aliases": "Picks定理 皮克定理 Pick theorem",
+      "url": "https://oi-wiki.org/geometry/pick/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "math-simpson",
+      "title": "自适应辛普森积分",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "比较整段与分段的辛普森近似，按误差估计自适应细分积分区间。",
+      "aliases": "辛普森积分 Simpson 自适应辛普森 自适应辛普森积分",
+      "url": "https://oi-wiki.org/math/numerical/integral/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "graph-long-chain",
+      "title": "长链剖分",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "选择向下深度最大的子节点连接长链，复用按深度组织的状态或加速祖先查询。",
+      "aliases": "long chain decomposition 长链剖分优化DP",
+      "url": "https://oi-wiki.org/graph/hld/#长链剖分",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph_tree.go#L1755",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-pohlig-hellman",
+      "title": "Pohlig–Hellman 算法",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "利用群阶的素因子分解，将离散对数拆成较小的素数幂问题再合并。",
+      "aliases": "Pohlig Hellman PH算法",
+      "url": "https://doc.sagemath.org/html/en/reference/groups/sage/groups/generic.html#sage.groups.generic.discrete_log",
+      "source": "SageMath",
+      "kind": "article"
+    },
+    {
+      "id": "basic-stl-pair",
+      "title": "pair 与二元组",
+      "category": "basic",
+      "tier": 1,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "将两个值作为一个对象保存，并理解默认按第一项、再按第二项比较的顺序。",
+      "aliases": "pair 二元组",
+      "url": "https://oi-wiki.org/lang/csl/pair/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "ds-merge-sort-tree",
+      "title": "归并树",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "在树的每个结点存储有序序列，用二分回答区间计数和顺序统计查询。",
+      "aliases": "Merge Sort Tree Mergesort Tree 归并排序树",
+      "url": "https://usaco.guide/adv/wavelet",
+      "source": "USACO Guide",
+      "kind": "article"
+    },
+    {
+      "id": "ds-binomial-heap",
+      "title": "二项堆",
+      "category": "ds",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把二项树按阶组织，通过类似二进制进位的合并维护可并优先队列。",
+      "aliases": "Binomial Heap 二项式堆",
+      "url": "https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/BinomialMinPQ.html",
+      "source": "Princeton Algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "graph-spqr-tree",
+      "title": "SPQR 树与三连通分解",
+      "category": "graph",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "将双连通多重图分解为串联、并联和三连通骨架，进一步刻画二点割结构。",
+      "aliases": "Triconnected Components 3-connected components 三点连通分量 线性三连通分解",
+      "url": "https://ogdf.github.io/doc/ogdf/classogdf_1_1_static_s_p_q_r_tree.html",
+      "source": "OGDF",
+      "kind": "article"
+    },
+    {
+      "id": "graph-push-relabel",
+      "title": "预流推进",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "允许中间顶点暂存多余流量，交替推进流量和提升高度来求最大流。",
+      "aliases": "Push Relabel Preflow Push HLPP 最高标号预流推进",
+      "url": "https://cp-algorithms.com/graph/push-relabel.html",
+      "source": "cp-algorithms",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L4707",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-strongly-polynomial-mincost",
+      "title": "强多项式最小费用流",
+      "category": "graph",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "研究运算次数只依赖顶点与边数的费用流算法，越过对容量和费用数值的依赖。",
+      "aliases": "Orlin strongly polynomial MCMF 最小费用最大流强多项式算法",
+      "url": "https://dspace.mit.edu/entities/publication/195e51a3-60cc-436c-bfad-cfcc6df4a361",
+      "source": "MIT 论文库",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-dynamic-convex-hull",
+      "title": "动态二维凸包",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "在点集更新时维护凸包边界；动态平面三角剖分提供了一条实现路径。",
+      "aliases": "Online Convex Hull Dynamic Planar Convex Hull 在线凸包",
+      "url": "https://doc.cgal.org/latest/Triangulation_2/index.html",
+      "source": "CGAL",
+      "kind": "article"
+    },
+    {
+      "id": "math-gf-differential-equation",
+      "title": "生成函数微分方程技巧",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "将带下标权重的递推转成生成函数的导数关系，用形式微分方程组织计数。",
+      "aliases": "ODE differential technique Elegia derivative magic 生成函数求导",
+      "url": "https://codeforces.com/blog/entry/76447",
+      "source": "Codeforces",
+      "kind": "article"
+    },
+    {
+      "id": "math-set-series-composition",
+      "title": "集合幂级数复合",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "把多项式复合推广到集合幂级数，在子集卷积的代数结构中处理高阶运算。",
+      "aliases": "Polynomial Composite Set Power Series Elegia subset convolution derivative magic",
+      "url": "https://codeforces.com/blog/entry/92183",
+      "source": "Codeforces",
+      "kind": "article"
+    },
+    {
+      "id": "math-subset-convolution",
+      "title": "子集卷积",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "按子集大小分层做变换，再卷积与反演，统计集合拆成两个不交部分的贡献。",
+      "aliases": "Subset Convolution Ranked Zeta Transform 集合幂级数乘法",
+      "url": "https://arxiv.org/abs/cs/0611101",
+      "source": "原始论文",
+      "kind": "article"
+    },
+    {
+      "id": "math-matroid-intersection",
+      "title": "拟阵交",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "在两个拟阵中寻找共同独立集，用交换图与增广推广匹配的思路。",
+      "aliases": "Matroid Intersection 拟阵求交",
+      "url": "https://oi-wiki.org/math/matroid/#拟阵交",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "dp-kadane",
+      "title": "最大子段和",
+      "category": "dp",
+      "tier": 2,
+      "difficulty": 1,
+      "popularity": 5,
+      "summary": "维护以当前位置结尾的最佳连续区间，让负贡献及时退出。",
+      "aliases": "Kadane 最大子数组和 最大连续子段和",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L471",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "dp-lcs",
+      "title": "最长公共子序列",
+      "category": "dp",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "在两个序列的前缀之间转移，寻找不要求连续的最长共同顺序。",
+      "aliases": "LCS Longest Common Subsequence",
+      "url": "https://oi-wiki.org/dp/basic/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L643",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "dp-lis",
+      "title": "最长上升子序列",
+      "category": "dp",
+      "tier": 2,
+      "difficulty": 2,
+      "popularity": 5,
+      "summary": "维护不同长度递增子序列的最小末尾，用二分优化状态转移。",
+      "aliases": "LIS Longest Increasing Subsequence 最长递增子序列",
+      "url": "https://cp-algorithms.com/dynamic_programming/longest_increasing_subsequence.html",
+      "source": "cp-algorithms",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L781",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "dp-lcis",
+      "title": "最长公共上升子序列",
+      "category": "dp",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "同时满足两个序列中的公共顺序与数值递增条件，结合两类子序列状态。",
+      "aliases": "LCIS Longest Common Increasing Subsequence",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L863",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "dp-lps",
+      "title": "最长回文子序列",
+      "category": "dp",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "按区间两端字符是否相同转移，保留能够构成回文的最长子序列。",
+      "aliases": "LPS Longest Palindromic Subsequence",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1644",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "dp-distinct-subsequence",
+      "title": "不同子序列计数",
+      "category": "dp",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "记录同一字符上次产生的贡献，扣除重复生成的子序列。",
+      "aliases": "Distinct Subsequences 子序列去重计数",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L984",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "dp-tsp",
+      "title": "旅行商状压 DP",
+      "category": "dp",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用已访问的顶点集合和当前终点作为状态，寻找访问所有点的最短路线。",
+      "aliases": "TSP Held Karp Hamilton 哈密顿路径",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1972",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "graph-01-bfs",
+      "title": "0–1 BFS",
+      "category": "graph",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "当边权只有零和一时，用双端队列按距离顺序扩展最短路。",
+      "aliases": "01BFS 0-1 BFS 零一最短路",
+      "url": "https://cp-algorithms.com/graph/01_bfs.html",
+      "source": "cp-algorithms",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L1803",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "graph-johnson",
+      "title": "Johnson 全源最短路",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "用势能重新赋权消除负边，再从各点运行 Dijkstra 求稀疏图全源最短路。",
+      "aliases": "Johnson Algorithm 重赋权",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2063",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "graph-shortest-cycle",
+      "title": "最小环",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "在最短路状态中控制环上最大编号的引入顺序，寻找最轻的简单环。",
+      "aliases": "Shortest Cycle Minimum Cycle Floyd最小环",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2035",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "graph-second-mst",
+      "title": "严格次小生成树",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "考察非树边替换形成的环，维护路径上不同的最大边权来寻找严格更大的最优解。",
+      "aliases": "Second Best MST 次小生成树",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2563",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "graph-manhattan-mst",
+      "title": "曼哈顿最小生成树",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "利用方向变换和邻近候选边，减少曼哈顿距离完全图中的生成树边集。",
+      "aliases": "Manhattan MST",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2684",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "graph-min-width-mst",
+      "title": "最小极差生成树",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "让生成树中最重边与最轻边的差最小，围绕排序后的边区间检查连通性。",
+      "aliases": "Minimum Width Spanning Tree 最小差值生成树",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2790",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "graph-degree-constrained-mst",
+      "title": "根度数限制生成树",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "在指定根的度数受限时优化生成树，结合根边选择与环上替换。",
+      "aliases": "Degree Constrained MST 度限制最小生成树",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L2431",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "graph-dag-path-cover",
+      "title": "DAG 最小路径覆盖",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "将顶点拆成左右两份，通过二分图匹配拼接互不相交的路径。",
+      "aliases": "Minimum Path Cover 最小不相交路径覆盖",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L3113",
+      "source": "codeforces-go",
+      "kind": "article"
+    },
+    {
+      "id": "graph-hopcroft-karp",
+      "title": "Hopcroft–Karp",
+      "category": "graph",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "分层寻找并同时增广多条最短交替路，加速二分图最大匹配。",
+      "aliases": "HK 算法 Hopcroft Karp",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L3231",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "graph-maximum-clique",
+      "title": "最大团与最大独立集",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "通过补图联系团和独立集，结合位集、搜索或折半处理规模较小的一般图。",
+      "aliases": "Maximum Clique Maximum Independent Set MIS 最大团搜索",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/graph.go#L5071",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "math-continued-fraction",
+      "title": "连分数",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "通过逐层整数部分与倒数表示数，研究有理逼近和二次无理数的周期。",
+      "aliases": "Continued Fraction 渐近分数",
+      "url": "https://cp-algorithms.com/algebra/continued-fractions.html",
+      "source": "cp-algorithms",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math_continued_fraction.go#L22",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "math-stern-brocot",
+      "title": "Stern–Brocot 树",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 3,
+      "popularity": 1,
+      "summary": "用相邻分数的中间分数生成全部正有理数，并联系 Farey 序列与连分数。",
+      "aliases": "Stern Brocot Farey Calkin Wilf 有理数树",
+      "url": "https://cp-algorithms.com/others/stern_brocot_tree_farey_sequences.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "math-cantor-expansion",
+      "title": "康托展开",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用每一位后方更小元素的数量与阶乘权重，为排列计算字典序排名。",
+      "aliases": "Cantor Expansion Lehmer Code 逆康托展开 排列排名",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/search.go#L533",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "math-gray-code",
+      "title": "格雷码",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 2,
+      "popularity": 2,
+      "summary": "让相邻编码只改变一个二进制位，构造平滑遍历全部状态的顺序。",
+      "aliases": "Gray Code 反射二进制码",
+      "url": "https://cp-algorithms.com/algebra/gray-code.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "math-gosper-hack",
+      "title": "Gosper’s Hack",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "借助最低位的一位和进位，一步跳到具有相同置位数的下一个掩码。",
+      "aliases": "Gosper Hack 固定大小子集枚举 固定popcount枚举",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/search.go#L844",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "misc-josephus",
+      "title": "约瑟夫问题",
+      "category": "misc",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "删除一个人后重新编号，把环形淘汰过程转化为规模递减的递推。",
+      "aliases": "Josephus Problem 环形报数",
+      "url": "https://oi-wiki.org/misc/josephus/",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "Go 模板 · codeforces-go",
+          "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/misc.go#L802",
+          "kind": "implementation"
+        }
+      ]
+    },
+    {
+      "id": "misc-floyd-cycle",
+      "title": "Floyd 判圈",
+      "category": "misc",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "让快慢指针在函数迭代序列中相遇，定位循环入口并计算环长。",
+      "aliases": "Tortoise Hare 龟兔算法 快慢指针 环检测 Floyd Cycle Detection",
+      "url": "https://cp-algorithms.com/others/tortoise_and_hare.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "misc-majority-vote",
+      "title": "Boyer–Moore 多数投票",
+      "category": "misc",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "通过不同元素两两抵消保留多数候选，再检查候选是否真正过半。",
+      "aliases": "Majority Vote 摩尔投票 主元素问题",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/misc.go#L984",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "ds-seg-binary-search",
+      "title": "线段树上二分",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 4,
+      "summary": "利用结点聚合信息排除整段范围，沿树下降定位第一个满足条件的位置。",
+      "aliases": "Segment Tree Walking 线段树上查找 findFirst findLast",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/segment_tree.go#L249",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "ds-dynamic-seg",
+      "title": "动态开点线段树",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "只创建访问到的结点，在很大的坐标范围上维护稀疏的区间信息。",
+      "aliases": "Implicit Segment Tree Sparse Segment Tree 动态线段树",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/segment_tree.go#L527",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "ds-lazy-heap",
+      "title": "懒删除堆",
+      "category": "ds",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "记录待删除元素并在堆顶集中清理，为普通堆补充删除操作。",
+      "aliases": "Lazy Heap 延迟删除堆 可删除堆",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/heap.go#L210",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "geometry-angular-sweep",
+      "title": "极角扫描与定半径圆覆盖",
+      "category": "geometry",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "固定一个边界点，将其余点可被覆盖的圆心位置转为角度区间并扫描。",
+      "aliases": "Angular Sweep Maximum Points Covered 固定半径圆覆盖",
+      "url": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/geometry.go#L749",
+      "source": "codeforces-go",
+      "kind": "implementation"
+    },
+    {
+      "id": "geometry-curved-boolean",
+      "title": "圆弧区域交并",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把圆弧作为区域边界，分割相交曲线并组织边界来计算区域的交与并。",
+      "aliases": "圆面积并 圆面积交 Circular Arc Boolean Set Operations 曲边多边形",
+      "url": "https://doc.cgal.org/latest/Boolean_set_operations_2/index.html",
+      "source": "CGAL",
+      "kind": "article"
+    }
+  ],
+  "updated": "2026-10-15"
+}
