@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "updatedAt": "2026-10-15",
   "categories": [
     {
@@ -382,7 +382,7 @@
       "difficulty": 1,
       "popularity": 5,
       "summary": "分清顺序与重复，再数清选择的数量。",
-      "aliases": "杨辉三角 多重集组合数 二项式定理",
+      "aliases": "杨辉三角 多重集组合数 二项式定理 组合恒等式 组合数前缀和 移动边界 嵌套选择 唯一拆分",
       "url": "https://oi-wiki.org/math/combinatorics/combination/",
       "source": "OI Wiki",
       "kind": "article"
@@ -992,7 +992,14 @@
       "aliases": "Aho Corasick",
       "url": "https://oi-wiki.org/string/ac-automaton/",
       "source": "OI Wiki",
-      "kind": "article"
+      "kind": "article",
+      "references": [
+        {
+          "title": "静态结构动态化 · 二进制分组",
+          "url": "https://oi-wiki.org/ds/kdt/#二进制分组",
+          "kind": "article"
+        }
+      ]
     },
     {
       "id": "graph-lca",
@@ -1220,7 +1227,7 @@
       "difficulty": 2,
       "popularity": 4,
       "summary": "用交替加减处理集合重叠造成的重复计数。",
-      "aliases": "容斥原理",
+      "aliases": "容斥原理 图上容斥 等式收缩 局部禁止",
       "url": "https://oi-wiki.org/math/combinatorics/inclusion-exclusion-principle/",
       "source": "OI Wiki",
       "kind": "article"
@@ -1246,7 +1253,7 @@
       "difficulty": 2,
       "popularity": 4,
       "summary": "把公平组合游戏映射为可异或的局面值。",
-      "aliases": "Sprague Grundy mex 博弈论 SG函数 公平组合博弈",
+      "aliases": "Sprague Grundy mex 博弈论 SG函数 公平组合博弈 SG定理 树上删边博弈",
       "url": "https://oi-wiki.org/math/game-theory/impartial-game/",
       "source": "OI Wiki",
       "kind": "article"
@@ -1272,7 +1279,7 @@
       "difficulty": 2,
       "popularity": 4,
       "summary": "识别合法括号、树形结构等经典计数模型。",
-      "aliases": "",
+      "aliases": "Catalan 卡特兰数 反射原理应用",
       "url": "https://oi-wiki.org/math/combinatorics/catalan/",
       "source": "OI Wiki",
       "kind": "article"
@@ -1524,7 +1531,7 @@
       "difficulty": 3,
       "popularity": 4,
       "summary": "同时保持下标顺序和堆序，连接区间与树。",
-      "aliases": "",
+      "aliases": "随机笛卡尔树 区间最小值事件",
       "url": "https://oi-wiki.org/ds/cartesian-tree/",
       "source": "OI Wiki",
       "kind": "article"
@@ -1853,7 +1860,7 @@
       "difficulty": 3,
       "popularity": 3,
       "summary": "快速判断与定位子序列匹配。",
-      "aliases": "",
+      "aliases": "下一次出现 子序列规范选择 去重计数",
       "url": "https://oi-wiki.org/string/seq-automaton/",
       "source": "OI Wiki",
       "kind": "article",
@@ -2142,7 +2149,7 @@
       "difficulty": 3,
       "popularity": 3,
       "summary": "用形式幂级数编码序列，让运算表达计数关系。",
-      "aliases": "OGF",
+      "aliases": "OGF 普通生成函数",
       "url": "https://oi-wiki.org/math/poly/ogf/",
       "source": "OI Wiki",
       "kind": "article"
@@ -2168,7 +2175,7 @@
       "difficulty": 3,
       "popularity": 3,
       "summary": "用因子求和组合数论函数。",
-      "aliases": "",
+      "aliases": "Dirichlet Inverse 狄利克雷逆",
       "url": "https://oi-wiki.org/math/number-theory/dirichlet/",
       "source": "OI Wiki",
       "kind": "article"
@@ -2346,7 +2353,7 @@
       "difficulty": 4,
       "popularity": 2,
       "summary": "逐次倍增精度，求逆元等形式幂级数运算。",
-      "aliases": "",
+      "aliases": "形式幂级数Newton法 FPS Newton",
       "url": "https://oi-wiki.org/math/poly/newton/",
       "source": "OI Wiki",
       "kind": "article"
@@ -2372,7 +2379,7 @@
       "difficulty": 4,
       "popularity": 2,
       "summary": "用阶乘加权编码带标号对象的组合关系。",
-      "aliases": "EGF",
+      "aliases": "EGF 置换循环类型 指数生成函数",
       "url": "https://oi-wiki.org/math/poly/egf/",
       "source": "OI Wiki",
       "kind": "article"
@@ -2457,7 +2464,7 @@
       "difficulty": 4,
       "popularity": 2,
       "summary": "通过递归降参求带取整的数论和式。",
-      "aliases": "floor sum",
+      "aliases": "floor sum floor_sum 带符号整除",
       "url": "https://oi-wiki.org/math/number-theory/euclidean/",
       "source": "OI Wiki",
       "kind": "article"
@@ -2490,7 +2497,7 @@
       "difficulty": 4,
       "popularity": 2,
       "summary": "理解模乘群中的周期和生成元。",
-      "aliases": "",
+      "aliases": "循环群 元素阶 幂方程",
       "url": "https://oi-wiki.org/math/number-theory/primitive-root/",
       "source": "OI Wiki",
       "kind": "article",
@@ -2510,7 +2517,7 @@
       "difficulty": 4,
       "popularity": 2,
       "summary": "连接集合划分、排列轮换与多项式基底。",
-      "aliases": "",
+      "aliases": "Stirling 满射计数 阶乘矩",
       "url": "https://oi-wiki.org/math/combinatorics/stirling/",
       "source": "OI Wiki",
       "kind": "article",
@@ -2530,7 +2537,7 @@
       "difficulty": 4,
       "popularity": 2,
       "summary": "把对称性纳入计数，区分等价对象。",
-      "aliases": "Burnside定理 Burnside引理 Polya定理 Pólya定理 波利亚计数 轨道计数",
+      "aliases": "Burnside定理 Burnside引理 Polya定理 Pólya定理 波利亚计数 轨道计数 循环指标 Cycle Index 置换群计数",
       "url": "https://oi-wiki.org/math/combinatorics/polya/",
       "source": "OI Wiki",
       "kind": "article"
@@ -2556,7 +2563,7 @@
       "difficulty": 4,
       "popularity": 2,
       "summary": "在有向图中寻找以给定结点为根、能从根到达所有顶点的最小权生成结构。",
-      "aliases": "朱刘算法 Chu Liu Edmonds 快速最小树形图 Tarjan 有向最小生成树 Directed MST O(ElogV)",
+      "aliases": "朱刘算法 Chu Liu Edmonds 快速最小树形图 Tarjan 有向最小生成树 Directed MST O(ElogV) Tarjan优化朱刘算法",
       "url": "https://oi-wiki.org/graph/dmst/",
       "source": "OI Wiki",
       "kind": "article",
@@ -2765,7 +2772,7 @@
       "difficulty": 3,
       "popularity": 2,
       "summary": "把比值最优化转化为带参数的判定问题。",
-      "aliases": "",
+      "aliases": "精确比值 有理数优化",
       "url": "https://oi-wiki.org/misc/frac-programming/",
       "source": "OI Wiki",
       "kind": "article"
@@ -2908,7 +2915,7 @@
       "difficulty": 4,
       "popularity": 1,
       "summary": "把平移后的系数或一段连续点值批量算出。",
-      "aliases": "",
+      "aliases": "Taylor Shift 泰勒平移 阶乘归一化 反转与卷积",
       "url": "https://oi-wiki.org/math/poly/shift/",
       "source": "OI Wiki",
       "kind": "article"
@@ -3012,7 +3019,7 @@
       "difficulty": 4,
       "popularity": 1,
       "summary": "通过格子形状理解排列与标准杨表计数。",
-      "aliases": "Young tableau hook length",
+      "aliases": "Young tableau hook length 标准杨表 Hook Length Formula",
       "url": "https://oi-wiki.org/math/young-tableau/",
       "source": "OI Wiki",
       "kind": "article"
@@ -3288,7 +3295,14 @@
       "aliases": "",
       "url": "https://oi-wiki.org/math/order-theory/",
       "source": "OI Wiki",
-      "kind": "article"
+      "kind": "article",
+      "references": [
+        {
+          "title": "偏序集的链、反链与线性扩展 · SageMath",
+          "url": "https://doc.sagemath.org/html/en/reference/combinat/sage/combinat/posets/posets.html",
+          "kind": "article"
+        }
+      ]
     },
     {
       "id": "string-sa-optimal-inplace",
@@ -3870,7 +3884,7 @@
       "difficulty": 3,
       "popularity": 3,
       "summary": "把匹配自动机的状态加入 DP，统计满足或避开特定模式的字符串。",
-      "aliases": "AC自动机DP 自动机上DP",
+      "aliases": "AC自动机DP 自动机上DP 状态乘积 聚合量 转移代数 避免连续k个相同符号",
       "url": "https://oi-wiki.org/string/ac-automaton/",
       "source": "OI Wiki",
       "kind": "article"
@@ -4283,10 +4297,17 @@
       "difficulty": 3,
       "popularity": 2,
       "summary": "研究完全图每条边定向后的结构，利用哈密顿路径等性质解决排序和可达性问题。",
-      "aliases": "tournament graph 锦标赛图",
+      "aliases": "tournament graph 锦标赛图 得分序列",
       "url": "https://oi-wiki.org/graph/concept/",
       "source": "OI Wiki",
-      "kind": "article"
+      "kind": "article",
+      "references": [
+        {
+          "title": "竞赛图得分序列 · Landau 定理",
+          "url": "https://arxiv.org/abs/1509.04205",
+          "kind": "article"
+        }
+      ]
     },
     {
       "id": "math-exlucas",
@@ -4492,7 +4513,7 @@
       "difficulty": 3,
       "popularity": 3,
       "summary": "在已知部分信息时更新概率，并判断多个事件能否独立相乘。",
-      "aliases": "条件概率 贝叶斯 独立事件",
+      "aliases": "条件概率 贝叶斯 独立事件 条件期望 全期望公式",
       "url": "https://oi-wiki.org/math/probability/conditional-probability/",
       "source": "OI Wiki",
       "kind": "article"
@@ -4505,7 +4526,7 @@
       "difficulty": 2,
       "popularity": 4,
       "summary": "将复杂随机量拆成若干容易计算的贡献，即使这些贡献并不独立也能对期望求和。",
-      "aliases": "期望线性性 linearity of expectation",
+      "aliases": "期望线性性 linearity of expectation 贡献法 尾和期望 Tail Sum Formula",
       "url": "https://oi-wiki.org/math/probability/exp-var/",
       "source": "OI Wiki",
       "kind": "article"
@@ -5321,7 +5342,482 @@
       "url": "https://doc.cgal.org/latest/Boolean_set_operations_2/index.html",
       "source": "CGAL",
       "kind": "article"
+    },
+    {
+      "id": "math-vandermonde",
+      "title": "范德蒙德卷积",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 3,
+      "summary": "从两个集合中分别选取元素再合并，把组合数乘积的求和压成一个组合数。",
+      "aliases": "Vandermonde convolution Chu Vandermonde 广义二项式 朱范德蒙德恒等式",
+      "url": "https://mathworld.wolfram.com/VandermondeIdentity.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article",
+      "references": [
+        {
+          "title": "广义形式 · Chu–Vandermonde 恒等式",
+          "url": "https://mathworld.wolfram.com/Chu-VandermondeIdentity.html",
+          "kind": "article"
+        }
+      ]
+    },
+    {
+      "id": "math-stars-bars",
+      "title": "隔板法与弱合成",
+      "category": "math",
+      "tier": 3,
+      "difficulty": 2,
+      "popularity": 4,
+      "summary": "将非负整数和转换成球与隔板的位置计数；上界限制可进一步结合容斥处理。",
+      "aliases": "Stars and Bars Weak Composition 弱组合 有界整数数组 非负整数解 插板法",
+      "url": "https://cp-algorithms.com/combinatorics/stars_and_bars.html",
+      "source": "cp-algorithms",
+      "kind": "article"
+    },
+    {
+      "id": "math-reflection-principle",
+      "title": "反射原理与投票问题",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "把越过边界的格路反射成另一类路径，通过计数相减处理前缀约束。",
+      "aliases": "Reflection Principle Ballot Problem Bertrand ballot 反射法 反射原理 卡特兰格路",
+      "url": "https://mathworld.wolfram.com/BallotProblem.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "graph-hall",
+      "title": "Hall 婚配定理",
+      "category": "graph",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "二分图一侧能否全部匹配，等价于其每个顶点子集都有足够多的邻居。",
+      "aliases": "Hall theorem Marriage Theorem 霍尔定理 完美匹配判定",
+      "url": "https://mathworld.wolfram.com/MarriageTheorem.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "math-variance",
+      "title": "方差与二阶矩",
+      "category": "math",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "用二阶矩与协方差衡量随机量的波动，在期望转移之外额外维护平方项。",
+      "aliases": "Variance Second Moment 方差 二阶矩 协方差 统计量增广",
+      "url": "https://oi-wiki.org/math/probability/exp-var/",
+      "source": "OI Wiki",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-affine",
+      "title": "仿射变换",
+      "category": "geometry",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "组合线性变换与平移，在保持共线和平行关系的同时将复杂形状化为更易处理的模型。",
+      "aliases": "Affine Transformation 仿射表示 坐标变换 椭圆仿射",
+      "url": "https://mathworld.wolfram.com/AffineTransformation.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "misc-weighted-median",
+      "title": "加权中位数与绝对值优化",
+      "category": "misc",
+      "tier": 4,
+      "difficulty": 3,
+      "popularity": 3,
+      "summary": "在非负权重下用加权中位数最小化加权绝对距离，整数可行域与边界约束再单独处理。",
+      "aliases": "Weighted Median Weighted L1 加权绝对值 最小绝对偏差 邮局选址",
+      "url": "https://ocw.mit.edu/courses/6-046j-introduction-to-algorithms-sma-5503-fall-2005/918110223b953b1865bd166dac2ddf77_ps2sol.pdf",
+      "source": "MIT OpenCourseWare",
+      "kind": "article"
+    },
+    {
+      "id": "math-newton-interpolation",
+      "title": "有限差分与 Newton 插值",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "用二项式多项式作为基，把等距点上的函数值与有限差分联系起来。",
+      "aliases": "Newton interpolation 牛顿插值 二项式基 有限差分 前向差分",
+      "url": "https://mathworld.wolfram.com/NewtonsForwardDifferenceFormula.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "math-dilworth",
+      "title": "Dilworth 定理",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "有限偏序集的最少链划分数等于最大反链大小，连接单调子序列覆盖与路径覆盖。",
+      "aliases": "Dilworth theorem 狄尔沃斯定理 链覆盖 反链 DAG路径覆盖 单调子序列覆盖",
+      "url": "https://mathworld.wolfram.com/DilworthsLemma.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "math-coupon-collector",
+      "title": "集齐问题",
+      "category": "math",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "计算反复抽取直到集齐所有种类的时间；非均匀概率时可结合尾和与集合容斥。",
+      "aliases": "Coupon Collector 优惠券收集 收集券问题 非均匀集齐 不等概率收集券",
+      "url": "https://mathworld.wolfram.com/CouponCollectorsProblem.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-parametric",
+      "title": "曲线参数化",
+      "category": "geometry",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "将曲线上的点写成参数函数，用合适参数描述分支、交点、切向量与积分区间。",
+      "aliases": "Parametrization Parametric Curve 有理参数化 有理点 极坐标参数化",
+      "url": "https://mathworld.wolfram.com/ParametricEquations.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "misc-knight-distance",
+      "title": "无限棋盘骑士距离",
+      "category": "misc",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 1,
+      "summary": "结合对称性、坐标下界与奇偶性求无限棋盘上的最少马步，同时处理小坐标例外。",
+      "aliases": "Infinite Board Knight Distance 无限棋盘马步 骑士最短路 Knight Metric",
+      "url": "https://cs.stackexchange.com/questions/97903/chess-knight-minimum-moves-to-destination-on-an-infinite-board",
+      "source": "Computer Science Stack Exchange",
+      "kind": "article"
+    },
+    {
+      "id": "ds-binary-grouping",
+      "title": "二进制分组与静态结构动态化",
+      "category": "ds",
+      "tier": 5,
+      "difficulty": 3,
+      "popularity": 2,
+      "summary": "把元素分成大小按二进制增长的静态块，插入时像进位一样合并重建；可用于动态模式串集合。",
+      "aliases": "Binary Grouping Logarithmic Method 静态转动态 动态AC自动机 二进制分组 动态模式集",
+      "url": "https://oi-wiki.org/ds/kdt/#二进制分组",
+      "source": "OI Wiki",
+      "kind": "article",
+      "references": [
+        {
+          "title": "模式匹配基础 · AC 自动机",
+          "url": "https://oi-wiki.org/string/ac-automaton/",
+          "kind": "article"
+        }
+      ]
+    },
+    {
+      "id": "math-schur-complement",
+      "title": "Schur 补与分块消元",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "消去一组变量后用 Schur 补描述剩余矩阵，推导分块行列式、逆矩阵与方程求解。",
+      "aliases": "Schur Complement 舒尔补 分块高斯消元 分块矩阵求逆",
+      "url": "https://www.statlect.com/matrix-algebra/Schur-complement",
+      "source": "StatLect",
+      "kind": "article"
+    },
+    {
+      "id": "math-carmichael-function",
+      "title": "Carmichael 函数",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "求模 n 的单位群指数，即让所有与 n 互素元素的幂都回到 1 的最小正指数。",
+      "aliases": "Carmichael Lambda Function 卡迈克尔函数 lambda函数 简化欧拉函数 单位群指数",
+      "url": "https://mathworld.wolfram.com/CarmichaelFunction.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "math-absorbing-markov",
+      "title": "吸收马尔可夫链",
+      "category": "math",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "将暂态与吸收态分开，通过基本矩阵或线性方程求吸收概率、到达时间及其矩。",
+      "aliases": "Absorbing Markov Chain Fundamental Matrix 吸收过程 吸收时间 均值与方差",
+      "url": "https://chance.dartmouth.edu/teaching_aids/books_articles/probability_book/Chapter11.pdf#page=11",
+      "source": "Grinstead–Snell 概率论",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-green",
+      "title": "Green 公式与几何矩",
+      "category": "geometry",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把平面区域积分转化为边界曲线积分，用统一框架计算面积、质心与几何矩。",
+      "aliases": "Green theorem 格林公式 格林定理 面积积分 几何矩 椭圆弓形面积 椭圆扇形面积",
+      "url": "https://mathworld.wolfram.com/GreensTheorem.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-conic",
+      "title": "圆锥曲线与退化分类",
+      "category": "geometry",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "从一般二次方程识别椭圆、抛物线、双曲线及退化情形，并分析直线求交与有效分支。",
+      "aliases": "Conic Section 二次曲线 二次型 圆锥曲线求交 椭圆 双曲线 抛物线 二次距离模型 最近椭圆点",
+      "url": "https://mathworld.wolfram.com/ConicSection.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "graph-binary-energy",
+      "title": "二元能量最小化与图割",
+      "category": "graph",
+      "tier": 6,
+      "difficulty": 4,
+      "popularity": 2,
+      "summary": "将满足次模条件的二元变量成对能量构造成割容量，通过最小割求最优标记。",
+      "aliases": "Binary Energy Graph Cuts Submodular 二元图割 物理相互作用 次模能量",
+      "url": "https://www.cs.cornell.edu/~rdz/Papers/KZ-PAMI04.pdf",
+      "source": "Cornell 论文",
+      "kind": "article"
+    },
+    {
+      "id": "graph-gale-ryser",
+      "title": "Gale–Ryser 定理",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "用排序后的度数与前缀不等式，判定两组非负整数能否成为简单二分图两侧的度数。",
+      "aliases": "Gale Ryser 二分图度数序列 零一矩阵行列和",
+      "url": "https://mathworld.wolfram.com/Gale-RyserTheorem.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "graph-landau",
+      "title": "Landau 定理",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "通过排序后的前缀和条件判定竞赛图得分序列，并研究对应竞赛图的构造。",
+      "aliases": "Landau theorem 兰道定理 竞赛图得分序列 锦标赛得分序列",
+      "url": "https://arxiv.org/abs/1509.04205",
+      "source": "原始论文",
+      "kind": "article"
+    },
+    {
+      "id": "graph-matrix-forest",
+      "title": "矩阵森林定理",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "将拉普拉斯矩阵与单位矩阵组合，用行列式和余子式描述有根生成森林的计数。",
+      "aliases": "Matrix Forest Theorem Chebotarev Shamis 矩阵树森林定理 有根生成森林",
+      "url": "https://arxiv.org/abs/math/0508178",
+      "source": "原始论文",
+      "kind": "article"
+    },
+    {
+      "id": "math-poset-mobius",
+      "title": "偏序集 Möbius 反演",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "在有限偏序集的区间上递归定义 Möbius 函数，将求和关系还原为原始贡献。",
+      "aliases": "Poset Mobius Inversion incidence algebra 偏序莫比乌斯反演 关联代数",
+      "url": "https://doc.sagemath.org/html/en/reference/combinat/sage/combinat/posets/posets.html#sage.combinat.posets.posets.FinitePoset.moebius_function",
+      "source": "SageMath",
+      "kind": "article"
+    },
+    {
+      "id": "math-rook-polynomial",
+      "title": "车多项式",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "按互不攻击的车的数量记录禁位棋盘，再用容斥统计受限排列与命中数。",
+      "aliases": "Rook Polynomial Rook Theory 棋盘多项式 禁位排列 恰好命中k个限制",
+      "url": "https://mathworld.wolfram.com/RookPolynomial.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "math-abel-binomial",
+      "title": "Abel 二项式定理",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "推广二项式展开，利用带有下标偏移的幂与组合数组织卷积恒等式。",
+      "aliases": "Abel binomial theorem 阿贝尔二项式定理 Abel型二项式恒等式",
+      "url": "https://mathworld.wolfram.com/AbelsBinomialTheorem.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "math-cauchy-binet",
+      "title": "Cauchy–Binet 公式",
+      "category": "math",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "把矩阵乘积的行列式展开成子式乘积之和，为矩阵树定理等组合计数提供代数解释。",
+      "aliases": "Cauchy Binet 柯西比内公式 子式求和 行列式乘积",
+      "url": "https://ocw.mit.edu/courses/18-212-algebraic-combinatorics-spring-2019/resources/mit18_212s19_lec28/",
+      "source": "MIT OpenCourseWare",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-cauchy-perimeter",
+      "title": "Cauchy 周长公式",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "对平面凸体在各个方向上的投影宽度积分，得到它的周长。",
+      "aliases": "Cauchy Perimeter Formula 柯西周长公式 平均宽度 投影宽度",
+      "url": "https://www.maths.dur.ac.uk/events/Meetings/RWIMM/slides/1-3-Wade.pdf#page=11",
+      "source": "Andrew Wade 讲义",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-support-function",
+      "title": "支撑函数",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "用每个方向上点积的最大值描述凸体，连接切线、宽度、凸体运算与优化。",
+      "aliases": "Support Function 支持函数 支撑线 椭圆支撑函数",
+      "url": "https://mathworld.wolfram.com/SupportFunction.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-homogeneous",
+      "title": "齐次坐标",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "增加一个坐标维度，把平面点、直线和投影变换纳入统一的代数表示。",
+      "aliases": "Homogeneous Coordinates Projective Geometry 射影坐标 射影几何",
+      "url": "https://mathworld.wolfram.com/HomogeneousCoordinates.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-robust-predicates",
+      "title": "稳健几何谓词",
+      "category": "geometry",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "对方向和圆内等影响分支的判断控制舍入误差，必要时用自适应精度保证符号正确。",
+      "aliases": "Robust Predicates Adaptive Precision 浮点误差 稳健几何 自适应精度 数值稳定性",
+      "url": "https://www.cs.cmu.edu/~quake/robust.html",
+      "source": "Jonathan Shewchuk",
+      "kind": "article"
+    },
+    {
+      "id": "graph-electrical-network",
+      "title": "电阻网络与有效电阻",
+      "category": "graph",
+      "tier": 7,
+      "difficulty": 4,
+      "popularity": 1,
+      "summary": "用电势与拉普拉斯方程描述电流，将有效电阻连接到随机游走、调和函数与生成树。",
+      "aliases": "Electrical Network Effective Resistance 电网络 调和函数 随机游走 电阻距离",
+      "url": "https://arxiv.org/abs/math/0001057",
+      "source": "原始论文",
+      "kind": "article"
+    },
+    {
+      "id": "math-formal-residue",
+      "title": "形式留数与系数提取",
+      "category": "math",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "把系数写成形式 Laurent 级数的留数，通过换元推导拉格朗日反演等公式，并控制截断精度。",
+      "aliases": "Formal Residue Laurent Series 系数换元 形式留数定理 截断精度",
+      "url": "https://doc.sagemath.org/html/en/reference/power_series/sage/rings/laurent_series_ring_element.html#sage.rings.laurent_series_ring_element.LaurentSeries.residue",
+      "source": "SageMath",
+      "kind": "article",
+      "references": [
+        {
+          "title": "换元应用 · 拉格朗日反演",
+          "url": "https://oi-wiki.org/math/poly/lagrange-inversion/",
+          "kind": "article"
+        }
+      ]
+    },
+    {
+      "id": "graph-tutte-matrix",
+      "title": "Tutte 矩阵与随机匹配判定",
+      "category": "graph",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "给图的边赋变量构造反对称矩阵，在适当数域随机代入，通过秩或行列式检测匹配结构。",
+      "aliases": "Tutte Matrix 图特矩阵 随机代数匹配判定 匹配行列式",
+      "url": "https://mathworld.wolfram.com/TutteMatrix.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-pole-polar",
+      "title": "极点与极线",
+      "category": "geometry",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "借助圆锥曲线建立点与直线的对偶关系，处理切线构造和射影几何关系。",
+      "aliases": "Pole Polar 极点极线 极线对偶 圆锥曲线切线",
+      "url": "https://mathworld.wolfram.com/Polar.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
+    },
+    {
+      "id": "geometry-elliptic-integral",
+      "title": "椭圆积分",
+      "category": "geometry",
+      "tier": 8,
+      "difficulty": 5,
+      "popularity": 1,
+      "summary": "椭圆弧长等积分通常超出初等函数范围，用椭圆积分表示并选择数值求值方法。",
+      "aliases": "Elliptic Integral 完全椭圆积分 不完全椭圆积分 椭圆弧长",
+      "url": "https://mathworld.wolfram.com/EllipticIntegral.html",
+      "source": "Wolfram MathWorld",
+      "kind": "article"
     }
-  ],
-  "updated": "2026-10-15"
+  ]
 }

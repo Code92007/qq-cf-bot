@@ -108,7 +108,7 @@
   async function load() {
     $("loadError").hidden = true;
     try {
-      const response = await fetch("/iceberg-data.json?v=4");
+      const response = await fetch("/iceberg-data.json?v=5");
       if (!response.ok) throw new Error("Atlas unavailable");
       const data = await response.json();
       if (!Array.isArray(data.topics) || !data.topics.length || !Array.isArray(data.tiers) || !Array.isArray(data.categories)) throw new Error("Invalid atlas");

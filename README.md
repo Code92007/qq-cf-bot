@@ -24,7 +24,7 @@ CF/Gym 题可从瓶子进入现有单题口胡工作台，沿用训练设置；�
 
 ### 算法竞赛冰山
 
-访问 `/iceberg`，无需登录即可探索 8 层算法竞赛知识地图。首版合并去重后收录 355 个知识点，主体链接到 OI Wiki，补充 cp-algorithms、KACTL、USACO Guide、原始论文与作者专题，并为 84 个知识点附加 codeforces-go 模板实现入口；支持中文 / 英文缩写搜索、领域与难度筛选、清单视图、随机下潜和可分享的知识点说明链接。层级与常见程度是编辑估计，不代表统计频率、学习顺序或选手评级。内容维护在 `src/qq_cf_bot/web/iceberg-data.json`，来源与去重规则见 [冰山资料合并说明](docs/algorithm-iceberg-sources.md)。
+访问 `/iceberg`，无需登录即可探索 8 层算法竞赛知识地图。首版合并去重后收录 390 个知识点，主体链接到 OI Wiki，补充 cp-algorithms、KACTL、USACO Guide、原始论文与作者专题，并为 84 个知识点附加 codeforces-go 模板实现入口；支持中文 / 英文缩写搜索、领域与难度筛选、清单视图、随机下潜和可分享的知识点说明链接。层级与常见程度是编辑估计，不代表统计频率、学习顺序或选手评级。内容维护在 `src/qq_cf_bot/web/iceberg-data.json`，来源与去重规则见 [冰山资料合并说明](docs/algorithm-iceberg-sources.md)。
 
 ### ICPC / CCPC 区域赛墙
 

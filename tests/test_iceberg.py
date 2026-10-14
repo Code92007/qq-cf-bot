@@ -50,6 +50,12 @@ class IcebergTest(unittest.TestCase):
             "Princeton Algorithms": "algs4.cs.princeton.edu", "OGDF": "ogdf.github.io",
             "MIT 论文库": "dspace.mit.edu", "CGAL": "doc.cgal.org",
             "SageMath": "doc.sagemath.org",
+            "Wolfram MathWorld": "mathworld.wolfram.com", "StatLect": "www.statlect.com",
+            "MIT OpenCourseWare": "ocw.mit.edu", "Cornell 论文": "www.cs.cornell.edu",
+            "Andrew Wade 讲义": "www.maths.dur.ac.uk",
+            "Grinstead–Snell 概率论": "chance.dartmouth.edu",
+            "Jonathan Shewchuk": "www.cs.cmu.edu",
+            "Computer Science Stack Exchange": "cs.stackexchange.com",
         }
         for topic in topics:
             with self.subTest(topic=topic["id"]):
