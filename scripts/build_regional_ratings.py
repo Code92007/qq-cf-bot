@@ -37,6 +37,10 @@ def download(snapshot, revision, contest):
         return
     directory = snapshot / path
     evidence = contest.get('rating_evidence', {})
+    if evidence.get('provider') == 'final-scoreboard':
+        directory.parent.mkdir(parents=True, exist_ok=True)
+        directory.write_bytes((ROOT / 'src/qq_cf_bot/catalog' / path).read_bytes())
+        return
     if evidence.get('provider') == 'rankland':
         directory.parent.mkdir(parents=True, exist_ok=True)
         if not directory.exists():

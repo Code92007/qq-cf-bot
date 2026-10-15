@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from qq_cf_bot.regional_rating import build_release, rate_problem, summarize_standings, summarize_rankland, rankland_snapshot
+from qq_cf_bot.regional_rating import build_release, rate_problem, summarize_standings, summarize_rankland, rankland_snapshot, summarize_final_scoreboard
 
 
 class StandingsRatingTest(unittest.TestCase):
@@ -130,9 +130,9 @@ class StandingsRatingTest(unittest.TestCase):
         self.assertFalse(set(rated).intersection(unrated))
         self.assertEqual(set(rated) | set(unrated), {c['id'] for c in catalog['contests']})
         self.assertEqual(set(release['problems']), {p['id'] for c in catalog['contests'] if c['id'] in rated for p in c['problems']})
-        self.assertEqual(len(rated), 77)
-        self.assertEqual(len(unrated), 12)
-        self.assertEqual(len(release['problems']), 984)
+        self.assertEqual(len(rated), 94)
+        self.assertEqual(len(unrated), 7)
+        self.assertEqual(len(release['problems']), 1192)
         self.assertTrue(all(unrated.values()))
         for result in release['problems'].values():
             self.assertLessEqual(result['range'][0], result['rating'])
@@ -144,6 +144,70 @@ class StandingsRatingTest(unittest.TestCase):
                                       'standings_url': result['standings_url']})
         for contest in release['contests'].values():
             self.assertTrue(all(len(h) == 64 for h in contest['sha256'].values()))
+
+
+class ArchivedFinalScoreboardTest(unittest.TestCase):
+    def fixture(self):
+        return {'schema': 'regional-final-scoreboard-v1', 'contest_id': 'old', 'labels': ['A', 'B'],
+                'source_name': 'Archived contest', 'duration_seconds': 18000,
+                'medal_rule': 'Original final awards', 'medal_source_url': 'https://organizer.example/awards',
+                'source_sha256': {'https://organizer.example/board': 'a' * 64},
+                'teams': [{'id': str(i), 'official': i != 0, 'solved': 1,
+                           'penalty_seconds': i * 60, 'accepted': ['A'],
+                           'medal': {1: 'gold', 2: 'silver', 3: 'bronze'}.get(i)} for i in range(5)]}
+
+    def test_explicit_awards_and_starred_rows(self):
+        result = summarize_final_scoreboard(self.fixture(), 'old')
+        self.assertEqual(result['official_teams'], 4)
+        self.assertEqual(result['excluded_teams'], 1)
+        self.assertEqual(result['problems']['A']['medal_accepted'], {'gold': 1, 'silver': 1, 'bronze': 1})
+        self.assertEqual(result['problems']['B']['accepted_teams'], 0)
+
+    def test_snapshot_changes_and_catalog_label_mismatches_are_rejected(self):
+        raw = json.dumps(self.fixture()).encode()
+        contest = {'id': 'old', 'problems': [{'id': 'old:A', 'index': 'A'}, {'id': 'old:B', 'index': 'B'}],
+                   'rating_evidence': {'provider': 'final-scoreboard', 'source_url': 'https://organizer.example/board',
+                                       'sha256': hashlib.sha256(raw).hexdigest()}}
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            snapshot = directory / 'board.json'
+            snapshot.write_bytes(raw)
+            build = lambda: build_release({'contests': [contest]}, directory, 'a' * 40, {}, lambda c: 'board.json')
+            self.assertEqual(len(build()['problems']), 2)
+            snapshot.write_bytes(raw + b'\n')
+            with self.assertRaisesRegex(ValueError, 'snapshot hash differs'):
+                build()
+            snapshot.write_bytes(raw)
+            contest['problems'][1]['index'] = 'C'
+            with self.assertRaisesRegex(ValueError, 'problem labels differ'):
+                build()
+
+    def test_inconsistent_or_ambiguous_archives_fail_closed(self):
+        for mutate in [lambda d: d.update(contest_id='wrong'),
+                       lambda d: d['teams'][1].update(id='0'),
+                       lambda d: d['teams'][1].update(official=1),
+                       lambda d: d['teams'][1].update(solved=2),
+                       lambda d: d['teams'][1].update(accepted=['Z']),
+                       lambda d: d['teams'][0].update(medal='gold'),
+                       lambda d: d['teams'][2].update(medal='bronze'),
+                       lambda d: d['teams'][1].update(penalty_seconds=float('nan'))]:
+            data = self.fixture()
+            mutate(data)
+            with self.assertRaises(ValueError):
+                summarize_final_scoreboard(data, 'old')
+
+    def test_every_pinned_historical_snapshot_reproduces_published_statistics(self):
+        directory = Path(__file__).resolve().parents[1] / 'src/qq_cf_bot/catalog'
+        catalog = json.loads((directory / 'regionals.json').read_text())
+        published = json.loads((directory / 'regional_ratings.json').read_text())
+        contests = [c for c in catalog['contests'] if c.get('rating_evidence', {}).get('provider') == 'final-scoreboard']
+        self.assertEqual(len(contests), 17)
+        release = build_release({'contests': contests}, directory, published['source_revision'], {},
+                                lambda c: c['rating_evidence']['standings_path'])
+        for pid, result in release['problems'].items():
+            self.assertEqual(result, published['problems'][pid])
+        self.assertEqual(published['contests']['icpc-2019-香港']['medal_boundaries']['gold']['teams'], 4)
+        self.assertEqual(published['contests']['ccpc-2018-秦皇岛']['medal_boundaries']['gold']['teams'], 26)
 
 
 class RanklandRatingTest(unittest.TestCase):

@@ -36,6 +36,7 @@ class RegionalStoreTest(unittest.TestCase):
 
     def test_catalog_seasons_cover_all_qoj_regional_sites(self):
         expected={
+            2018:{'ICPC':{'香港','北京','南京','徐州','沈阳','焦作','青岛'},'CCPC':{'吉林','桂林','秦皇岛'}},
             2019:{'ICPC':{'香港','南京','上海','徐州','银川','南昌','沈阳'},'CCPC':{'厦门','哈尔滨','秦皇岛'}},
             2020:{'ICPC':{'济南','澳门','南京','上海','沈阳','银川','昆明'},'CCPC':{'威海','绵阳','秦皇岛','长春'}},
             2021:{'ICPC':{'济南','昆明','澳门','南京','上海','沈阳'},'CCPC':{'广州','桂林','哈尔滨','威海'}},
@@ -50,14 +51,22 @@ class RegionalStoreTest(unittest.TestCase):
                 finals=[c for c in self.store.contests if c['year']==year and c['series']==name and c.get('stage')=='final']
                 self.assertEqual(len(finals),1)
                 self.assertTrue(all(p['aliases'] for p in finals[0]['problems']))
-        self.assertEqual(len(self.store.contests),89)
-        self.assertEqual(len(self.store.problems),1132)
+        self.assertEqual(len(self.store.contests),101)
+        self.assertEqual(len(self.store.problems),1264)
         for p in self.store.problems.values():
             if p.get('qoj_id'):
                 self.assertIn('qoj:'+str(p['qoj_id']),p['aliases'])
             self.assertTrue(p['aliases'] or p.get('unmapped'))
         self.assertIn('nowcoder:220443', self.store.aliases)
         self.assertNotIn('codeforces:102769C', self.store.aliases)
+
+    def test_2018_catalog_uses_verified_gym_aliases_and_explicit_pending_hongkong(self):
+        self.assertEqual(self.store.aliases['codeforces:102055A'], 'ccpc-2018-Final:A')
+        self.assertEqual(self.store.aliases['codeforces:102056D'], 'icpc-2018-ECFinal:D')
+        self.assertEqual(self.store.aliases['codeforces:104270M'], 'icpc-2018-青岛:M')
+        hongkong = next(c for c in self.store.contests if c['id'] == 'icpc-2018-香港')
+        self.assertEqual(hongkong['catalog_status'], 'pending_problem_list')
+        self.assertEqual(hongkong['problems'], [])
 
     def test_final_platform_evidence_merges_with_existing_practice(self):
         pid='icpc-2021-ECFinal:A'
@@ -286,13 +295,15 @@ class RegionalDifficultyTest(unittest.TestCase):
         self.app.handle_get(public, '/api/regional-catalog')
         self.assertEqual(public.status, 200)
         payload = public.json()
-        self.assertEqual(len(payload['difficulty']), 984)
+        self.assertEqual(len(payload['difficulty']), 1192)
         self.assertEqual(payload['difficulty'][pid]['rating'], 900)
         self.assertEqual(payload['difficulty'][pid]['accepted_teams'], 320)
-        self.assertEqual(payload['years'], list(range(2025, 2018, -1)))
-        self.assertEqual(len(payload['contests']), 89)
-        self.assertIn('icpc-2019-上海', payload['ratingRelease']['unrated_contests'])
-        self.assertNotIn('icpc-2019-上海:A', payload['difficulty'])
+        self.assertEqual(payload['years'], list(range(2025, 2017, -1)))
+        self.assertEqual(len(payload['contests']), 101)
+        self.assertNotIn('icpc-2019-上海', payload['ratingRelease']['unrated_contests'])
+        self.assertIn('icpc-2019-上海:A', payload['difficulty'])
+        self.assertIn('ccpc-2019-厦门', payload['ratingRelease']['unrated_contests'])
+        self.assertIn('ccpc-2018-Final:A', payload['difficulty'])
         historical = payload['difficulty']['icpc-2022-香港:A']
         self.assertEqual(historical['official_teams'], 115)
         self.assertEqual(historical['accepted_teams'], 92)

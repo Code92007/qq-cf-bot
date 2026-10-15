@@ -241,6 +241,58 @@ def round_hundred(value):
     return int(math.floor(value / 100 + 0.5)) * 100
 
 
+def summarize_final_scoreboard(data, contest_id):
+    """Read pinned, anonymous final rows transcribed from archived scoreboards.
+
+    Medals are explicit source-backed assignments, never inferred from a fixed
+    percentage. The importer verifies the source award table before publishing.
+    """
+    if data.get('schema') != 'regional-final-scoreboard-v1' or data.get('contest_id') != contest_id:
+        raise ValueError('Final scoreboard identity differs')
+    labels = data['labels']
+    if not labels or len(set(labels)) != len(labels) or any(not re.fullmatch('[A-Z]', p) for p in labels):
+        raise ValueError('Invalid final scoreboard labels')
+    duration = data['duration_seconds']
+    if type(duration) is not int or not 0 < duration <= 86400:
+        raise ValueError('Invalid final scoreboard duration')
+    if not data.get('source_sha256') or any(not re.fullmatch('[0-9a-f]{64}', h) for h in data['source_sha256'].values()):
+        raise ValueError('Missing final scoreboard source hashes')
+    rows, seen = [], set()
+    medals = ['gold', 'silver', 'bronze']
+    for row in data['teams']:
+        if not isinstance(row['id'], str) or row['id'] in seen or type(row['official']) is not bool:
+            raise ValueError('Duplicate team or ambiguous final scoreboard official status')
+        seen.add(row['id'])
+        accepted = row['accepted']
+        penalty = row['penalty_seconds']
+        if (not isinstance(accepted, list) or len(set(accepted)) != len(accepted)
+                or set(accepted) - set(labels) or type(row['solved']) is not int or len(accepted) != row['solved']):
+            raise ValueError('Final scoreboard solve count differs from problem columns')
+        if type(penalty) not in {int, float} or not math.isfinite(penalty) or penalty < 0:
+            raise ValueError('Invalid final scoreboard penalty')
+        if row['medal'] not in [None, *medals] or (row['medal'] and (not row['official'] or not accepted)):
+            raise ValueError('Invalid final scoreboard medal')
+        if row['official']:
+            rows.append(row)
+    rows.sort(key=lambda r: (-r['solved'], r['penalty_seconds']))
+    levels = [medals.index(r['medal']) if r['medal'] else 3 for r in rows]
+    if levels != sorted(levels):
+        raise ValueError('Final scoreboard medals disagree with ranking')
+    cohorts = {m: [r for r in rows if r['medal'] == m] for m in medals}
+    if any(not members for members in cohorts.values()):
+        raise ValueError('Incomplete final scoreboard medals')
+    boundaries = {m: {'teams': len(members), 'last_solved': members[-1]['solved'],
+                       'last_penalty_minutes': int(members[-1]['penalty_seconds'] // 60)}
+                  for m, members in cohorts.items()}
+    problems = {p: {'accepted_teams': sum(p in r['accepted'] for r in rows), 'official_teams': len(rows),
+                    'medal_accepted': {m: sum(p in r['accepted'] for r in members) for m, members in cohorts.items()},
+                    'medal_teams': {m: len(members) for m, members in cohorts.items()}} for p in labels}
+    return {'official_teams': len(rows), 'effective_teams': sum(bool(r['accepted']) for r in rows),
+            'excluded_teams': len(data['teams']) - len(rows), 'duration_seconds': duration,
+            'medal_rule': data['medal_rule'], 'medal_source_url': data['medal_source_url'],
+            'original_source_sha256': data['source_sha256'], 'medal_boundaries': boundaries, 'problems': problems}
+
+
 def rate_problem(stats, prior=None):
     """Medal-size anchors + cohort hard bounds; never infer official CF rating."""
     n, solved = stats['official_teams'], stats['accepted_teams']
@@ -301,7 +353,15 @@ def build_release(catalog, snapshot, revision, priors, path_for_contest):
             release['unrated_contests'][contest['id']] = reason
             continue
         rankland = evidence.get('provider') == 'rankland'
-        if rankland:
+        final_scoreboard = evidence.get('provider') == 'final-scoreboard'
+        if final_scoreboard:
+            files = {'final_scoreboard': (snapshot / path).read_bytes()}
+            if evidence.get('sha256') != hashlib.sha256(files['final_scoreboard']).hexdigest():
+                raise ValueError('Final scoreboard snapshot hash differs')
+            data = json.loads(files['final_scoreboard'])
+            summary = summarize_final_scoreboard(data, contest['id'])
+            source_name, source_url = data['source_name'], evidence['source_url']
+        elif rankland:
             files = {'rankland': (snapshot / path).read_bytes()}
             expected_hash = evidence.get('sha256')
             if expected_hash != hashlib.sha256(files['rankland']).hexdigest():
@@ -318,10 +378,10 @@ def build_release(catalog, snapshot, revision, priors, path_for_contest):
             source_url = f'https://github.com/xcpcio/board-data/tree/{revision}/{path}'
         override = evidence.get('medal_override')
         if override:
-            if rankland or config.get('medal') is not None or not override.get('source_url'):
+            if rankland or final_scoreboard or config.get('medal') is not None or not override.get('source_url'):
                 raise ValueError('Medal override requires a source and missing upstream rules')
             config['medal'] = {'official': override['counts']}
-        if not rankland:
+        if not rankland and not final_scoreboard:
             summary = summarize_standings(config, teams, runs)
         for key, expected in evidence.get('expected_summary', {}).items():
             if summary[key] != expected:
@@ -335,7 +395,7 @@ def build_release(catalog, snapshot, revision, priors, path_for_contest):
             pid = problem['id']
             result = rate_problem(summary['problems'][problem['index']], priors.get(pid))
             result.update({'contest': contest['id'], 'method': METHOD,
-                           'standings_url': source_url if rankland else 'https://board.xcpcio.com/' + path.removeprefix('data/') + '/'})
+                           'standings_url': source_url if rankland or final_scoreboard else 'https://board.xcpcio.com/' + path.removeprefix('data/') + '/'})
             release['problems'][pid] = result
         summary.pop('problems')
         summary.update({'source_name': source_name,
