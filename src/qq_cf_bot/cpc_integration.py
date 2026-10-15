@@ -48,6 +48,9 @@ class WallConnection:
                     if not isinstance(pid, str) or not isinstance(progress, dict) or any(type(progress.get(k)) is not bool for k in ('personal','team','onsite','attempted')):
                         raise ValueError('进度格式错误')
                 identity = body.get('identity')
+                if 'knowledge' in body:
+                    from .iceberg import validate_knowledge
+                    validate_knowledge(body['knowledge'])
                 if (not isinstance(identity, dict)
                         or identity.get('status') not in {'unverified','pending','approved','rejected','revoked','superseded'}
                         or type(identity.get('verified_until')) not in {int,float}):

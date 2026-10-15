@@ -177,6 +177,10 @@ function showAuth() {
 }
 
 function showApp(data) {
+  if (new URLSearchParams(location.search).get("next") === "iceberg") {
+    location.replace("/iceberg?mode=achievements");
+    return;
+  }
   if (new URLSearchParams(location.search).get("next") === "pool") {
     location.replace("/pool");
     return;

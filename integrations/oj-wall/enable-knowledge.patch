@@ -1,0 +1,26 @@
+diff --git a/cpc_integration.py b/cpc_integration.py
+--- a/cpc_integration.py
++++ b/cpc_integration.py
+@@ -353,7 +353,10 @@ def handle(handler, service, post=False):
+             if not owner:
+                 handler.send_error_json(401, '连接码无效、已撤销或已到期')
+                 return True
+-            handler.send_json(200, service.progress(owner))
++            from knowledge_export import knowledge_snapshot
++            result = service.progress(owner)
++            result['knowledge'] = knowledge_snapshot(service, owner)
++            handler.send_json(200, result)
+             return True
+         principal = service.app.get_current_principal(handler)
+         if not principal or principal['type'] != 'user':
+diff --git a/Dockerfile b/Dockerfile
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -12,6 +12,7 @@ COPY app.py /app/app.py
+ COPY codeforces_auth.py /app/codeforces_auth.py
+ COPY cpc_common.py /app/cpc_common.py
+ COPY cpc_integration.py /app/cpc_integration.py
++COPY knowledge_export.py /app/knowledge_export.py
+ COPY cpc_scoreboard.py /app/cpc_scoreboard.py
+ COPY cpc_sources.py /app/cpc_sources.py
+ COPY team_analysis.py /app/team_analysis.py

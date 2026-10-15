@@ -57,6 +57,8 @@ class WebApplication:
         self.regionals = RegionalApplication(self)
         from .problem_pool import ProblemPool
         self.pool = ProblemPool(self)
+        from .iceberg import IcebergAchievements
+        self.iceberg = IcebergAchievements(self)
 
     def handle_get(self, handler, path: str) -> bool:
         if not self.config.web_enabled:
@@ -64,6 +66,16 @@ class WebApplication:
         try:
             if path in {"/iceberg", "/iceberg/"}:
                 self._static(handler, "iceberg.html", "text/html; charset=utf-8", no_cache=True)
+                return True
+            if path in {"/api/iceberg/progress", "/api/iceberg/recommendations"}:
+                session = self._require_session(handler)
+                if path.endswith("recommendations"):
+                    result = self.iceberg.recommendations(session, handler)
+                else:
+                    from urllib.parse import parse_qs
+                    teams = parse_qs(urlsplit(getattr(handler, "path", "")).query).get("teams") == ["1"]
+                    result = self.iceberg.state(session, teams)
+                self._json(handler, result)
                 return True
             if path == "/api/pool":
                 session = self._require_session(handler)
@@ -143,7 +155,9 @@ class WebApplication:
             if not lock.acquire(blocking=False):
                 raise ChallengeError("operation_in_progress", "上一个操作还在处理中。", 409)
             try:
-                if path.startswith("/api/pool/"):
+                if path == "/api/iceberg/link":
+                    self._json(handler, self.iceberg.link(session, payload))
+                elif path.startswith("/api/pool/"):
                     self._json(handler, self.pool.post(session, path.rsplit("/", 1)[-1], payload))
                 elif path.startswith("/api/regionals/"):
                     self._json(handler, self.regionals.post(session, path.rsplit("/", 1)[-1], payload))

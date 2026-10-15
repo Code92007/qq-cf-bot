@@ -1,0 +1,151 @@
+import importlib.util
+import io
+import json
+import sqlite3
+import tempfile
+import time
+import unittest
+from datetime import datetime, timezone
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from qq_cf_bot.config import Config
+from qq_cf_bot.core import ChallengeService
+from qq_cf_bot.iceberg import merge_records, timestamp, validate_knowledge
+from qq_cf_bot.webapp import WebApplication
+from test_webapp import _Handler
+
+
+def ts(value):
+    return int(datetime.fromisoformat(value).replace(tzinfo=timezone.utc).timestamp())
+
+
+class AchievementTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        with patch.dict('os.environ', {'BOT_DATA_DIR': self.temp.name, 'CF_SUBMIT_ENABLED':'false', 'JUDGE_ENABLED':'false'}, clear=True):
+            config = Config.from_env()
+        self.app = WebApplication(config, ChallengeService(config))
+        self.session = {'user_id': 1, 'display_name':'测试 <人>', 'csrf_token':'token'}
+        self.first, self.last = ts('2020-01-01'), ts('2024-03-02')
+        self.snapshot([
+            self.record('codeforces:1704F', ['dp','greedy'], self.first, self.last, ['2020-01-01','2022-06-01','2024-03-02']),
+            self.record('codeforces:1705A', ['greedy'], ts('2023-04-05'), ts('2023-04-05')),
+            self.record('luogu:P1001', ['线段树'], None, None),
+            self.record('qoj:999999', ['NTT'], self.first, self.last, kind='team'),
+        ])
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def record(self, key, tags, first, last, days=None, kind='personal'):
+        return {'key':key,'kind':kind,'title':'题目 <标题>','tags':tags,'firstAt':first,'lastAt':last,'days':days or []}
+
+    def snapshot(self, rows):
+        with self.app.regionals.store.connect() as db:
+            db.execute('insert or replace into cpc_wall_links values (?,?,?,?,?)', (1, 'private-token', json.dumps({'knowledge': {'version':1,'complete':True,'records':rows}}), int(time.time()), ''))
+
+    def test_multi_tags_first_last_dates_and_distinct_counts(self):
+        state = self.app.iceberg.state(self.session)
+        self.assertEqual(state['topics']['dp-basic']['firstAt'], self.first)
+        self.assertEqual(state['topics']['dp-basic']['lastAt'], self.last)
+        self.assertEqual(state['topics']['basic-greedy']['count'], 2)
+        self.assertEqual(state['summary']['solved'], 3)
+        self.assertNotIn('private-token', json.dumps(state))
+        self.assertEqual(state['topics']['math-poly-ntt']['count'], 0)
+        self.assertEqual(self.app.iceberg.state(self.session, True)['topics']['math-poly-ntt']['count'], 1)
+
+    def test_unknown_dates_never_become_sync_dates(self):
+        state = self.app.iceberg.state(self.session)
+        self.assertEqual(state['topics']['ds-seg']['count'], 1)
+        self.assertIsNone(state['topics']['ds-seg']['firstAt'])
+        self.assertIsNone(state['topics']['ds-seg']['lastAt'])
+        self.assertEqual(state['topics']['ds-seg']['undated'], 1)
+
+    def test_year_memory_includes_intermediate_ac_and_counts_new_topics_once(self):
+        state = self.app.iceberg.state(self.session)
+        self.assertEqual(state['memories']['2022']['solved'], 1)
+        self.assertEqual(state['memories']['2022']['newTopics'], 0)
+        self.assertEqual(state['memories']['2022']['first']['date'], '2022-06-01')
+        self.assertEqual(state['memories']['2020']['newTopics'], 2)
+        self.assertEqual(state['memories']['all']['activeDays'], 4)
+
+    def test_manual_many_to_many_links_are_owner_scoped_and_reversible(self):
+        for topic in ['math-poly-ntt','math-poly-fft']:
+            self.app.iceberg.link(self.session, {'topicId':topic,'problemKey':'luogu:P1001'})
+        state = self.app.iceberg.state(self.session)
+        self.assertEqual(state['topics']['math-poly-ntt']['count'], 1)
+        self.assertEqual(state['topics']['math-poly-fft']['count'], 1)
+        other = self.app.iceberg.state({**self.session,'user_id':2})
+        self.assertEqual(other['summary']['solved'], 0)
+        with self.assertRaises(ValueError):
+            self.app.iceberg.link({**self.session,'user_id':2}, {'topicId':'math-poly-ntt','problemKey':'luogu:P1001'})
+        self.app.iceberg.link(self.session, {'topicId':'math-poly-ntt','problemKey':'luogu:P1001','remove':True})
+        self.assertEqual(self.app.iceberg.state(self.session)['topics']['math-poly-ntt']['count'], 0)
+
+    def test_metadata_fills_missing_tags_and_recommendations_exclude_solved(self):
+        problems = [dict(contestId=1704,index='F',name='已做',rating=1500,tags=['dp']),dict(contestId=99999,index='A',name='未做',rating=1600,tags=['dp']),dict(contestId=99999,index='B',name='太难',rating=3000,tags=['dp']),dict(contestId=99999,index='C',name='别的标签',rating=1500,tags=['greedy'])]
+        self.app.service.cf.cache_path.write_text(json.dumps({'result':{'problems':problems}}))
+        handler = SimpleNamespace(path='/api/iceberg/recommendations?topic=dp-basic&minRating=1200&maxRating=2000')
+        result = self.app.iceberg.recommendations(self.session, handler)
+        self.assertEqual([p['key'] for p in result['problems']], ['codeforces:99999A'])
+        self.snapshot([self.record('codeforces:1704F', [], self.first, self.last)])
+        self.assertEqual(self.app.iceberg.state(self.session)['topics']['dp-basic']['count'], 1)
+
+    def test_private_routes_require_login_and_mutation_requires_csrf(self):
+        handler = _Handler()
+        self.app.handle_get(handler, '/api/iceberg/progress')
+        self.assertEqual(handler.status, 401)
+        register = _Handler({'username':'alice','displayName':'Alice','password':'password123'})
+        self.app.handle_post(register, '/api/auth/register')
+        cookie = register.header('Set-Cookie').split(';',1)[0]
+        handler = _Handler(cookie=cookie)
+        self.app.handle_post(handler, '/api/iceberg/link')
+        self.assertEqual(handler.status, 403)
+        handler = _Handler(cookie=cookie)
+        self.app.handle_get(handler, '/api/iceberg/progress')
+        self.assertEqual(handler.status, 200)
+        self.assertEqual(handler.json()['summary']['solved'], 3)
+
+    def test_snapshot_validation_rejects_partial_or_bad_evidence(self):
+        with self.assertRaises(ValueError):
+            validate_knowledge({'version':1,'complete':False,'records':[]})
+        with self.assertRaises(ValueError):
+            validate_knowledge({'version':1,'complete':True,'records':[self.record('javascript:bad', [], True, True)]})
+        with self.assertRaises(ValueError):
+            validate_knowledge({'version':1,'complete':True,'records':[self.record('codeforces:1704F', [], self.last, self.first)]})
+
+    def test_repeat_ac_merges_dates_and_does_not_multiply_problems(self):
+        result = merge_records([self.record('codeforces:1704F', ['dp'],self.first,self.first),self.record('codeforces:1704F',['greedy'],self.last,self.last)])
+        self.assertEqual(len(result),1)
+        self.assertEqual(result['codeforces:1704F']['tags'],{'dp','greedy'})
+        self.assertEqual(result['codeforces:1704F']['firstAt'],self.first)
+        self.assertEqual(result['codeforces:1704F']['lastAt'],self.last)
+        self.assertIsNone(timestamp(None))
+        self.assertIsNone(timestamp(True))
+
+
+class ExportTest(unittest.TestCase):
+    def test_owner_active_accounts_aliases_multi_tags_repeats_and_placeholders(self):
+        spec = importlib.util.spec_from_file_location('knowledge_export', Path(__file__).parents[1]/'integrations/oj-wall/knowledge_export.py')
+        exporter = importlib.util.module_from_spec(spec); spec.loader.exec_module(exporter)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'test.db'
+            def db():
+                conn = sqlite3.connect(path); conn.row_factory = sqlite3.Row; return conn
+            with db() as conn:
+                conn.executescript('create table handles(id,platform,handle,owner_type,owner_id,active,stats_json);create table cpc_handle_kinds(handle_id,kind);create table submissions(platform,handle,owner_type,owner_id,problem_id,problem_name,submitted_at,url,raw_json,verdict);')
+                conn.execute("insert into handles values (1,'codeforces','a','user','1',1,'{}')")
+                for owner, verdict, stamp, pid in [('1','AC',1000,'1A'),('1','OK',2000,'1A'),('2','AC',3000,'2A'),('1','WA',4000,'3A'),('1','AC',5000,'activity')]:
+                    conn.execute('insert into submissions values (?,?,?,?,?,?,?,?,?,?)',('codeforces','a','user',owner,pid,pid,stamp,'',json.dumps({'problem':{'tags':['dp','greedy']}}),verdict))
+            app = SimpleNamespace(raw_json_dict=lambda r:json.loads(r['raw_json']),is_activity_placeholder=lambda r,raw:r['problem_id']=='activity',canonical_problem_key=lambda platform,pid,title,raw:platform+':'+pid)
+            result = exporter.knowledge_snapshot(SimpleNamespace(db=db,app=app),'1')
+            self.assertEqual(len(result['records']),1)
+            record = result['records'][0]
+            self.assertEqual((record['firstAt'],record['lastAt']),(1000,2000))
+            self.assertEqual(record['tags'],['dp','greedy'])
+            self.assertEqual(result['excludedActivity'],1)
+
+
+if __name__ == '__main__': unittest.main()

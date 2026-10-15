@@ -7,8 +7,8 @@
   <meta name="description" content="从第一份 AC 到深海里的算法：按八个深度探索算法竞赛知识，查找 OI Wiki 与更多学习资料。">
   <title>算法竞赛冰山 · CF Bot</title>
   <link rel="stylesheet" href="/styles.css?v=iceberg-1">
-  <link rel="stylesheet" href="/iceberg.css?v=3">
-  <script src="/iceberg.js?v=6" defer></script>
+  <link rel="stylesheet" href="/iceberg.css?v=4">
+  <script src="/iceberg.js?v=7" defer></script>
 </head>
 <body class="iceberg-page">
   <a class="skip-link" href="#explore">跳到知识地图</a>
@@ -18,6 +18,7 @@
     <span class="nav-caption">保持好奇，继续下潜。</span>
   </header>
   <main class="iceberg-main">
+    <div class="edition-bar"><p>一座冰山，两种看法。</p><div class="view-toggle edition-toggle" role="group" aria-label="冰山版本"><button type="button" data-mode="pure" aria-pressed="true">纯享版</button><button type="button" data-mode="achievements" aria-pressed="false">我的成就墙 <span aria-hidden="true">✦</span></button></div></div>
     <section class="iceberg-hero" aria-labelledby="icebergTitle">
       <div class="hero-copy">
         <p class="atlas-kicker"><span></span> CF BOT KNOWLEDGE ATLAS <i>VOL. 01</i></p>
@@ -61,6 +62,16 @@
       </div>
     </section>
 
+    <section id="journeyPanel" class="journey-panel" aria-label="我的算法竞赛生涯" hidden>
+      <div class="journey-heading"><div><p class="atlas-kicker">MY ALGORITHM JOURNEY</p><h2>每一份 AC，都曾照亮一片海。</h2></div><button id="refreshJourney" type="button" class="quiet">刷新记录 ↻</button></div>
+      <p id="journeyStatus" role="status" aria-live="polite">正在寻找你的足迹…</p>
+      <div id="journeyContent" hidden>
+        <div id="journeyStats" class="journey-stats"></div>
+        <div class="journey-options"><label><input id="includeTeams" type="checkbox"> 计入 OJ Wall 团队账号</label><a href="/regionals">连接 / 同步 OJ Wall ↗</a></div>
+        <details class="memory-book" open><summary>我的竞赛回忆 <span>翻开这本航海日志 ↗</span></summary><div class="memory-heading"><p>那些初次相遇，和久别重逢。</p><label>时间范围 <select id="memoryYear"><option value="all">整个竞赛生涯</option></select></label></div><div id="memoryCards" class="memory-cards"></div><details class="memory-timeline"><summary>沿着点亮时间，重走一遍</summary><ol id="memoryTimeline"></ol></details><button id="downloadMemory" type="button" class="quiet">保存这份回忆 ↓</button><p class="journey-note">回忆来自当前保存的代码 AC 记录；点亮代表有相关做题足迹。标签可能不完整，同一道题可以点亮多个知识点。</p></details>
+      </div>
+    </section>
+
     <section id="explore" class="explore" aria-labelledby="exploreTitle">
       <div class="explore-heading"><div><p class="atlas-kicker">THE EXPEDITION</p><h2 id="exploreTitle">算法竞赛冰山</h2></div><p>点击名称阅读资料 <span>·</span> 点击 <span class="info-example">i</span> 了解概念</p></div>
       <form id="atlasFilters" class="atlas-controls" role="search">
@@ -70,7 +81,9 @@
           <div class="view-toggle" role="group" aria-label="展示方式"><button type="button" data-view="iceberg" aria-pressed="true">冰山图</button><button type="button" data-view="list" aria-pressed="false">知识清单</button></div>
         </div>
         <div id="categoryFilters" class="category-filters" role="group" aria-label="知识领域"></div>
+        <div id="achievementFilters" class="achievement-filters" hidden><label>做题足迹 <select id="progressFilter"><option value="all">全部知识点</option><option value="lit">已经点亮</option><option value="unlit">尚未点亮</option><option value="stale">久未 AC · 待复习</option><option value="unknown">有 AC · 时间未知</option></select></label><label>多久没碰 <select id="staleDays"><option value="30">30 天</option><option value="90">90 天</option><option value="180" selected>180 天</option><option value="365">365 天</option></select></label><label>题目难度 <input id="reviewMin" type="number" min="800" max="3500" step="100" value="1200" aria-label="推荐题目最低难度"> — <input id="reviewMax" type="number" min="800" max="3500" step="100" value="2400" aria-label="推荐题目最高难度"></label><button id="reviewTopic" type="button" class="quiet">推送一道复习题 ↗</button><p>待复习按最近一次 AC 筛选，仅作回顾线索；未点亮也可能只是缺少标签。</p></div>
       </form>
+      <div id="reviewResults" class="review-results" hidden aria-live="polite"></div>
       <div class="map-meta"><p id="resultSummary" role="status" aria-live="polite">正在绘制知识地图…</p><div class="map-legend"><span><i></i> OI Wiki</span><span><i class="extra-dot"></i> 拓展阅读</span><button id="resetFilters" type="button" hidden>清除筛选 ↺</button></div></div>
       <div class="iceberg-layout">
         <aside class="depth-sidebar" aria-label="深度导航"><p>下潜深度 <span>↓</span></p><nav id="depthNav"></nav><a class="back-to-surface" href="#icebergTitle">回到水面 ↑</a></aside>
