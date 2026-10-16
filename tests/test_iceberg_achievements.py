@@ -125,6 +125,15 @@ class AchievementTest(unittest.TestCase):
         self.assertIsNone(timestamp(None))
         self.assertIsNone(timestamp(True))
 
+    def test_precise_luogu_tags_light_each_algorithm_without_expanding_broad_tags(self):
+        self.snapshot([self.record('luogu:P1234', ['线段树', '树形 DP', '最近公共祖先 LCA', '后缀自动机 SAM', '快速数论变换 NTT', 'dp'], self.first, self.last)])
+        state = self.app.iceberg.state(self.session)
+        for tid in ['ds-seg', 'dp-tree', 'graph-lca', 'string-sam', 'math-poly-ntt', 'dp-basic']:
+            self.assertEqual(state['topics'][tid]['count'], 1)
+            self.assertEqual(state['topics'][tid]['firstAt'], self.first)
+        self.assertEqual(state['topics']['dp-interval']['count'], 0)
+        self.assertEqual(state['topics']['ds-seg-beats']['count'], 0)
+
 
 class ExportTest(unittest.TestCase):
     def test_owner_active_accounts_aliases_multi_tags_repeats_and_placeholders(self):
@@ -146,6 +155,19 @@ class ExportTest(unittest.TestCase):
             self.assertEqual((record['firstAt'],record['lastAt']),(1000,2000))
             self.assertEqual(record['tags'],['dp','greedy'])
             self.assertEqual(result['excludedActivity'],1)
+            root = Path(directory)
+            (root/'catalog').mkdir(); (root/'cache').mkdir()
+            (root/'catalog/luogu_algorithm_tags.json').write_text(json.dumps({'tags': {'42': {'label':'线段树','key':'segment tree'}, '53': {'label':'树状数组','key':'fenwick tree'}}}))
+            (root/'catalog/luogu_problems.json').write_text(json.dumps({'problems': {'P1234': {'tags': [19,42]}}}))
+            (root/'cache/luogu-analysis.json').write_text(json.dumps({'problems': {'P1234': {'tags': [19,53]}}}))
+            app.ROOT, app.CACHE_DIR = root, root/'cache'
+            with db() as conn:
+                conn.execute("insert into handles values (2,'luogu','b','user','1',1,'{}')")
+                conn.execute('insert into submissions values (?,?,?,?,?,?,?,?,?,?)',('luogu','b','user','1','P1234','多标签题',6000,'',json.dumps({'problem':{'tags':[19,42]}}),'AC'))
+            result = exporter.knowledge_snapshot(SimpleNamespace(db=db,app=app),'1')
+            luogu = next(r for r in result['records'] if r['key']=='luogu:P1234')
+            self.assertEqual(set(luogu['tags']), {'线段树','segment tree','树状数组','fenwick tree'})
+            self.assertEqual((luogu['firstAt'],luogu['lastAt']), (6000,6000))
 
 
 if __name__ == '__main__': unittest.main()
