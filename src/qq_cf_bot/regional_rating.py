@@ -15,6 +15,21 @@ IGNORED = {'COMPILATION_ERROR', 'PRESENTATION_ERROR', 'CONFIGURATION_ERROR', 'SY
            'CANCELED', 'SKIPPED'}
 
 
+def medal_safety(solves, cohorts):
+    """Smallest solve count beating every official team below each medal tier.
+
+    The guarantee holds against the archived final field, with the same award
+    eligibility. Silver/bronze mean that medal or better.
+    """
+    eligible = set()
+    result = {}
+    for medal in ('gold', 'silver', 'bronze'):
+        eligible.update(cohorts[medal])
+        outside = max((n for tid, n in solves.items() if tid not in eligible), default=0)
+        result[medal] = {'max_outside_solved': outside, 'safe_solved': outside + 1}
+    return result
+
+
 def rankland_state(raw):
     if raw.lstrip().startswith(b'{'):
         return json.loads(raw)
@@ -125,10 +140,26 @@ def summarize_rankland(raw, expected_key):
                        'official_teams': len(rows),
                        'medal_accepted': {m: sum(label in r['accepted'] for r in members) for m, members in cohorts.items()},
                        'medal_teams': {m: len(members) for m, members in cohorts.items()}} for label in labels}
+    safety = medal_safety({r['id']: len(r['accepted']) for r in rows},
+                          {m: [r['id'] for r in members] for m, members in cohorts.items()})
+    references = []
+    for group in groups:
+        marker = group['marker']
+        members = [r for r in rows if not marker or marker in r['markers']]
+        ids = {r['id'] for r in members}
+        local_cohorts = {m: [r for r in members if r['id'] in ids] for m, members in cohorts.items()}
+        references.append({'marker': marker,
+                           'label': next((m['label'] for m in srk.get('markers', []) if m['id'] == marker), marker or '正式队'),
+                           'medal_boundaries': {m: {'last_solved': len(max(members, key=lambda r: r['key'])['accepted']),
+                                                    'last_penalty_minutes': int(max(members, key=lambda r: r['key'])['key'][1] // 60)}
+                                                for m, members in local_cohorts.items()},
+                           'medal_safety': medal_safety({r['id']: len(r['accepted']) for r in members},
+                                                       {m: [r['id'] for r in members] for m, members in local_cohorts.items()})})
     return {'official_teams': len(rows), 'effective_teams': sum(bool(r['accepted']) for r in rows),
             'excluded_teams': len(srk['rows']) - len(rows), 'duration_seconds': duration,
             'medal_rule': 'RankLand SRK 显式金银铜分别枚数及分组规则', 'medal_groups': groups,
-            'medal_boundaries': boundaries, 'problems': problems}
+            'medal_boundaries': boundaries, 'medal_safety': safety,
+            'medal_reference_groups': references, 'problems': problems}
 
 
 def summarize_standings(config, teams, runs):
@@ -234,7 +265,9 @@ def summarize_standings(config, teams, runs):
             'excluded_teams': len(teams) - len(official), 'unlisted_team_runs': unlisted_runs,
             'duration_seconds': duration,
             'medal_rule': medal_rule, 'medal_rank_limits': dict(zip(cohorts, limits)),
-            'medal_boundaries': boundaries, 'problems': problems}
+            'medal_boundaries': boundaries,
+            'medal_safety': medal_safety({tid: len(s['solved']) for tid, s in scores.items()}, cohorts),
+            'problems': problems}
 
 
 def round_hundred(value):
@@ -290,7 +323,10 @@ def summarize_final_scoreboard(data, contest_id):
     return {'official_teams': len(rows), 'effective_teams': sum(bool(r['accepted']) for r in rows),
             'excluded_teams': len(data['teams']) - len(rows), 'duration_seconds': duration,
             'medal_rule': data['medal_rule'], 'medal_source_url': data['medal_source_url'],
-            'original_source_sha256': data['source_sha256'], 'medal_boundaries': boundaries, 'problems': problems}
+            'original_source_sha256': data['source_sha256'], 'medal_boundaries': boundaries,
+            'medal_safety': medal_safety({r['id']: r['solved'] for r in rows},
+                                       {m: [r['id'] for r in members] for m, members in cohorts.items()}),
+            'problems': problems}
 
 
 def rate_problem(stats, prior=None):

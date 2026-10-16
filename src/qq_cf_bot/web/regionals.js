@@ -13,6 +13,27 @@ function difficultyText(d){
   }
   return text;
 }
+
+// Both walls use the same published final standings and current rating map.
+function regionalMedalReference(contest, release, difficulty) {
+  const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const stats = release?.contests?.[contest.id];
+  if (!stats?.medal_boundaries) return `<span class="medal-missing" title="${escape(release?.unrated_contests?.[contest.id] || '尚缺可核验奖牌终榜')}">奖牌线待核验</span>`;
+  const ratings = contest.problems.map(p => difficulty?.[p.id]?.rating);
+  const complete = ratings.length > 0 && ratings.every(r => Number.isFinite(r) && r > 0);
+  const sorted = complete ? [...ratings].sort((a,b) => a-b) : [];
+  const threshold = count => count > ratings.length ? '题数不可达' : `${count}题 · ${complete ? sorted[count-1] : '未评级'}`;
+  const groups = stats.medal_reference_groups?.length > 1 ? stats.medal_reference_groups : [stats];
+  return groups.map(group => `${groups.length > 1 ? `<small class="medal-group">${escape(group.label)}组</small>` : ''}<div class="medal-grid">${['gold','silver','bronze'].map((medal, i) => {
+    const boundary = group.medal_boundaries[medal];
+    const safe = group.medal_safety?.[medal]?.safe_solved;
+    const speedText = threshold(boundary.last_solved);
+    const safeText = Number.isInteger(safe) ? threshold(safe) : '待核验';
+    const title = `${['金','银','铜'][i]}牌或更好。手速线：${speedText}，末位罚时 ${boundary.last_penalty_minutes} 分钟，同题数仍需比较罚时。稳牌线：${safeText}，超过本场终榜所有低于该档奖牌的正式队题数。Rating 为从易到难完成对应题数时的最低最高难度，非任意一道题达标即可获牌。`;
+    return `<span class="medal-label medal-${medal}">${['金','银','铜'][i]}</span><span title="${escape(title)}">${escape(speedText)}</span><span title="${escape(title)}">${escape(safeText)}</span>`;
+  }).join('')}</div>`).join('');
+}
+
 const EMPTY = {oral:false,code:false,attempted:false,oralAttempted:false,draft:false};
 function message(text="") { $("notice").textContent=text; }
 async function request(path, body) {
@@ -29,7 +50,7 @@ function draftKey(pid){return `regional-draft:${model.user}:${pid}`;}
 function completed(p){return Boolean(model.view==="oral"?p.oral:model.view==="code"?p.code:p.oral||p.code||p.onsite);}
 function attempted(p){return model.view==="oral"?p.oralAttempted:model.view==="code"?p.attempted:p.attempted||p.oralAttempted;}
 function visible(p){return $("filter").value==="all" || ($("filter").value==="unfinished"&&!completed(p)) || ($("filter").value==="draft"&&p.draft) || ($("filter").value==="oralOnly"&&p.oral&&!p.code);}
-function persistFilters(){localSet(`regional-filters:${model.user}`,JSON.stringify({year:$("year").value,series:$("series").value,search:$("search").value,filter:$("filter").value,view:model.view,order:$("problemOrder").value}));}
+function persistFilters(){localSet(`regional-filters:${model.user}`,JSON.stringify({year:$("year").value,series:$("series").value,search:$("search").value,filter:$("filter").value,view:model.view,order:$("problemOrder").value,medals:$("medalReferenceToggle").checked}));}
 function regionalSourceLinks(problem,contest){
   const links=(problem.aliases||[]).flatMap(key=>{
     const [oj,id]=key.split(':');
@@ -51,8 +72,11 @@ function orderedProblems(contest){
 function renderWall(){
   if(!model.data)return;
   const rows=model.data.contests.filter(c=>(!$("year").value||c.year===Number($("year").value))&&($("series").value==="all"||c.series===$("series").value)&&(!$("search").value||c.name.toLowerCase().includes($("search").value.toLowerCase())));
+  const showMedals=$("medalReferenceToggle").checked;
+  $("medalHelp").hidden=!showMedals;
+  const medalHead=showMedals?'<th class="medal-reference" scope="col">奖牌参考<small>手速线 / 稳牌线（题数 · Rating）</small></th>':"";
   const max=Math.max(1,...rows.map(c=>c.problems.length));
-  $("wall").querySelector("thead").innerHTML=`<tr><th scope="col">比赛 / 赛站</th><th scope="col">我的进度</th>${Array.from({length:max},(_,i)=>`<th scope="col">${$("problemOrder").value==="rating"?i+1:String.fromCharCode(65+i)}</th>`).join("")}</tr>`;
+  $("wall").querySelector("thead").innerHTML=`<tr><th scope="col">比赛 / 赛站</th>${medalHead}<th scope="col">我的进度</th>${Array.from({length:max},(_,i)=>`<th scope="col">${$("problemOrder").value==="rating"?i+1:String.fromCharCode(65+i)}</th>`).join("")}</tr>`;
   let done=0,total=0;
   $("wall").querySelector("tbody").innerHTML=rows.map(c=>{
     let solved=0,tries=0;
@@ -65,8 +89,8 @@ function renderWall(){
       return `<td><button class="tile ${difficultyClass(diff?.rating)} ${ok?"done":status.draft&&model.view!=="code"?"draft":tried?"tried":""} ${show?"":"filtered"} ${p.unmapped?"unmapped":""}" data-problem="${esc(p.id)}" title="${esc(title)}" aria-label="${esc(title)}"><i class="rating-circle" aria-hidden="true"></i>${esc(p.index)}<span class="tile-rating" aria-hidden="true">${diff?esc(diff.rating):"—"}</span><span class="tile-mark" aria-hidden="true">${esc(marks)}</span></button></td>`;
     }).join("");
     done+=solved;total+=c.problems.length;
-    return `<tr><th scope="row"><a class="site-name" href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer"><span class="series-badge">${esc(c.series)}</span>${esc(c.year)} · ${esc(c.site)}${c.stage==="final"?"":"站"}</a></th><td>${c.catalog_status==="pending_problem_list"?"题单待核验":model.view==="code"?`AC ${solved} / ${c.problems.length}<br>提交过 ${tries}`:`完成 ${solved} / ${c.problems.length}<br>尝试过 ${tries}`}</td>${cells}${"<td></td>".repeat(max-c.problems.length)}</tr>`;
-  }).join("")||`<tr><td colspan="${max+2}">没有匹配的比赛，试试其他年份或赛站。</td></tr>`;
+    return `<tr><th scope="row"><a class="site-name" href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer"><span class="series-badge">${esc(c.series)}</span>${esc(c.year)} · ${esc(c.site)}${c.stage==="final"?"":"站"}</a></th>${showMedals?`<td class="medal-reference">${regionalMedalReference(c,model.data.ratingRelease,model.data.difficulty)}</td>`:""}<td class="progress-cell">${c.catalog_status==="pending_problem_list"?"题单待核验":model.view==="code"?`AC ${solved} / ${c.problems.length}<br>提交过 ${tries}`:`完成 ${solved} / ${c.problems.length}<br>尝试过 ${tries}`}</td>${cells}${"<td></td>".repeat(max-c.problems.length)}</tr>`;
+  }).join("")||`<tr><td colspan="${max+2+Number(showMedals)}">没有匹配的比赛，试试其他年份或赛站。</td></tr>`;
   $("summary").textContent=`${rows.length} 场比赛 · ${model.user?`${done} / ${total} 题完成`:`${total} 题已收录`}`;
   $("coverage").textContent=`目录核验于 ${model.data.verifiedAt||"—"}。来源：Codeforces、QOJ 等公开目录；虚线题格表示平台映射待核验。账号历史未回填完时，未着色不代表从未做过。`;
   document.querySelectorAll("[data-view]").forEach(b=>{b.classList.toggle("selected",b.dataset.view===model.view);b.setAttribute("aria-pressed",String(b.dataset.view===model.view));});
@@ -98,6 +122,7 @@ async function boot(){
   $("year").innerHTML=model.data.years.map(y=>`<option>${y}</option>`).join("");
   let saved={};try{saved=JSON.parse(localGet(`regional-filters:${model.user}`)||"{}");}catch(_){}
   for(const id of ["year","series","filter","search"]){if(saved[id]!==undefined&&(!(id==="year")||model.data.years.includes(Number(saved[id]))))$(id).value=saved[id];}
+  $("medalReferenceToggle").checked=saved.medals!==false;
   if(["oral","code","union"].includes(saved.view))model.view=saved.view;
   if(["index","rating"].includes(saved.order))$("problemOrder").value=saved.order;
   model.initialized=true;renderWall();renderQojAuthorization();
@@ -162,7 +187,7 @@ async function submit(kind){
 }
 document.addEventListener("DOMContentLoaded",()=>{
   boot().catch(e=>message(e.message));
-  ["year","series","filter","problemOrder"].forEach(id=>$(id).addEventListener("change",renderWall));$("search").addEventListener("input",renderWall);
+  ["year","series","filter","problemOrder","medalReferenceToggle"].forEach(id=>$(id).addEventListener("change",renderWall));$("search").addEventListener("input",renderWall);
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener("click",()=>{model.view=b.dataset.view;renderWall();}));
   document.addEventListener("click",e=>{const b=e.target.closest('button[data-problem]');if(b)run(()=>openProblem(b.dataset.problem));});
   $("resume").addEventListener("click",()=>run(()=>openProblem(model.data.lastProblem)));

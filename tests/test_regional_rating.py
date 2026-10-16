@@ -5,10 +5,17 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from qq_cf_bot.regional_rating import build_release, rate_problem, summarize_standings, summarize_rankland, rankland_snapshot, summarize_final_scoreboard
+from qq_cf_bot.regional_rating import build_release, rate_problem, summarize_standings, summarize_rankland, rankland_snapshot, summarize_final_scoreboard, medal_safety
 
 
 class StandingsRatingTest(unittest.TestCase):
+    def test_safe_medal_counts_use_best_team_outside_cumulative_tier(self):
+        cohorts = {'gold': ['g'], 'silver': ['s'], 'bronze': ['b']}
+        result = medal_safety({'g': 8, 's': 8, 'b': 6, 'iron': 3}, cohorts)
+        self.assertEqual([result[m]['safe_solved'] for m in cohorts], [9, 7, 4])
+        # A clear gap means the last gold count itself can already be safe.
+        self.assertEqual(medal_safety({'g': 8, 's': 7, 'b': 6, 'iron': 3}, cohorts)['gold']['safe_solved'], 8)
+
     def fixture(self):
         config = {'start_time': 1700000000, 'end_time': 1700018000, 'penalty': 1200,
                   'problems': [{'id': '1009', 'label': 'A'}, {'id': '1013', 'label': 'B'}],
