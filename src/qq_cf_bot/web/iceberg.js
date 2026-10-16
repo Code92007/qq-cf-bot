@@ -86,11 +86,19 @@
     renderJourney(); render();
     if (dialog.open && dialog.dataset.topic) openTopic(dialog.dataset.topic, false);
   }
+  function topicEvidence(record, topic) {
+    const reference = record.referenceTopics?.[topic.id];
+    const labels = [];
+    if (reference) labels.push(`<a href="${escape(reference)}" target="_blank" rel="noopener noreferrer">资料例题 ↗</a>`);
+    if (record.manualTopicIds.includes(topic.id)) labels.push("补充关联");
+    if (!labels.length) labels.push("标签匹配");
+    return labels.join(" · ");
+  }
   function footprintDetails(topic) {
     if (mode === "pure" || !journey) return "";
     const p = achievement(topic), records = new Map(journey.problems.map(r => [r.key,r]));
     const examples = p.problemKeys.map(k => records.get(k));
-    return `<section class="footprint-details"><h3>${p.count ? "✦ 这片海，你来过" : "还没有关联的 AC 足迹"}</h3><div class="footprint-dates"><p>首次点亮<strong>${dateLabel(p.firstAt)}</strong></p><p>最近一次 AC<strong>${dateLabel(p.lastAt)}</strong></p><p>去重题目<strong>${p.count} 道</strong></p></div>${p.undated ? `<p class="journey-note">${p.undated} 道题缺少原始时间；已知日期仅代表目前保存的最早 / 最近记录。</p>` : ""}<details ${p.count ? "open" : ""}><summary>关联题目与时间依据</summary><ul class="footprint-problems">${examples.map(r => `<li><div>${r.url ? `<a href="${escape(r.url)}" target="_blank" rel="noopener noreferrer">${escape(r.key)} · ${escape(r.title)} ↗</a>` : `<span>${escape(r.key)} · ${escape(r.title)}</span>`}<small>${escape(r.sources.join(" / "))}${r.manualTopicIds.includes(topic.id) ? " · 补充关联" : " · 标签匹配"}</small></div><p>首次 ${dateLabel(r.firstAt)}<br>最近 ${dateLabel(r.lastAt)}</p>${r.manualTopicIds.includes(topic.id) ? `<button type="button" data-unlink="${escape(r.key)}" class="quiet">移除补充关联</button>` : ""}</li>`).join("") || '<li>平台标签不够细时，可以在下方补充关联。</li>'}</ul></details><details class="manual-link"><summary>补充关联：这道已 AC 的题用到了它</summary><p class="journey-note">选择历史 AC 题目，使用原始 AC 时间点亮。可以把同一道题关联到多个知识点。</p><label>搜索已 AC 题目<input type="search" id="linkProblemSearch" placeholder="题号或题名" maxlength="100"></label><select id="linkProblem" aria-label="选择已 AC 题目">${linkOptions("")}</select><button id="saveTopicLink" type="button" class="quiet">关联到这个知识点</button><p id="linkStatus" role="status"></p></details><button type="button" id="recommendThisTopic" class="quiet">找几道这个知识点的题 ↗</button></section>`;
+    return `<section class="footprint-details"><h3>${p.count ? "✦ 这片海，你来过" : "还没有关联的 AC 足迹"}</h3><div class="footprint-dates"><p>首次点亮<strong>${dateLabel(p.firstAt)}</strong></p><p>最近一次 AC<strong>${dateLabel(p.lastAt)}</strong></p><p>去重题目<strong>${p.count} 道</strong></p></div>${p.undated ? `<p class="journey-note">${p.undated} 道题缺少原始时间；已知日期仅代表目前保存的最早 / 最近记录。</p>` : ""}<details ${p.count ? "open" : ""}><summary>关联题目与时间依据</summary><ul class="footprint-problems">${examples.map(r => `<li><div>${r.url ? `<a href="${escape(r.url)}" target="_blank" rel="noopener noreferrer">${escape(r.key)} · ${escape(r.title)} ↗</a>` : `<span>${escape(r.key)} · ${escape(r.title)}</span>`}<small>${escape(r.sources.join(" / "))} · ${topicEvidence(r, topic)}</small></div><p>首次 ${dateLabel(r.firstAt)}<br>最近 ${dateLabel(r.lastAt)}</p>${r.manualTopicIds.includes(topic.id) ? `<button type="button" data-unlink="${escape(r.key)}" class="quiet">移除补充关联</button>` : ""}</li>`).join("") || '<li>平台标签不够细时，可以在下方补充关联。</li>'}</ul></details><details class="manual-link"><summary>补充关联：这道已 AC 的题用到了它</summary><p class="journey-note">选择历史 AC 题目，使用原始 AC 时间点亮。可以把同一道题关联到多个知识点。</p><label>搜索已 AC 题目<input type="search" id="linkProblemSearch" placeholder="题号或题名" maxlength="100"></label><select id="linkProblem" aria-label="选择已 AC 题目">${linkOptions("")}</select><button id="saveTopicLink" type="button" class="quiet">关联到这个知识点</button><p id="linkStatus" role="status"></p></details><button type="button" id="recommendThisTopic" class="quiet">找几道这个知识点的题 ↗</button></section>`;
   }
   function linkOptions(query) {
     return '<option value="">选择一道题目</option>' + journey.problems.filter(r => `${r.key} ${r.title}`.toLowerCase().includes(query.toLowerCase())).slice(0,100).map(r => `<option value="${escape(r.key)}">${escape(r.key)} · ${escape(r.title)}</option>`).join("");

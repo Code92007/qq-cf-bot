@@ -1,0 +1,472 @@
+{
+  "version": 1,
+  "description": "Reviewed algorithm examples supplement coarse platform tags. A reference only lights a topic after the owner has AC evidence for that exact problem. Shared articles, counterexamples and generic templates do not imply every implementation.",
+  "entries": [
+    {
+      "problemKey": "atcoder:abc159_f",
+      "topicId": "dp-knapsack-basic",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1183",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1183"
+    },
+    {
+      "problemKey": "atcoder:abc187_f",
+      "topicId": "math-submask",
+      "source": "https://oi-wiki.org/math/binary-set/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/binary-set.md#L137"
+    },
+    {
+      "problemKey": "atcoder:abc270_g",
+      "topicId": "math-number-theory-discrete-logarithm",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2475",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2475"
+    },
+    {
+      "problemKey": "atcoder:abc274_d",
+      "topicId": "dp-knapsack-basic",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1167",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1167"
+    },
+    {
+      "problemKey": "atcoder:abc274_e",
+      "topicId": "dp-tsp",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1961",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1961"
+    },
+    {
+      "problemKey": "atcoder:abc274_g",
+      "topicId": "graph-graph-matching-bigraph-match",
+      "source": "https://oi-wiki.org/graph/graph-matching/bigraph-match/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/graph-matching/bigraph-match.md#L346"
+    },
+    {
+      "problemKey": "atcoder:abc275_f",
+      "topicId": "dp-knapsack-basic",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1181",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1181"
+    },
+    {
+      "problemKey": "atcoder:abc278_g",
+      "topicId": "math-game-theory-impartial-game",
+      "source": "https://oi-wiki.org/math/game-theory/impartial-game/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/game-theory/impartial-game.md#L673"
+    },
+    {
+      "problemKey": "atcoder:abc283_h",
+      "topicId": "math-number-theory-euclidean",
+      "source": "https://oi-wiki.org/math/number-theory/euclidean/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/number-theory/euclidean.md#L716"
+    },
+    {
+      "problemKey": "atcoder:abc284_f",
+      "topicId": "string-z-func",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L319",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/strings.go#L319"
+    },
+    {
+      "problemKey": "atcoder:arc084_b",
+      "topicId": "graph-mod-shortest-path",
+      "source": "https://oi-wiki.org/graph/mod-shortest-path/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/mod-shortest-path.md#L73"
+    },
+    {
+      "problemKey": "atcoder:arc100_c",
+      "topicId": "math-subset-transform",
+      "source": "https://oi-wiki.org/basic/prefix-sum/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/basic/prefix-sum.md#L350"
+    },
+    {
+      "problemKey": "atcoder:dp_d",
+      "topicId": "dp-knapsack-basic",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1162",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1162"
+    },
+    {
+      "problemKey": "codeforces:1009F",
+      "topicId": "graph-long-chain",
+      "source": "https://oi-wiki.org/graph/hld/#长链剖分",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/hld/#长链剖分.md#L384"
+    },
+    {
+      "problemKey": "codeforces:1082E",
+      "topicId": "dp-kadane",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L464",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L464"
+    },
+    {
+      "problemKey": "codeforces:1100F",
+      "topicId": "math-linear-algebra-basis",
+      "source": "https://oi-wiki.org/math/linear-algebra/basis/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/linear-algebra/basis.md#L378"
+    },
+    {
+      "problemKey": "codeforces:1102F",
+      "topicId": "dp-tsp",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1968",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1968"
+    },
+    {
+      "problemKey": "codeforces:1114D",
+      "topicId": "dp-lcs",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L637",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L637"
+    },
+    {
+      "problemKey": "codeforces:1187E",
+      "topicId": "dp-tree",
+      "source": "https://oi-wiki.org/dp/tree/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/tree.md#L115"
+    },
+    {
+      "problemKey": "codeforces:1208F",
+      "topicId": "math-subset-transform",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2215",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2215"
+    },
+    {
+      "problemKey": "codeforces:1234F",
+      "topicId": "math-subset-transform",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2207",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2207"
+    },
+    {
+      "problemKey": "codeforces:126B",
+      "topicId": "string-z-func",
+      "source": "https://oi-wiki.org/string/z-func/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/string/z-func.md#L159"
+    },
+    {
+      "problemKey": "codeforces:1296E2",
+      "topicId": "dp-lis",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L760",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L760"
+    },
+    {
+      "problemKey": "codeforces:1304D",
+      "topicId": "dp-lis",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L852",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L852"
+    },
+    {
+      "problemKey": "codeforces:1326D2",
+      "topicId": "string-manacher",
+      "source": "https://oi-wiki.org/string/manacher/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/string/manacher.md#L233"
+    },
+    {
+      "problemKey": "codeforces:1342E",
+      "topicId": "math-combinatorics-stirling",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2883",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2883"
+    },
+    {
+      "problemKey": "codeforces:1359D",
+      "topicId": "dp-kadane",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L452",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L452"
+    },
+    {
+      "problemKey": "codeforces:1373D",
+      "topicId": "dp-kadane",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L463",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L463"
+    },
+    {
+      "problemKey": "codeforces:13E",
+      "topicId": "ds-decompose",
+      "source": "https://oi-wiki.org/ds/decompose/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/ds/decompose.md#L101"
+    },
+    {
+      "problemKey": "codeforces:1443E",
+      "topicId": "math-cantor-expansion",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/search.go#L532",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/search.go#L532"
+    },
+    {
+      "problemKey": "codeforces:148D",
+      "topicId": "dp-probability",
+      "source": "https://oi-wiki.org/dp/probability/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/probability.md#L13"
+    },
+    {
+      "problemKey": "codeforces:1582F1",
+      "topicId": "dp-lis",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L780",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L780"
+    },
+    {
+      "problemKey": "codeforces:163A",
+      "topicId": "dp-lcs",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L633",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L633"
+    },
+    {
+      "problemKey": "codeforces:1646E",
+      "topicId": "math-number-theory-sieve",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L868",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L868"
+    },
+    {
+      "problemKey": "codeforces:165E",
+      "topicId": "math-subset-transform",
+      "source": "https://oi-wiki.org/basic/prefix-sum/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/basic/prefix-sum.md#L348"
+    },
+    {
+      "problemKey": "codeforces:1661F",
+      "topicId": "dp-opt-wqs-binary-search",
+      "source": "https://oi-wiki.org/dp/opt/wqs-binary-search/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/opt/wqs-binary-search.md#L873"
+    },
+    {
+      "problemKey": "codeforces:1704F",
+      "topicId": "math-game-theory-impartial-game",
+      "source": "https://oi-wiki.org/math/game-theory/impartial-game/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/game-theory/impartial-game.md#L678"
+    },
+    {
+      "problemKey": "codeforces:1709E",
+      "topicId": "graph-dsu-on-tree",
+      "source": "https://oi-wiki.org/graph/dsu-on-tree/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/dsu-on-tree.md#L130"
+    },
+    {
+      "problemKey": "codeforces:1715E",
+      "topicId": "dp-opt-slope",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2867",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L2867"
+    },
+    {
+      "problemKey": "codeforces:1771D",
+      "topicId": "dp-lps",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1643",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1643"
+    },
+    {
+      "problemKey": "codeforces:1843F2",
+      "topicId": "dp-kadane",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L438",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L438"
+    },
+    {
+      "problemKey": "codeforces:1845D",
+      "topicId": "dp-kadane",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L465",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L465"
+    },
+    {
+      "problemKey": "codeforces:284A",
+      "topicId": "math-number-theory-primitive-root",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2101",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/math.go#L2101"
+    },
+    {
+      "problemKey": "codeforces:346B",
+      "topicId": "dp-lcs",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L638",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L638"
+    },
+    {
+      "problemKey": "codeforces:366C",
+      "topicId": "dp-knapsack-basic",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1187",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L1187"
+    },
+    {
+      "problemKey": "codeforces:463D",
+      "topicId": "dp-lcs",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L635",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L635"
+    },
+    {
+      "problemKey": "codeforces:4D",
+      "topicId": "dp-lis",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L764",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L764"
+    },
+    {
+      "problemKey": "codeforces:55D",
+      "topicId": "dp-number",
+      "source": "https://oi-wiki.org/dp/number/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/number.md#L428"
+    },
+    {
+      "problemKey": "codeforces:600E",
+      "topicId": "graph-dsu-on-tree",
+      "source": "https://oi-wiki.org/graph/dsu-on-tree/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/dsu-on-tree.md#L124"
+    },
+    {
+      "problemKey": "codeforces:622F",
+      "topicId": "math-numerical-interp",
+      "source": "https://oi-wiki.org/math/numerical/interp/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/numerical/interp.md#L114"
+    },
+    {
+      "problemKey": "codeforces:741D",
+      "topicId": "graph-dsu-on-tree",
+      "source": "https://oi-wiki.org/graph/dsu-on-tree/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/dsu-on-tree.md#L112"
+    },
+    {
+      "problemKey": "codeforces:768D",
+      "topicId": "dp-probability",
+      "source": "https://oi-wiki.org/dp/probability/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/probability.md#L35"
+    },
+    {
+      "problemKey": "codeforces:865D",
+      "topicId": "dp-opt-slope-trick",
+      "source": "https://oi-wiki.org/dp/opt/slope-trick/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/opt/slope-trick.md#L446"
+    },
+    {
+      "problemKey": "codeforces:888G",
+      "topicId": "graph-mst",
+      "source": "https://oi-wiki.org/graph/mst/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/mst.md#L259"
+    },
+    {
+      "problemKey": "codeforces:906D",
+      "topicId": "math-number-theory-fermat",
+      "source": "https://oi-wiki.org/math/number-theory/fermat/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/number-theory/fermat.md#L222"
+    },
+    {
+      "problemKey": "codeforces:960F",
+      "topicId": "dp-lis",
+      "source": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L770",
+      "reference": "https://github.com/Zhonghe-zhao/codeforces-go/blob/2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1/copypasta/dp.go#L770"
+    },
+    {
+      "problemKey": "hdu:1402",
+      "topicId": "math-poly-fft",
+      "source": "https://oi-wiki.org/math/poly/fft/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/poly/fft.md#L578"
+    },
+    {
+      "problemKey": "hdu:2089",
+      "topicId": "dp-number",
+      "source": "https://oi-wiki.org/dp/number/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/number.md#L146"
+    },
+    {
+      "problemKey": "hdu:2196",
+      "topicId": "dp-tree",
+      "source": "https://oi-wiki.org/dp/tree/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/tree.md#L29"
+    },
+    {
+      "problemKey": "hdu:4738",
+      "topicId": "graph-cut",
+      "source": "https://oi-wiki.org/graph/cut/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/cut.md#L182"
+    },
+    {
+      "problemKey": "hdu:6184",
+      "topicId": "graph-rings-count",
+      "source": "https://oi-wiki.org/graph/rings-count/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/rings-count.md#L57"
+    },
+    {
+      "problemKey": "hdu:6579",
+      "topicId": "math-linear-algebra-basis",
+      "source": "https://oi-wiki.org/math/linear-algebra/basis/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/linear-algebra/basis.md#L391"
+    },
+    {
+      "problemKey": "luogu:P1903",
+      "topicId": "misc-modifiable-mo-algo",
+      "source": "https://oi-wiki.org/misc/modifiable-mo-algo/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/misc/modifiable-mo-algo.md#L72"
+    },
+    {
+      "problemKey": "luogu:P2292",
+      "topicId": "dp-automaton",
+      "source": "https://oi-wiki.org/string/ac-automaton/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/string/ac-automaton.md#L311"
+    },
+    {
+      "problemKey": "luogu:P4718",
+      "topicId": "math-number-theory-pollard-rho",
+      "source": "https://oi-wiki.org/math/number-theory/pollard-rho/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/math/number-theory/pollard-rho.md#L264"
+    },
+    {
+      "problemKey": "luogu:P5047",
+      "topicId": "misc-mo-algo-secondary-offline",
+      "source": "https://oi-wiki.org/misc/mo-algo-secondary-offline/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/misc/mo-algo-secondary-offline.md#L19"
+    },
+    {
+      "problemKey": "luogu:P5501",
+      "topicId": "misc-mo-algo-secondary-offline",
+      "source": "https://oi-wiki.org/misc/mo-algo-secondary-offline/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/misc/mo-algo-secondary-offline.md#L46"
+    },
+    {
+      "problemKey": "poj:1113",
+      "topicId": "geometry-convex-hull",
+      "source": "https://oi-wiki.org/geometry/convex-hull/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/geometry/convex-hull.md#L318"
+    },
+    {
+      "problemKey": "poj:1236",
+      "topicId": "graph-scc",
+      "source": "https://oi-wiki.org/graph/scc/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/scc.md#L337"
+    },
+    {
+      "problemKey": "poj:1679",
+      "topicId": "graph-mst",
+      "source": "https://oi-wiki.org/graph/mst/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/graph/mst.md#L315"
+    },
+    {
+      "problemKey": "poj:2823",
+      "topicId": "ds-monotonic-queue",
+      "source": "https://oi-wiki.org/ds/monotonic-queue/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/ds/monotonic-queue.md#L8"
+    },
+    {
+      "problemKey": "poj:3250",
+      "topicId": "ds-monotonic-stack",
+      "source": "https://oi-wiki.org/ds/monotonic-stack/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/ds/monotonic-stack.md#L39"
+    },
+    {
+      "problemKey": "spoj:DQUERY",
+      "topicId": "ds-decompose",
+      "source": "https://oi-wiki.org/ds/decompose/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/ds/decompose.md#L104"
+    },
+    {
+      "problemKey": "spoj:GSS3",
+      "topicId": "dp-dynamic",
+      "source": "https://oi-wiki.org/dp/dynamic/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/dp/dynamic.md#L88"
+    },
+    {
+      "problemKey": "spoj:GSS3",
+      "topicId": "ds-seg",
+      "source": "https://oi-wiki.org/ds/seg/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/ds/seg.md#L513"
+    },
+    {
+      "problemKey": "uva:10245",
+      "topicId": "geometry-nearest-points",
+      "source": "https://oi-wiki.org/geometry/nearest-points/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/geometry/nearest-points.md#L108"
+    },
+    {
+      "problemKey": "uva:11987",
+      "topicId": "ds-dsu",
+      "source": "https://oi-wiki.org/ds/dsu/",
+      "reference": "https://github.com/OI-wiki/OI-wiki/blob/9adaa9bacf5ad81ce6217c04955f0094b0f9fba5/docs/ds/dsu.md#L220"
+    }
+  ],
+  "sourceRevisions": {
+    "oiWiki": "9adaa9bacf5ad81ce6217c04955f0094b0f9fba5",
+    "codeforcesGo": "2a7acdb9cbb4ed25488e6ac84cc6e6f89b66a2a1"
+  }
+}

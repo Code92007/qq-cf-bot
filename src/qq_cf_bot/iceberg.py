@@ -68,6 +68,20 @@ PLATFORM_TAGS = {
     '线性筛法': 'math-number-theory-sieve', '斜率维护技巧 slope trick': 'dp-opt-slope-trick',
     '闵可夫斯基和 Minkowski sum': 'minkowski', '二区间合并（猫树分治）': 'ds-cat-tree',
     'KTT / Kinetic Tournament Tree': 'ds-kinetic-tournament-tree', 'Hall 定理': 'graph-hall',
+    # Reviewed synonyms only: atlas search aliases also contain ambiguous names
+    # such as "Tarjan", "平衡树" and "树套树", so they cannot all be tags.
+    'DFS': 'search-dfs', '深度优先搜索 DFS': 'search-dfs',
+    'BFS': 'search-bfs', '广度优先搜索 BFS': 'search-bfs',
+    '二分': 'basic-binary', '双指针 two-pointer': 'misc-two-pointer',
+    '折半搜索 meet in the middle': 'search-meet-in-middle',
+    'cdq': 'misc-cdq-divide', 'sparse table': 'ds-sparse-table',
+    'chinese remainder theorem': 'math-number-theory-crt',
+    '字符串': 'string-basic', '字符串（入门）': 'string-basic',
+    '树的遍历': 'graph-tree-basic', '树论': 'graph-tree-basic',
+    '素数判断': 'math-number-theory-prime', '矩阵加速': 'math-linear-algebra-matrix',
+    '线性递推': 'basic-recurrence', '轮廓线 DP': 'dp-state',
+    '二项式定理': 'math-combinatorics-combination', 'Floyd 算法': 'graph-shortest-path',
+    '二次剩余': 'math-number-theory-quad-residue', '线段相交': 'geometry-2d',
 }
 
 
@@ -154,6 +168,13 @@ class IcebergAchievements:
             if aliases:
                 primary = min(aliases, key=lambda key: (not key.startswith('codeforces:'), key))
                 self.canonical.update({key: primary for key in aliases})
+        # Public, reviewed problem references complement platforms' coarse tags.
+        # They are intersected with this owner's real AC history below.
+        catalog = json.loads((self.web.static_dir.parent / 'catalog/iceberg-problem-topics.json').read_text())
+        self.references = {}
+        for entry in catalog['entries']:
+            key = self.canonical.get(entry['problemKey'], entry['problemKey'])
+            self.references.setdefault(key, {})[entry['topicId']] = entry['source']
         self.tags = {tag_key(t['title']): t['id'] for t in self.topics.values()}
         self.tags.update({tag_key(k): v for k, v in PLATFORM_TAGS.items() if v in self.topics})
         self.cache_stamp = None
@@ -203,7 +224,8 @@ class IcebergAchievements:
             item['tags'].update(p.get('tags', []))
             item['rating'] = p.get('rating')
             item['url'] = problem_url(key)
-            item['topicIds'] = sorted({self.tags[tag_key(t)] for t in item['tags'] if tag_key(t) in self.tags})
+            item['referenceTopics'] = self.references.get(key, {})
+            item['topicIds'] = sorted({self.tags[tag_key(t)] for t in item['tags'] if tag_key(t) in self.tags} | item['referenceTopics'].keys())
             item['manualTopicIds'] = []
         for link in links:
             item = records.get(self.canonical.get(link['problem_key'], link['problem_key']))
@@ -282,9 +304,10 @@ class IcebergAchievements:
         candidates = []
         for key, p in self.cached_metadata().items():
             rating = p.get('rating')
-            if key in records or not isinstance(rating, int) or not low <= rating <= high:
+            canonical = self.canonical.get(key, key)
+            if canonical in records or not isinstance(rating, int) or not low <= rating <= high:
                 continue
-            if tid in {self.tags.get(tag_key(t)) for t in p.get('tags', [])}:
+            if tid in {self.tags.get(tag_key(t)) for t in p.get('tags', [])} or tid in self.references.get(canonical, {}):
                 candidates.append({'key': key, 'title': p['name'], 'rating': rating, 'tags': p.get('tags', []), 'url': problem_url(key)})
         random.shuffle(candidates)
         return {'topic': tid, 'total': len(candidates), 'problems': candidates[:6]}

@@ -30,7 +30,7 @@ class AchievementTest(unittest.TestCase):
         self.session = {'user_id': 1, 'display_name':'测试 <人>', 'csrf_token':'token'}
         self.first, self.last = ts('2020-01-01'), ts('2024-03-02')
         self.snapshot([
-            self.record('codeforces:1704F', ['dp','greedy'], self.first, self.last, ['2020-01-01','2022-06-01','2024-03-02']),
+            self.record('codeforces:99001A', ['dp','greedy'], self.first, self.last, ['2020-01-01','2022-06-01','2024-03-02']),
             self.record('codeforces:1705A', ['greedy'], ts('2023-04-05'), ts('2023-04-05')),
             self.record('luogu:P1001', ['线段树'], None, None),
             self.record('qoj:999999', ['NTT'], self.first, self.last, kind='team'),
@@ -85,12 +85,12 @@ class AchievementTest(unittest.TestCase):
         self.assertEqual(self.app.iceberg.state(self.session)['topics']['math-poly-ntt']['count'], 0)
 
     def test_metadata_fills_missing_tags_and_recommendations_exclude_solved(self):
-        problems = [dict(contestId=1704,index='F',name='已做',rating=1500,tags=['dp']),dict(contestId=99999,index='A',name='未做',rating=1600,tags=['dp']),dict(contestId=99999,index='B',name='太难',rating=3000,tags=['dp']),dict(contestId=99999,index='C',name='别的标签',rating=1500,tags=['greedy'])]
+        problems = [dict(contestId=99001,index='A',name='已做',rating=1500,tags=['dp']),dict(contestId=99999,index='A',name='未做',rating=1600,tags=['dp']),dict(contestId=99999,index='B',name='太难',rating=3000,tags=['dp']),dict(contestId=99999,index='C',name='别的标签',rating=1500,tags=['greedy'])]
         self.app.service.cf.cache_path.write_text(json.dumps({'result':{'problems':problems}}))
         handler = SimpleNamespace(path='/api/iceberg/recommendations?topic=dp-basic&minRating=1200&maxRating=2000')
         result = self.app.iceberg.recommendations(self.session, handler)
         self.assertEqual([p['key'] for p in result['problems']], ['codeforces:99999A'])
-        self.snapshot([self.record('codeforces:1704F', [], self.first, self.last)])
+        self.snapshot([self.record('codeforces:99001A', [], self.first, self.last)])
         self.assertEqual(self.app.iceberg.state(self.session)['topics']['dp-basic']['count'], 1)
 
     def test_private_routes_require_login_and_mutation_requires_csrf(self):
@@ -114,14 +114,14 @@ class AchievementTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_knowledge({'version':1,'complete':True,'records':[self.record('javascript:bad', [], True, True)]})
         with self.assertRaises(ValueError):
-            validate_knowledge({'version':1,'complete':True,'records':[self.record('codeforces:1704F', [], self.last, self.first)]})
+            validate_knowledge({'version':1,'complete':True,'records':[self.record('codeforces:99001A', [], self.last, self.first)]})
 
     def test_repeat_ac_merges_dates_and_does_not_multiply_problems(self):
-        result = merge_records([self.record('codeforces:1704F', ['dp'],self.first,self.first),self.record('codeforces:1704F',['greedy'],self.last,self.last)])
+        result = merge_records([self.record('codeforces:99001A', ['dp'],self.first,self.first),self.record('codeforces:99001A',['greedy'],self.last,self.last)])
         self.assertEqual(len(result),1)
-        self.assertEqual(result['codeforces:1704F']['tags'],{'dp','greedy'})
-        self.assertEqual(result['codeforces:1704F']['firstAt'],self.first)
-        self.assertEqual(result['codeforces:1704F']['lastAt'],self.last)
+        self.assertEqual(result['codeforces:99001A']['tags'],{'dp','greedy'})
+        self.assertEqual(result['codeforces:99001A']['firstAt'],self.first)
+        self.assertEqual(result['codeforces:99001A']['lastAt'],self.last)
         self.assertIsNone(timestamp(None))
         self.assertIsNone(timestamp(True))
 
@@ -133,6 +133,69 @@ class AchievementTest(unittest.TestCase):
             self.assertEqual(state['topics'][tid]['firstAt'], self.first)
         self.assertEqual(state['topics']['dp-interval']['count'], 0)
         self.assertEqual(state['topics']['ds-seg-beats']['count'], 0)
+
+    def test_coarse_p5047_tags_gain_reviewed_secondary_offline_reference_and_original_dates(self):
+        self.snapshot([self.record('luogu:P5047', ['分块', '莫队'], self.first, self.last)])
+        state = self.app.iceberg.state(self.session)
+        topic = state['topics']['misc-mo-algo-secondary-offline']
+        self.assertEqual((topic['count'], topic['firstAt'], topic['lastAt']), (1, self.first, self.last))
+        record = state['problems'][0]
+        self.assertTrue({'ds-decompose', 'misc-mo-algo', 'misc-mo-algo-secondary-offline'} <= set(record['topicIds']))
+        self.assertEqual(record['referenceTopics']['misc-mo-algo-secondary-offline'], 'https://oi-wiki.org/misc/mo-algo-secondary-offline/')
+        self.assertEqual(record['manualTopicIds'], [])
+        self.assertEqual(state['topics']['misc-modifiable-mo-algo']['count'], 0)
+        self.assertEqual(state['topics']['misc-rollback-mo-algo']['count'], 0)
+
+    def test_references_require_exact_owner_ac_and_respect_team_selection(self):
+        self.snapshot([self.record('luogu:P5047', [], self.first, self.last, kind='team'),
+                       self.record('luogu:P5048', ['莫队'], self.first, self.last)])
+        self.assertEqual(self.app.iceberg.state(self.session)['topics']['misc-mo-algo-secondary-offline']['count'], 0)
+        self.assertEqual(self.app.iceberg.state(self.session, True)['topics']['misc-mo-algo-secondary-offline']['count'], 1)
+        self.assertEqual(self.app.iceberg.state({**self.session, 'user_id':2}, True)['summary']['lit'], 0)
+
+    def test_shared_articles_and_nearby_notes_do_not_assign_other_algorithms(self):
+        self.snapshot([self.record('codeforces:1009F', ['trees'], self.first, self.last),
+                       self.record('codeforces:1304D', ['constructive algorithms'], self.first, self.last),
+                       self.record('luogu:P4213', ['杜教筛'], self.first, self.last)])
+        state = self.app.iceberg.state(self.session)
+        for tid in ['graph-long-chain', 'dp-lis', 'math-number-theory-hyperbola']:
+            self.assertEqual(state['topics'][tid]['count'], 1)
+        for tid in ['graph-hld', 'dp-lcis', 'math-number-theory-min-25']:
+            self.assertEqual(state['topics'][tid]['count'], 0)
+
+    def test_precise_synonyms_and_ambiguous_labels_do_not_expand_to_implementations(self):
+        self.snapshot([self.record('luogu:P999999', ['cdq', 'sparse table', 'chinese remainder theorem', '轮廓线 DP', '平衡树', '树套树', 'Tarjan', 'games', 'matrices', 'hashing'], self.first, self.last),
+                       self.record('luogu:P1177', ['sortings'], self.first, self.last),
+                       self.record('luogu:P3369', ['平衡树'], self.first, self.last)])
+        state = self.app.iceberg.state(self.session)
+        for tid in ['misc-cdq-divide', 'ds-sparse-table', 'math-number-theory-crt', 'dp-state', 'basic-sort-intro']:
+            self.assertEqual(state['topics'][tid]['count'], 1)
+        for tid in ['ds-treap', 'ds-rbtree', 'ds-splay', 'ds-seg-in-seg', 'graph-scc', 'graph-dmst', 'basic-quick-sort', 'basic-radix-sort', 'math-game-theory-impartial-game', 'math-linear-algebra-matrix', 'string-hash']:
+            self.assertEqual(state['topics'][tid]['count'], 0)
+
+    def test_reviewed_recommendations_match_coarse_tags_and_exclude_canonical_solved(self):
+        self.app.service.cf.cache_path.write_text(json.dumps({'result':{'problems':[
+            dict(contestId=1661,index='F',name='Teleporters',rating=2700,tags=['dp'])]}}))
+        handler = SimpleNamespace(path='/api/iceberg/recommendations?topic=dp-opt-wqs-binary-search&minRating=2600&maxRating=2800')
+        result = self.app.iceberg.recommendations(self.session, handler)
+        self.assertEqual([p['key'] for p in result['problems']], ['codeforces:1661F'])
+        self.app.iceberg.canonical['luogu:CF1661F'] = 'codeforces:1661F'
+        self.snapshot([self.record('luogu:CF1661F', [], self.first, self.last)])
+        self.assertEqual(self.app.iceberg.recommendations(self.session, handler)['total'], 0)
+
+    def test_reviewed_catalog_has_unique_valid_topics_keys_and_traceable_sources(self):
+        path = Path(__file__).parents[1]/'src/qq_cf_bot/catalog/iceberg-problem-topics.json'
+        catalog = json.loads(path.read_text())
+        seen = set()
+        for row in catalog['entries']:
+            with self.subTest(row=row):
+                pair = (row['problemKey'], row['topicId'])
+                self.assertNotIn(pair, seen)
+                seen.add(pair)
+                self.assertIn(row['topicId'], self.app.iceberg.topics)
+                self.assertRegex(row['problemKey'], r'^[a-z]+:[A-Za-z0-9_]+$')
+                self.assertTrue(row['source'].startswith(('https://oi-wiki.org/', 'https://github.com/Zhonghe-zhao/codeforces-go/blob/')))
+                self.assertRegex(row['reference'], r'^https://github.com/(?:OI-wiki/OI-wiki|Zhonghe-zhao/codeforces-go)/blob/[0-9a-f]{40}/.+#L[1-9][0-9]*$')
 
 
 class ExportTest(unittest.TestCase):
