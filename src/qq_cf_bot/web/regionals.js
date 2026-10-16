@@ -29,7 +29,7 @@ function draftKey(pid){return `regional-draft:${model.user}:${pid}`;}
 function completed(p){return Boolean(model.view==="oral"?p.oral:model.view==="code"?p.code:p.oral||p.code||p.onsite);}
 function attempted(p){return model.view==="oral"?p.oralAttempted:model.view==="code"?p.attempted:p.attempted||p.oralAttempted;}
 function visible(p){return $("filter").value==="all" || ($("filter").value==="unfinished"&&!completed(p)) || ($("filter").value==="draft"&&p.draft) || ($("filter").value==="oralOnly"&&p.oral&&!p.code);}
-function persistFilters(){localSet(`regional-filters:${model.user}`,JSON.stringify({year:$("year").value,series:$("series").value,search:$("search").value,filter:$("filter").value,view:model.view}));}
+function persistFilters(){localSet(`regional-filters:${model.user}`,JSON.stringify({year:$("year").value,series:$("series").value,search:$("search").value,filter:$("filter").value,view:model.view,order:$("problemOrder").value}));}
 function regionalSourceLinks(problem,contest){
   const links=(problem.aliases||[]).flatMap(key=>{
     const [oj,id]=key.split(':');
@@ -42,19 +42,25 @@ function regionalSourceLinks(problem,contest){
   const seen=new Set();
   return links.filter(link=>{if(seen.has(link.url))return false;seen.add(link.url);return true;}).map(link=>`<a href="${esc(link.url)}" target="_blank" rel="noopener noreferrer">${esc(link.label)} ↗</a>`).join(" ");
 }
+function problemDifficulty(p){return model.data.difficulty?.[p.id] || (p.difficulty?{rating:p.difficulty,source:p.difficulty_source}:null);}
+function orderedProblems(contest){
+  const rating = p => {const value=problemDifficulty(p)?.rating;return Number.isFinite(value)&&value>0?value:Infinity;};
+  const byIndex = (a,b) => String(a.index).localeCompare(String(b.index),"en",{numeric:true});
+  return [...contest.problems].sort((a,b)=>($("problemOrder").value==="rating" ? rating(a)-rating(b) : 0)||byIndex(a,b));
+}
 function renderWall(){
   if(!model.data)return;
   const rows=model.data.contests.filter(c=>(!$("year").value||c.year===Number($("year").value))&&($("series").value==="all"||c.series===$("series").value)&&(!$("search").value||c.name.toLowerCase().includes($("search").value.toLowerCase())));
   const max=Math.max(1,...rows.map(c=>c.problems.length));
-  $("wall").querySelector("thead").innerHTML=`<tr><th scope="col">比赛 / 赛站</th><th scope="col">我的进度</th>${Array.from({length:max},(_,i)=>`<th scope="col">${String.fromCharCode(65+i)}</th>`).join("")}</tr>`;
+  $("wall").querySelector("thead").innerHTML=`<tr><th scope="col">比赛 / 赛站</th><th scope="col">我的进度</th>${Array.from({length:max},(_,i)=>`<th scope="col">${$("problemOrder").value==="rating"?i+1:String.fromCharCode(65+i)}</th>`).join("")}</tr>`;
   let done=0,total=0;
   $("wall").querySelector("tbody").innerHTML=rows.map(c=>{
     let solved=0,tries=0;
-    const cells=c.problems.map(p=>{
+    const cells=orderedProblems(c).map(p=>{
       const status=model.data.progress[p.id]||EMPTY,ok=completed(status),tried=attempted(status),show=visible(status);
       solved+=Number(ok);tries+=Number(tried||(model.view!=="code"&&status.draft));
       const marks=model.view==="oral"?(status.oral?"口":status.draft?"草稿":status.oralAttempted?"需修改":"") :model.view==="code"?(status.code?"AC":status.attempted?(status.verdict||"已提交"):"") :[status.oral?"口":"",status.code?"码":"",status.onsite?"现":""].filter(Boolean).join("")||(status.draft?"草稿":tried?"尝试":"");
-      const diff=model.data.difficulty?.[p.id] || (p.difficulty?{rating:p.difficulty,source:p.difficulty_source}:null);
+      const diff=problemDifficulty(p);
       const title=`${difficultyText(diff)}\n${c.name} ${p.index} · ${p.name}\n口胡：${status.oral?"通过":status.oralAttempted?"已尝试":"未通过"}；代码：${status.code?"AC":status.attempted?(status.verdict||"提交过"):"未提交"}${status.onsite?"；现场所在队伍通过":""}${status.wallTeam?"；含绑定团队线上通过":""}${status.draft?"；有草稿":""}${p.unmapped?"；平台题号待核验":""}`;
       return `<td><button class="tile ${difficultyClass(diff?.rating)} ${ok?"done":status.draft&&model.view!=="code"?"draft":tried?"tried":""} ${show?"":"filtered"} ${p.unmapped?"unmapped":""}" data-problem="${esc(p.id)}" title="${esc(title)}" aria-label="${esc(title)}"><i class="rating-circle" aria-hidden="true"></i>${esc(p.index)}<span class="tile-rating" aria-hidden="true">${diff?esc(diff.rating):"—"}</span><span class="tile-mark" aria-hidden="true">${esc(marks)}</span></button></td>`;
     }).join("");
@@ -93,6 +99,7 @@ async function boot(){
   let saved={};try{saved=JSON.parse(localGet(`regional-filters:${model.user}`)||"{}");}catch(_){}
   for(const id of ["year","series","filter","search"]){if(saved[id]!==undefined&&(!(id==="year")||model.data.years.includes(Number(saved[id]))))$(id).value=saved[id];}
   if(["oral","code","union"].includes(saved.view))model.view=saved.view;
+  if(["index","rating"].includes(saved.order))$("problemOrder").value=saved.order;
   model.initialized=true;renderWall();renderQojAuthorization();
   const hash=decodeURIComponent(location.hash.slice(1));
   if(hash&&model.user&&model.data.contests.some(c=>c.problems.some(p=>p.id===hash)))await openProblem(hash);
@@ -155,7 +162,7 @@ async function submit(kind){
 }
 document.addEventListener("DOMContentLoaded",()=>{
   boot().catch(e=>message(e.message));
-  ["year","series","filter"].forEach(id=>$(id).addEventListener("change",renderWall));$("search").addEventListener("input",renderWall);
+  ["year","series","filter","problemOrder"].forEach(id=>$(id).addEventListener("change",renderWall));$("search").addEventListener("input",renderWall);
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener("click",()=>{model.view=b.dataset.view;renderWall();}));
   document.addEventListener("click",e=>{const b=e.target.closest('button[data-problem]');if(b)run(()=>openProblem(b.dataset.problem));});
   $("resume").addEventListener("click",()=>run(()=>openProblem(model.data.lastProblem)));
