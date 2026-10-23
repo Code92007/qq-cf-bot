@@ -59,11 +59,14 @@ function setStatement(statement, error) {
   $("statementError").textContent = error || "";
   if (!statement) return;
   $("practiceTitle").textContent = statement.title || app.entry.entry.problemId;
-  for (const [name, value] of [["背景", statement.background], ["题目描述", statement.description], ["输入格式", statement.input], ["输出格式", statement.output], ["提示", statement.hint]]) {
+  for (const [name, key] of [["背景", "background"], ["题目描述", "description"], ["输入格式", "input"], ["输出格式", "output"], ["提示", "hint"]]) {
+    const value = statement[key];
     if (!value) continue;
     const section = document.createElement("section"); section.className = "statement-part";
     const heading = document.createElement("h4"); heading.textContent = name;
-    const content = document.createElement("div"); content.textContent = value;
+    const content = document.createElement("div"); content.className = "statement-content";
+    if (statement.html?.[key]) content.innerHTML = statement.html[key];
+    else content.textContent = value;
     section.append(heading, content); $("statementBody").append(section);
   }
   for (const [index, pair] of (statement.samples || []).entries()) {

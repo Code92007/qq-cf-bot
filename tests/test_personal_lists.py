@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from qq_cf_bot.models import JudgeResult, ProblemStatement
-from qq_cf_bot.personal_lists import parse_entries
+from qq_cf_bot.personal_lists import _display_statement, parse_entries
 from test_webapp import WebApplicationTest, _Handler
 
 
@@ -88,6 +88,15 @@ class PersonalListsTest(WebApplicationTest):
             opened = self._post("/api/lists/open", {"entryId": entry_id, "prepareStatement": True}, alice)
         self.assertEqual(opened.json()["statement"]["title"], "A+B")
         fetch.assert_called_once_with("P1001")
+
+    def test_statement_markup_is_rendered_and_sanitized(self):
+        statement = _display_statement({"description": "**重点** <script>alert(1)</script>\n\n| A | B |\n|---|---|\n| 1 | 2 |",
+                                        "sourceUrl": "https://www.luogu.com.cn/problem/P1001"})
+        rendered = statement["html"]["description"]
+        self.assertIn("<strong>重点</strong>", rendered)
+        self.assertIn("<table>", rendered)
+        self.assertNotIn("<script", rendered)
+        self.assertNotIn("alert(1)", rendered)
 
 
 if __name__ == "__main__":

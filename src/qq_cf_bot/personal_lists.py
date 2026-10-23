@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from .core import ChallengeError
 from .models import CFProblem
 from .problem_pool import normalize_problem
+from .renderer import _markdown_to_html, _StatementHTMLRenderer
 
 
 def _now():
@@ -58,6 +59,22 @@ def parse_entries(raw, default_group="未分组"):
     if not entries:
         raise ValueError("请输入至少一道题。")
     return entries
+
+
+def _display_statement(statement):
+    if not statement:
+        return None
+    rendered = {}
+    source_url = statement.get("sourceUrl", "")
+    for key in ("background", "description", "input", "output", "hint"):
+        raw = statement.get(key, "")
+        if not raw:
+            continue
+        sanitizer = _StatementHTMLRenderer(source_url)
+        sanitizer.feed(_markdown_to_html(raw, source_url))
+        sanitizer.close()
+        rendered[key] = sanitizer.result
+    return {**statement, "html": rendered}
 
 
 class PersonalLists:
@@ -210,7 +227,7 @@ class PersonalLists:
         return {"entry": {"id": entry["id"], "group": entry["group_name"], "problemId": entry["problem_id"],
                           "platform": entry["platform"], "url": entry["url"], "status": entry["status"],
                           "title": entry["title"]}, "draft": entry["draft"], "draftVersion": entry["draft_version"],
-                "statement": statement, "statementError": error, "attempts": attempts}
+                "statement": _display_statement(statement), "statementError": error, "attempts": attempts}
 
     def _fetch_statement(self, entry):
         platform, pid = entry["platform"], entry["problem_id"]
@@ -239,7 +256,7 @@ class PersonalLists:
                          "hint": "", "background": "", "samples": [], "sourceUrl": entry["url"]}
             db.execute("update personal_list_entries set statement_json=?,updated_at=? where id=?",
                        (json.dumps(statement, ensure_ascii=False), _now(), entry_id))
-        return {"statement": statement}
+        return {"statement": _display_statement(statement)}
 
     def save_draft(self, user, entry_id, text, version):
         if not isinstance(text, str) or len(text) > 20000:
