@@ -24,16 +24,19 @@ class LuoguClient:
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(CookieJar()))
 
     def fetch_statement(self, problem: CFProblem) -> ProblemStatement:
-        url = f"https://www.luogu.com.cn/problem/{problem.luogu_pid}"
+        return self.fetch_problem_id(problem.luogu_pid, fallback_title=problem.name)
+
+    def fetch_problem_id(self, pid: str, fallback_title: str = "") -> ProblemStatement:
+        url = f"https://www.luogu.com.cn/problem/{pid}"
         payload = self._fetch_json(url)
         data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
         current_data = payload.get("currentData") or data.get("currentData") or {}
         raw_problem = current_data.get("problem") or data.get("problem") or payload.get("problem")
         if not isinstance(raw_problem, dict):
-            raise RuntimeError(f"Luogu response for {problem.luogu_pid} does not contain problem data")
-        statement = statement_from_luogu_problem(raw_problem, fallback_title=problem.name, source_url=url)
+            raise RuntimeError(f"Luogu response for {pid} does not contain problem data")
+        statement = statement_from_luogu_problem(raw_problem, fallback_title=fallback_title or pid, source_url=url)
         if not statement.description and not statement.input_format and not statement.output_format:
-            raise RuntimeError(f"Luogu statement for {problem.luogu_pid} is empty")
+            raise RuntimeError(f"Luogu statement for {pid} is empty")
         return statement
 
     def fetch_solution_payload(self, problem: CFProblem) -> dict:

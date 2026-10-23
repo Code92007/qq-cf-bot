@@ -59,11 +59,25 @@ class WebApplication:
         self.pool = ProblemPool(self)
         from .iceberg import IcebergAchievements
         self.iceberg = IcebergAchievements(self)
+        from .personal_lists import PersonalLists
+        self.personal_lists = PersonalLists(self)
 
     def handle_get(self, handler, path: str) -> bool:
         if not self.config.web_enabled:
             return False
         try:
+            if path in {"/lists", "/lists/"}:
+                self._static(handler, "lists.html", "text/html; charset=utf-8", no_cache=True)
+                return True
+            if path == "/api/lists":
+                session = self._require_session(handler)
+                self._json(handler, self.personal_lists.state(int(session["user_id"])))
+                return True
+            if path == "/api/lists/entries":
+                session = self._require_session(handler)
+                query = parse_qs(urlsplit(getattr(handler, "path", "")).query)
+                self._json(handler, self.personal_lists.listing(int(session["user_id"]), query.get("id", [""])[0]))
+                return True
             if path in {"/iceberg", "/iceberg/"}:
                 self._static(handler, "iceberg.html", "text/html; charset=utf-8", no_cache=True)
                 return True
@@ -126,6 +140,8 @@ class WebApplication:
                 self._static(handler, "index.html", "text/html; charset=utf-8", no_cache=True)
                 return True
             static_files = {
+                "/lists.js": ("lists.js", "text/javascript; charset=utf-8"),
+                "/lists.css": ("lists.css", "text/css; charset=utf-8"),
                 "/iceberg.js": ("iceberg.js", "text/javascript; charset=utf-8"),
                 "/iceberg.css": ("iceberg.css", "text/css; charset=utf-8"),
                 "/iceberg-data.json": ("iceberg-data.json", "application/json; charset=utf-8"),
@@ -173,6 +189,8 @@ class WebApplication:
             try:
                 if path == "/api/iceberg/link":
                     self._json(handler, self.iceberg.link(session, payload))
+                elif path.startswith("/api/lists/"):
+                    self._json(handler, self.personal_lists.post(int(session["user_id"]), path.rsplit("/", 1)[-1], payload))
                 elif path.startswith("/api/pool/"):
                     self._json(handler, self.pool.post(session, path.rsplit("/", 1)[-1], payload))
                 elif path.startswith("/api/regionals/"):
