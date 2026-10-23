@@ -70,10 +70,13 @@ def _display_statement(statement):
         raw = statement.get(key, "")
         if not raw:
             continue
-        sanitizer = _StatementHTMLRenderer(source_url)
-        sanitizer.feed(_markdown_to_html(raw, source_url))
-        sanitizer.close()
-        rendered[key] = sanitizer.result
+        try:
+            sanitizer = _StatementHTMLRenderer(source_url)
+            sanitizer.feed(_markdown_to_html(raw, source_url))
+            sanitizer.close()
+            rendered[key] = sanitizer.result
+        except Exception:
+            pass
     return {**statement, "html": rendered}
 
 

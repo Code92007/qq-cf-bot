@@ -98,6 +98,12 @@ class PersonalListsTest(WebApplicationTest):
         self.assertNotIn("<script", rendered)
         self.assertNotIn("alert(1)", rendered)
 
+    def test_unrenderable_statement_keeps_raw_text(self):
+        with patch("qq_cf_bot.personal_lists._markdown_to_html", side_effect=ValueError("invalid markup")):
+            statement = _display_statement({"description": "原题内容", "sourceUrl": ""})
+        self.assertEqual(statement["description"], "原题内容")
+        self.assertEqual(statement["html"], {})
+
 
 if __name__ == "__main__":
     unittest.main()
