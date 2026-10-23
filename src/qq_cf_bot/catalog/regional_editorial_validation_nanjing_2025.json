@@ -1,0 +1,76 @@
+{
+  "scope": "2025 ICPC Nanjing A B C E F G H I J K M",
+  "status": "passed",
+  "seed": 20251109,
+  "limitations": "Independent checks of explanations; no online submissions, extreme-scale timing, optimized E deque or NTT implementation verification. A covers every valid hidden board state.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 213444,
+      "method": "every allowed board size and hole position; exact moving-bitboard simulation and query bound"
+    },
+    "B": {
+      "passed": true,
+      "cases": 300,
+      "method": "integer-direction enumeration versus grouped angular sweep, including zeros and opposite rays"
+    },
+    "C": {
+      "passed": true,
+      "cases": 300,
+      "method": "enumerate all positive splits"
+    },
+    "E": {
+      "passed": true,
+      "cases": 300,
+      "method": "threshold DP and both color passes versus enumeration of every simple path; excludes optimized deque"
+    },
+    "F": {
+      "passed": true,
+      "cases": 1088,
+      "method": "incremental subset DSUs versus exhaustive vertex-and-mask reachability"
+    },
+    "G": {
+      "passed": true,
+      "cases": 250,
+      "method": "all set partitions of buckets versus extreme-pair deletion"
+    },
+    "H": {
+      "passed": true,
+      "cases": 1023,
+      "method": "all binary strings through length 9 against literal four-substring enumeration, plus published long example"
+    },
+    "I": {
+      "passed": true,
+      "cases": 250,
+      "method": "full history policy-tree enumeration versus four-state backward DP, including zero probability"
+    },
+    "J": {
+      "passed": true,
+      "cases": 117,
+      "method": "enumerate roots and neighbor orders for small connected graphs; compare with true cuts and brute bridges"
+    },
+    "K": {
+      "passed": true,
+      "cases": 8010,
+      "method": "full 16020-state retrograde graph versus immediate-capture characterization on all 8010 initial positions"
+    },
+    "M": {
+      "passed": true,
+      "cases": 200,
+      "method": "enumerate all polygon vertex subsets; verify both convolution indices with exact naive multiplication, not NTT"
+    }
+  },
+  "content_sha256": {
+    "icpc-nanjing-A.md": "28a754c2786b863f93a18c81887db4abe87f15cad7f9736799e41ce3abd81875",
+    "icpc-nanjing-B.md": "e766f748e3e9699489483a8d40341e1e76dd20d924108721cec8c218394c2324",
+    "icpc-nanjing-C.md": "1e80505a51f04d6ade217bdf78acc4c94bd3eb66c144f51e34e05026063a9b0b",
+    "icpc-nanjing-E.md": "098bec1876a5ae966dfb17ff387915785ef51db4d0e79295202df20a2c1e1d8c",
+    "icpc-nanjing-F.md": "1a3cb094e05255367dba1309acbb29c2f22f10ae7a6991920e51d8ef9bc6d91e",
+    "icpc-nanjing-G.md": "c9e5d810540ff056e9bba4569e9e2c98ac8476b00929a383a32e853f20019233",
+    "icpc-nanjing-H.md": "440778fec54aa31723372acb2a02f424dfa70412d2e58bf89f9f2a8132cccd16",
+    "icpc-nanjing-I.md": "29d35b7d4f168e2089e7594c3b471494bba40f40fc7cfd555bf732196348f79d",
+    "icpc-nanjing-J.md": "b6f6e3c3001868581b9b39674fd1490b6b1344253560fc9242e376e02898582d",
+    "icpc-nanjing-K.md": "4d3df9e4d2ca1ea184a9c5ad65f5ad9efceaa41d1179df5382f4e7aeff09d464",
+    "icpc-nanjing-M.md": "3c64ec8ee99b3887e38371d03af988cc3063faa950c520d74578ddf3ad183dac"
+  }
+}

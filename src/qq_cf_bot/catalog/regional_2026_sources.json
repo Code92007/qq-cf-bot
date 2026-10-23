@@ -1,5 +1,5 @@
 {
-  "verified_at": "2026-10-18",
+  "verified_at": "2026-10-23",
   "method": "standings-medal-v1",
   "scope": "2026 ICPC 西安、CCPC 长春正式赛；使用原榜完整赛时提交，排除打星。仅发布匿名终榜行和题目元数据。",
   "contests": [
@@ -13,12 +13,16 @@
       },
       "anonymous_snapshot": "historical_standings/icpc2026xian.json",
       "anonymous_snapshot_sha256": "e66c5abe62754c9900f3a45d8dd24de57c0670afdf1f258e7fbe3f994e3b3b00",
-      "mapping_note": "QOJ 4580 当前仅受邀账号可见；待账号登录核验题名和单题编号，保留原榜题序与完整评级。",
+      "mapping_note": "2026-10-24 通过 QOJ 登录会话核验 A–M 题名和单题编号。",
       "scoring_note": "XCPCIO 毫秒提交时间，逐题按分钟取整，CE 不罚时；金银铜 41/82/123 支。",
-      "problem_access": "invited"
+      "problem_access": "login_required",
+      "qoj_contest_id": 4580,
+      "qoj_url": "https://qoj.ac/contest/4580"
     },
     {
       "id": "ccpc-2026-长春",
+      "qoj_contest_id": 4582,
+      "qoj_url": "https://qoj.ac/contest/4582",
       "ranklist_url": "https://rank.iccpc.cn/r/8a3a28e3-f6b3-4a58-b4ac-fa8039fb2c72",
       "raw_source_sha256": {
         "rank": "a78de23448e7bfabb7081b256f454e8cd7b3bb75a94a9285de48ab0049955a20",
@@ -27,9 +31,9 @@
       },
       "anonymous_snapshot": "historical_standings/ccpc2026changchun.json",
       "anonymous_snapshot_sha256": "5d50d152091681d3d4a9e7e001490f72857c25d94db7d65ec6528e5019211837",
-      "mapping_note": "题名与题序取自长春原榜；尚未公布可核验的在线做题链接，平台别名待补。",
+      "mapping_note": "2026-10-24 通过 QOJ 登录会话核验 A–M 题名和单题编号。",
       "scoring_note": "与原榜 RankCore / RankTool 核对全部 301 支正式队的逐题 AC、解题数、秒级罚时、奖牌；CE 不罚时，PE 罚时；299 支有提交正式队为奖牌分母，累计 30/90/180 名。",
-      "problem_access": "pending"
+      "problem_access": "login_required"
     }
   ]
 }

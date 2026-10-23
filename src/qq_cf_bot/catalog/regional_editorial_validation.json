@@ -1,0 +1,88 @@
+{
+  "scope": "2026 CCPC Changchun A-M",
+  "seed": 20261024,
+  "status": "passed",
+  "limitations": "Small-case correctness checks only; no online judge submissions or full-scale timing claims.",
+  "checks": {
+    "A": {
+      "cases": 144,
+      "method": "binary matrices: enumerate every legal operation and shortest clearing sequence",
+      "passed": true
+    },
+    "B": {
+      "cases": 200,
+      "method": "LCA objective identity and convex flow model versus exhaustive course subsets and schedules",
+      "passed": true
+    },
+    "C": {
+      "cases": 300,
+      "method": "all cyclic starting points as oracle",
+      "passed": true
+    },
+    "D": {
+      "cases": 376,
+      "method": "explicit reachable sets, minimal rounds, both branches at every layer, 60-level compression",
+      "passed": true
+    },
+    "E": {
+      "cases": 4876,
+      "method": "all triples for n=8..30, check tree, permutation and actual BFS distances",
+      "passed": true
+    },
+    "F": {
+      "cases": 555,
+      "method": "enumerate all permutations through n=7; synchronous deletion with exact and masked constraints",
+      "passed": true
+    },
+    "G": {
+      "cases": 350,
+      "method": "Tarjan answer versus all subsets of allowed interval flips for every banned edge",
+      "passed": true
+    },
+    "H": {
+      "cases": 66,
+      "method": "exact rational Markov-chain equations for every population partition n<=8",
+      "passed": true
+    },
+    "I": {
+      "cases": 8190,
+      "method": "all binary strings length 1..12: size, forbidden triples, uniqueness, decoding",
+      "passed": true
+    },
+    "J": {
+      "cases": 300,
+      "method": "enumerate all 2-bit arrays, including self constraints and contradictions",
+      "passed": true
+    },
+    "K": {
+      "cases": 250,
+      "method": "deque and offline color filtering versus every query simulated on actual cells",
+      "passed": true
+    },
+    "L": {
+      "cases": 4094,
+      "method": "all binary strings length 1..11, enumerate every even palindrome replacement",
+      "passed": true
+    },
+    "M": {
+      "cases": 300,
+      "method": "enumerate all intervals and moduli, compare elementwise palindromes",
+      "passed": true
+    }
+  },
+  "content_sha256": {
+    "ccpc-changchun-A.md": "fe032abf9470101376649c890c6ee692e3df94dc9c2bbd15948aa9d8e37bbcce",
+    "ccpc-changchun-B.md": "2f87c563bc15749163da50f50eeef1321fd1889a5574e479918bc0eb2c4ecdd2",
+    "ccpc-changchun-C.md": "6e6d62fd8a39d1063d54eeb59f88cf46f701385343339487cd678d83624144ba",
+    "ccpc-changchun-D.md": "7c74f3367d405c293b0d151aedab2b4283fc3a756f30ec94d58b86a91c6554f9",
+    "ccpc-changchun-E.md": "83d655540d1401fddad5fd8bbca5383b9a9c110c71e27275c7475711af628137",
+    "ccpc-changchun-F.md": "8287394630316d4b26ddaa1c107e3993da63466c57d7e4ef7311b802b1d9be6a",
+    "ccpc-changchun-G.md": "2200fb7f1bde1dd8fae897eb01a6bcbb5e22974a0353797e683ce25f4dae17b5",
+    "ccpc-changchun-H.md": "ba813700d41fe8e54e64bf64e1dd177034229372414468daddb59045bd857ec9",
+    "ccpc-changchun-I.md": "f144846f145b1733350801f66389c169a427af2b1d1122d951a6dccc5fe03834",
+    "ccpc-changchun-J.md": "b8248d0f12e33cf9e93c150f65eb7c6230648f853657915e070b350ee237ab3f",
+    "ccpc-changchun-K.md": "5ca7687fe00a6d2c36e2b092512ffc543e1fb92fc0bcc3791751bb7b6f94c3c8",
+    "ccpc-changchun-L.md": "d9efe7c482c8455e19748b92b31f80c315781dac276b27f84c7c55063dd662d3",
+    "ccpc-changchun-M.md": "cbd0e98d7d8ce1ae19c78137493433156ec0ebd3859a5cb43e838d367f1df53e"
+  }
+}

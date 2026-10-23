@@ -60,6 +60,18 @@ class RegionalStoreTest(unittest.TestCase):
         self.assertIn('nowcoder:220443', self.store.aliases)
         self.assertNotIn('codeforces:102769C', self.store.aliases)
 
+    def test_2026_changchun_uses_published_qoj_contest_link(self):
+        contest = next(c for c in self.store.contests if c['id'] == 'ccpc-2026-长春')
+        self.assertEqual(contest['source_url'], 'https://qoj.ac/contest/4582')
+        self.assertEqual(contest['qoj_url'], contest['source_url'])
+        self.assertEqual(contest['qoj_contest_id'], 4582)
+        self.assertEqual(contest['source_label'], 'QOJ')
+        self.assertIn({'url': contest['ranklist_url'], 'label': '原榜单'}, contest['source_links'])
+        self.assertNotIn('尚未公布', contest['mapping_note'])
+        self.assertEqual([p['index'] for p in contest['problems']], list('ABCDEFGHIJKLM'))
+        self.assertEqual([p['qoj_id'] for p in contest['problems']], list(range(22910,22923)))
+        self.assertTrue(all(p['aliases'] == ['qoj:'+str(p['qoj_id'])] and not p.get('unmapped') for p in contest['problems']))
+
     def test_2018_catalog_uses_verified_gym_aliases_and_explicit_pending_hongkong(self):
         self.assertEqual(self.store.aliases['codeforces:102055A'], 'ccpc-2018-Final:A')
         self.assertEqual(self.store.aliases['codeforces:102056D'], 'icpc-2018-ECFinal:D')

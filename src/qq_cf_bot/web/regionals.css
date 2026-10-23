@@ -37,3 +37,24 @@ th.medal-reference small { display: block; font-size: 10px; color: #718091; font
 .medal-group { display: block; text-align: left; color: #718091; margin-bottom: 2px; }
 .medal-missing { color: #84919b; }
 .medal-help { color: #718091; font-size: 12px; line-height: 1.6; margin: 8px 0 14px; }
+
+/* Tutorials stay hidden until the reader explicitly requests them. */
+.editorial-controls{border-top:1px solid var(--line);margin-top:18px;padding-top:8px}
+.editorial-actions{display:flex;gap:8px;flex-wrap:wrap}
+.editorial-actions button{font-size:12px;padding:7px 10px}
+.editorial-reader{max-width:980px;margin:24px auto;scroll-margin-top:20px;overflow-wrap:anywhere;font-size:15px;line-height:1.9}
+.editorial-reader h1{font-size:26px;margin:26px 0 18px}
+.editorial-reader h2{font-size:20px;margin:30px 0 12px}
+.editorial-reader h3{font-size:17px;margin:24px 0 10px}
+.editorial-reader .practice-nav h2{margin:0}
+.editorial-reader pre{background:#f4f7f6;padding:16px;border-radius:7px;white-space:pre-wrap}
+.editorial-reader code{font-size:13px;background:#f1f5f3;border-radius:3px;padding:1px 4px}
+.editorial-reader pre code{padding:0;background:none}
+.editorial-reader table{display:block;overflow:auto;white-space:normal;margin:18px 0}
+.editorial-reader th,.editorial-reader td{position:static;min-width:90px;max-width:none;text-align:left;padding:9px;vertical-align:top}
+.editorial-reader th{background:#f1f5f3}
+.editorial-reader li{margin:8px 0}
+@media(max-width:650px){.editorial-reader{padding:18px;font-size:14px}.editorial-reader h1{font-size:23px}.editorial-reader h2{font-size:18px}}
+
+.editorial-download{display:block;margin-top:5px;font-size:11px;font-weight:500;white-space:normal;text-decoration:underline;text-underline-offset:3px}
+.editorial-pending{display:block;margin-top:5px;font-size:11px;font-weight:400;color:var(--muted)}

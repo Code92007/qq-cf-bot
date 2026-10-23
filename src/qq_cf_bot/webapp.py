@@ -14,7 +14,7 @@ from html.parser import HTMLParser
 from http.cookies import SimpleCookie
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 
 from .config import Config
 from .core import ChallengeActor, ChallengeError, ChallengeService, SubmissionOutcome, parse_problem_id
@@ -72,7 +72,6 @@ class WebApplication:
                 if path.endswith("recommendations"):
                     result = self.iceberg.recommendations(session, handler)
                 else:
-                    from urllib.parse import parse_qs
                     teams = parse_qs(urlsplit(getattr(handler, "path", "")).query).get("teams") == ["1"]
                     result = self.iceberg.state(session, teams)
                 self._json(handler, result)
@@ -86,7 +85,24 @@ class WebApplication:
                 return True
             if path == "/api/regional-catalog":
                 store = self.regionals.store
-                self._json(handler, {"difficulty": store.difficulties(), "ratingRelease": store.rating_metadata(), "contests": store.contests, "years": sorted({c["year"] for c in store.contests}, reverse=True), "verifiedAt": store.catalog.get("verified_at")})
+                self._json(handler, {"difficulty": store.difficulties(), "ratingRelease": store.rating_metadata(), "contests": store.contests, "years": sorted({c["year"] for c in store.contests}, reverse=True), "verifiedAt": store.catalog.get("verified_at"), "editorialContests": store.editorials.coverage(store.contests)})
+                return True
+            if path == "/api/regionals/editorials.md":
+                query = parse_qs(urlsplit(getattr(handler, "path", "")).query, keep_blank_values=True)
+                ids = query.get("contest", [])
+                contest = next((c for c in self.regionals.store.contests if ids == [c['id']]), None)
+                if contest is None:
+                    raise ChallengeError('contest_not_found', '比赛不存在。', 404)
+                body = self.regionals.store.editorials.contest_markdown(contest).encode('utf-8')
+                filename = quote(contest['id'] + '-题解.md', safe='')
+                handler.send_response(200)
+                self._security_headers(handler)
+                handler.send_header('Content-Type', 'text/markdown; charset=utf-8')
+                handler.send_header('Content-Disposition', f"attachment; filename=editorials.md; filename*=UTF-8''{filename}")
+                handler.send_header('Cache-Control', 'no-store')
+                handler.send_header('Content-Length', str(len(body)))
+                handler.end_headers()
+                handler.wfile.write(body)
                 return True
             if path == "/api/regionals":
                 session = self._require_session(handler)

@@ -95,7 +95,9 @@ function renderWall(){
       return `<td><button class="tile ${difficultyClass(diff?.rating)} ${ok?"done":status.draft&&model.view!=="code"?"draft":tried?"tried":""} ${show?"":"filtered"} ${p.unmapped?"unmapped":""}" data-problem="${esc(p.id)}" title="${esc(title)}" aria-label="${esc(title)}"><i class="rating-circle" aria-hidden="true"></i>${esc(p.index)}<span class="tile-rating" aria-hidden="true">${diff?esc(diff.rating):"—"}</span><span class="tile-mark" aria-hidden="true">${esc(marks)}</span></button></td>`;
     }).join("");
     done+=solved;total+=c.problems.length;
-    return `<tr><th scope="row"><a class="site-name" href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer"><span class="series-badge">${esc(c.series)}</span>${esc(c.year)} · ${esc(c.site)}${c.stage==="final"?"":"站"}</a></th>${showMedals?`<td class="medal-reference">${regionalMedalReference(c,model.data.ratingRelease,model.data.difficulty)}</td>`:""}<td class="progress-cell">${c.catalog_status==="pending_problem_list"?"题单待核验":model.view==="code"?`AC ${solved} / ${c.problems.length}<br>提交过 ${tries}`:`完成 ${solved} / ${c.problems.length}<br>尝试过 ${tries}`}</td>${cells}${"<td></td>".repeat(max-c.problems.length)}</tr>`;
+    const editorial=model.data.editorialContests?.[c.id];
+    const download=editorial?.ready?`<a class="editorial-download" href="/api/regionals/editorials.md?contest=${encodeURIComponent(c.id)}" download title="下载 ${esc(c.name)} 的详细题解，按原题号排列">下载题解 Markdown · ${editorial.ready}/${editorial.total}</a>`:'<span class="editorial-pending">题解待补</span>';
+    return `<tr><th scope="row"><a class="site-name" href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer"><span class="series-badge">${esc(c.series)}</span>${esc(c.year)} · ${esc(c.site)}${c.stage==="final"?"":"站"}</a>${download}</th>${showMedals?`<td class="medal-reference">${regionalMedalReference(c,model.data.ratingRelease,model.data.difficulty)}</td>`:""}<td class="progress-cell">${c.catalog_status==="pending_problem_list"?"题单待核验":model.view==="code"?`AC ${solved} / ${c.problems.length}<br>提交过 ${tries}`:`完成 ${solved} / ${c.problems.length}<br>尝试过 ${tries}`}</td>${cells}${"<td></td>".repeat(max-c.problems.length)}</tr>`;
   }).join("")||`<tr><td colspan="${max+2+Number(showMedals)}">没有匹配的比赛，试试其他年份或赛站。</td></tr>`;
   $("summary").textContent=`${rows.length} 场比赛 · ${model.user?`${done} / ${total} 题完成`:`${total} 题已收录`}`;
   $("coverage").textContent=`目录核验于 ${model.data.verifiedAt||"—"}。来源：Codeforces、QOJ 等公开目录；虚线题格表示平台映射待核验。账号历史未回填完时，未着色不代表从未做过。`;
@@ -139,16 +141,17 @@ async function run(task){
   if(model.busy)return;
   model.busy=true;message();
   const buttons=[...document.querySelectorAll('button:not(:disabled)')];buttons.forEach(b=>b.disabled=true);
-  try{await task();}catch(e){message(e.message);}finally{model.busy=false;buttons.filter(b=>b.isConnected).forEach(b=>b.disabled=false);renderRecords();renderDifficultyProgress();updateAvailability();}
+  try{await task();}catch(e){message(e.message);}finally{model.busy=false;buttons.filter(b=>b.isConnected).forEach(b=>b.disabled=false);renderRecords();renderDifficultyProgress();updateAvailability();updateEditorialAvailability();}
 }
 function updateAvailability(){if(!model.detail)return;$("submitOral").disabled=model.busy||!model.detail.statement||!model.data.oralJudge;$("submitCode").disabled=model.busy||!model.detail.statement||!model.data.codeJudge||!model.detail.problem.cf_contest_id;}
-async function openProblem(pid){
+async function openProblem(pid,prepareStatement=false){
   if(!model.user){message("请先登录本站，再开始口胡。比赛目录仍可浏览。");$("loginRequired").scrollIntoView({behavior:"smooth"});return;}
   await saveDraft();
   if(!$("wallView").hidden){model.scroll=document.querySelector('.table-wrap').scrollTop;model.scrollX=document.querySelector('.table-wrap').scrollLeft;}
-  message("正在准备中文题面，首次打开可能需要一点时间…");
-  const d=await post("open",{problemId:pid});
-  model.detail=d;model.dirty=false;
+  const prepare=prepareStatement||!model.data.editorialReady?.includes(pid);
+  message(prepare?"正在准备中文题面，首次打开可能需要一点时间…":"正在打开题目…");
+  const d=await post("open",{problemId:pid,prepareStatement:prepare});
+  model.detail=d;model.dirty=false;resetEditorial();
   $("oralText").value=d.draft.body;$("codeText").value="";$("oralResult").textContent="";
   let recovery=null;try{recovery=JSON.parse(localGet(draftKey(pid))||"null");}catch(_){}
   if(recovery&&recovery.body!==d.draft.body&&recovery.dirty){$("oralText").value=recovery.body;model.dirty=true;message("已恢复本机尚未同步的草稿。服务器版本仍保留；如有冲突请复制后合并。");}else message();
@@ -165,8 +168,33 @@ async function openProblem(pid){
   if(!d.attempts.length&&!d.evidence.length)$("attempts").textContent="还没有练习记录。";
   $("saveStatus").textContent=model.dirty?"本机恢复，尚未同步":d.draft.updated_at?"草稿已保存":"自动保存";
   $("wallView").hidden=true;$("practiceView").hidden=false;$("resume").hidden=true;
-  history.replaceState(null,"",'#'+encodeURIComponent(pid));updateAvailability();window.scrollTo(0,0);
+  history.replaceState(null,"",'#'+encodeURIComponent(pid));updateAvailability();updateEditorialAvailability();window.scrollTo(0,0);
 }
+function resetEditorial(){
+  $("editorialPanel").hidden=true;$("editorialBody").replaceChildren();$("editorialSource").replaceChildren();
+  updateEditorialAvailability();
+}
+function updateEditorialAvailability(){
+  const e=model.detail?.editorial;
+  if(!e)return;
+  $("editorialStatus").textContent=e.available?`详细题解已预置${e.fullViewed?" · 已看过完整题解":e.hintLevel?` · 已用 ${e.hintLevel} 条提示`:" · 尚未展开"}`:e.message;
+  for(const id of ["editorialLearning","editorialHint","editorialFull"])$(id).disabled=model.busy||!e.available;
+  $("editorialHint").textContent=e.hintLevel>=e.hintCount?"回看全部提示":`查看提示 ${(e.hintLevel||0)+1}`;
+}
+async function revealEditorial(view){
+  const pid=model.detail.problem.id,e=model.detail.editorial;
+  const level=Math.min((e.hintLevel||0)+1,e.hintCount);
+  const d=await post("editorial",{problemId:pid,view,level});
+  if(model.detail?.problem.id!==pid)return;
+  if(view==="full")e.fullViewed=true;
+  if(view==="hint")e.hintLevel=level;
+  $("editorialTitle").textContent=`${model.detail.problem.index} · ${{learning:"先学什么",hint:"渐进提示",full:"详细题解"}[view]}`;
+  $("editorialBody").innerHTML=view==="hint"?d.hints.map((h,i)=>`<section><h3>提示 ${i+1}</h3><p>${esc(h)}</p></section>`).join(""):d.html;
+  $("editorialSource").innerHTML=`依据 <a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">${esc(d.source.title)}</a> · ${esc(d.source.author)} · PDF 第 ${esc(d.pages.join("、"))} 页<br>${esc(d.validation)}`;
+  $("editorialPanel").hidden=false;updateEditorialAvailability();
+  $("editorialPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
 async function saveDraft(){
   clearTimeout(model.saveTimer);
   if(model.savePromise){await model.savePromise;if(model.dirty)return saveDraft();return;}
@@ -193,11 +221,15 @@ async function submit(kind){
 }
 document.addEventListener("DOMContentLoaded",()=>{
   boot().catch(e=>message(e.message));
+  $("editorialLearning").addEventListener("click",()=>run(()=>revealEditorial("learning")));
+  $("editorialHint").addEventListener("click",()=>run(()=>revealEditorial("hint")));
+  $("editorialFull").addEventListener("click",()=>run(()=>revealEditorial("full")));
+  $("editorialClose").addEventListener("click",()=>{$("editorialPanel").hidden=true;$("editorialBody").replaceChildren();$("editorialFull").focus();});
   ["year","series","filter","problemOrder","medalReferenceToggle"].forEach(id=>$(id).addEventListener("change",renderWall));$("search").addEventListener("input",renderWall);
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener("click",()=>{model.view=b.dataset.view;renderWall();}));
   document.addEventListener("click",e=>{const b=e.target.closest('button[data-problem]');if(b)run(()=>openProblem(b.dataset.problem));});
   $("resume").addEventListener("click",()=>run(()=>openProblem(model.data.lastProblem)));
-  $("back").addEventListener("click",()=>run(back));$("retry").addEventListener("click",()=>run(()=>openProblem(model.detail.problem.id)));
+  $("back").addEventListener("click",()=>run(back));$("retry").addEventListener("click",()=>run(()=>openProblem(model.detail.problem.id,true)));
   $("saveDraft").addEventListener("click",()=>run(saveDraft));$("submitOral").addEventListener("click",()=>run(()=>submit('oral')));$("submitCode").addEventListener("click",()=>run(()=>submit('code')));
   $("oralText").addEventListener("input",()=>{if(!model.detail)return;model.dirty=true;$("saveStatus").textContent="尚未同步 · 本机已保留";localSet(draftKey(model.detail.problem.id),JSON.stringify({body:$("oralText").value,dirty:true}));clearTimeout(model.saveTimer);model.saveTimer=setTimeout(()=>saveDraft().catch(e=>message(e.message)),900);});
   window.addEventListener("beforeunload",e=>{if(model.dirty){e.preventDefault();e.returnValue="";}});

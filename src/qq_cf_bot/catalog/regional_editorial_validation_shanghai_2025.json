@@ -1,0 +1,88 @@
+{
+  "scope": "2025 ICPC Shanghai A-M",
+  "seed": 20251024,
+  "status": "passed",
+  "limitations": "Small-case algorithm checks only; no online judge submissions, extreme-scale timing, or NTT implementation verification.",
+  "checks": {
+    "A": {
+      "cases": 858,
+      "method": "all targets in random binary trees; subtree distance equivalence and query limit",
+      "passed": true
+    },
+    "B": {
+      "cases": 300,
+      "method": "closed-walk state-space search including disconnected graphs and self loops",
+      "passed": true
+    },
+    "C": {
+      "cases": 1064,
+      "method": "all length-4/6 permutation graphs, all balanced length-8 patterns and larger random permutations; simulate operations and enforce 114 limit",
+      "passed": true
+    },
+    "D": {
+      "cases": 100,
+      "method": "enumerate all ternary masks and all matching binary indices",
+      "passed": true
+    },
+    "E": {
+      "cases": 150,
+      "method": "incremental near-string tree against all pairwise Hamming distances",
+      "passed": true
+    },
+    "F": {
+      "cases": 3125,
+      "method": "exhaustive coordinate grid 0..4; envelope conditions and all degeneracies versus segment intersection",
+      "passed": true
+    },
+    "G": {
+      "cases": 150,
+      "method": "enumerate all set partitions versus masked linear basis",
+      "passed": true
+    },
+    "H": {
+      "cases": 295,
+      "method": "exact minimax for every multiset of 2,4,6 values in 0..4",
+      "passed": true
+    },
+    "I": {
+      "cases": 300,
+      "method": "150 exhaustive modification cases plus 150 full six-bit arrays against quadratic DP",
+      "passed": true
+    },
+    "J": {
+      "cases": 150,
+      "method": "enumerate all walks up to k edges, preserving duplicate edges, against lazy trie",
+      "passed": true
+    },
+    "K": {
+      "cases": 500,
+      "method": "block split points and lazy-add sum identities versus prefix scans",
+      "passed": true
+    },
+    "L": {
+      "cases": 253,
+      "method": "distinct reachable permutations from all recursive splits and extremal swaps versus 12-state DP",
+      "passed": true
+    },
+    "M": {
+      "cases": 1020,
+      "method": "all binary strings through length 9; enumerate ordered trees and edge orientations versus matching polynomial",
+      "passed": true
+    }
+  },
+  "content_sha256": {
+    "icpc-shanghai-A.md": "ff743586d17acfc5b098419708592846592dd4c5c2f7ea29b9e37484af0acdb2",
+    "icpc-shanghai-B.md": "1086192bc7768b579f76cc50a7b933b6e1d8ae07e709c42d5f5d941d696a8e2e",
+    "icpc-shanghai-C.md": "5fdb1be8a17e851af4dc017f52290a2dcd597c2a0fdea7490ffc36fddb9e737a",
+    "icpc-shanghai-D.md": "3ae7616fb7823f3e1dcd27b013bdcf7291d150218e4f419a96d2972ec5d2e1ce",
+    "icpc-shanghai-E.md": "c2e882af04f353eb15c75f6316ff846ef96fdff5285dc7172c2732429fe23969",
+    "icpc-shanghai-F.md": "91bb55e2cb63ffa337575289e28a3bde35882f024fb8e4a0aed12e5b8c9724c8",
+    "icpc-shanghai-G.md": "ddd8eace5e7c94a2f291bbeac60b3e742dce27e58e4406bf18a26c57ca2fe155",
+    "icpc-shanghai-H.md": "9e3f9ce9a390251303401dc9a2fab495181cb14199eba81a66d0723850084d51",
+    "icpc-shanghai-I.md": "a061f4d83d175a891ce97aedaca693c92ab5a78974f4994bfa1612820416ed44",
+    "icpc-shanghai-J.md": "a5e89913d2e6ded3dce2862bab83f7f2f0d266ff0b9f2595b44b2d2a60e36c98",
+    "icpc-shanghai-K.md": "11611454be6a5776b462eccce479d4ad924964f6d6d64ed89a9f7fbd46c57c63",
+    "icpc-shanghai-L.md": "da195d5db543bd12a45a50102a27a9cf5d8373b7c7cc33a04a56447aa95a383b",
+    "icpc-shanghai-M.md": "6234342048c25906aa321f8e93dc75d2c6b53483c1fce4ea86dc65ab1388cc88"
+  }
+}

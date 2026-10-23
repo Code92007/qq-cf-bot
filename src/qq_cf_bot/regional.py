@@ -79,6 +79,8 @@ class RegionalStore:
         self.problems = {p['id']: {**p, 'contest': c['id']} for c in self.contests for p in c['problems']}
         ratings_path = Path(__file__).with_name('catalog') / 'regional_ratings.json'
         self.rating_release = json.loads(ratings_path.read_text(encoding='utf-8'))
+        from .regional_editorials import RegionalEditorials
+        self.editorials = RegionalEditorials()
         self.aliases = {}
         for p in self.problems.values():
             for alias in p.get('aliases', []):
@@ -113,6 +115,10 @@ class RegionalStore:
             create table if not exists regional_positions(user_id integer primary key,problem_id text not null);
             create table if not exists regional_statements(problem_id text primary key,body text not null,updated_at text not null);
             create table if not exists regional_difficulty(problem_id text primary key,rating integer not null,source text not null,updated_at text not null);
+            create table if not exists regional_editorial_reads(
+              user_id integer, problem_id text, hint_level integer not null default 0,
+              full_viewed integer not null default 0, updated_at text not null,
+              primary key(user_id,problem_id));
             ''')
             db.execute("update regional_bindings set status='failed',message='服务重启，请重新同步' where status in ('queued','running')")
 
@@ -186,7 +192,9 @@ class RegionalStore:
         return {'contests': self.contests, 'progress': self.progress(user), 'bindings': bindings, 'imports': batches,
                 'years': sorted({c['year'] for c in self.contests}, reverse=True), 'verifiedAt': self.catalog.get('verified_at'),
                 'lastProblem': position[0] if position else None, 'ready': sorted(ready),
-                'difficulty': self.difficulties(), 'ratingRelease': self.rating_metadata()}
+                'difficulty': self.difficulties(), 'ratingRelease': self.rating_metadata(),
+                'editorialReady': self.editorials.ready(),
+                'editorialContests': self.editorials.coverage(self.contests)}
 
     def detail(self, user, pid):
         p = self.problem(pid)
@@ -196,7 +204,22 @@ class RegionalStore:
             keys = p.get('aliases', [])
             evidence = [dict(r) for r in db.execute('select * from regional_evidence where user_id=? and problem_key in (' + ','.join('?' for _ in keys) + ') order by coalesce(submitted_at,0) desc limit 30', (user,*keys))] if keys else []
             db.execute('insert into regional_positions values (?,?) on conflict(user_id) do update set problem_id=excluded.problem_id', (user,pid))
-        return {'problem': p, 'draft': dict(draft) if draft else {'body':'','version':0}, 'attempts':attempts,'evidence':evidence}
+            reading = db.execute('select hint_level,full_viewed from regional_editorial_reads where user_id=? and problem_id=?', (user,pid)).fetchone()
+        return {'problem': p, 'draft': dict(draft) if draft else {'body':'','version':0}, 'attempts':attempts,'evidence':evidence,
+                'editorial': {**self.editorials.metadata(pid), 'hintLevel': reading['hint_level'] if reading else 0,
+                              'fullViewed': bool(reading['full_viewed']) if reading else False}}
+
+    def read_editorial(self, user, pid, view, level=1):
+        self.problem(pid)
+        result = self.editorials.read(pid, view, level)
+        if view in {'hint', 'full'}:
+            with self.connect() as db:
+                db.execute('''insert into regional_editorial_reads values (?,?,?,?,?)
+                  on conflict(user_id,problem_id) do update set
+                  hint_level=max(hint_level,excluded.hint_level),
+                  full_viewed=max(full_viewed,excluded.full_viewed),updated_at=excluded.updated_at''',
+                  (user,pid,level if view=='hint' else 0,int(view=='full'),now()))
+        return result
 
     def save_draft(self, user, pid, body, version):
         self.problem(pid)
@@ -369,10 +392,22 @@ class RegionalApplication:
             return self.store.revoke_import(user,str(payload.get('token') or ''))
         if action == 'draft':
             return self.store.save_draft(user,pid,payload.get('body'),payload.get('version'))
+        if action == 'editorial':
+            return self.store.read_editorial(user,pid,payload.get('view','full'),payload.get('level',1))
         if action in {'difficulty', 'difficulty-year'}:
             raise ChallengeError('rating_read_only', '评级由离线校准后统一发布，网站不提供刷新。', 403)
         if action == 'open':
             detail = self.store.detail(user,pid)
+            if payload.get('prepareStatement') is False:
+                with self.store.connect() as db:
+                    cached = db.execute('select body from regional_statements where problem_id=?',(pid,)).fetchone()
+                statement = _statement_from_json(cached[0]) if cached else None
+                detail['statement'] = self.statement_json(statement) if statement else None
+                if statement:
+                    detail['title'] = statement.title
+                else:
+                    detail['statementError'] = '中文题面尚未缓存，点击“准备中文题面”加载。预置题解可以立即阅读。'
+                return detail
             try:
                 p,statement = self.prepare(pid)
                 detail['statement'] = self.statement_json(statement)

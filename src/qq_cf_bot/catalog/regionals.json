@@ -1,5 +1,5 @@
 {
-  "verified_at": "2026-10-18",
+  "verified_at": "2026-10-23",
   "source": "QOJ regional categories 463/462/461/460/459/458/576 and 364/278/277/276/275/379/581; QOJ contest problem headings; official Gym dashboards; RankLand original boards; Nowcoder public problem-list API; QOJ final categories, official Universal Cup dashboards, CCPC 2020 author problem order; Jisuanke 5530 and PTA 1231102432326602752 reading links; RankLand SRK finals medal groups and verified QOJ links; 2018 Gym dashboards and Qingdao official statements; 2018–2019 ICPC official awards and CCPC full award tables; pinned anonymous historical final scoreboards; 2026 final scoreboard snapshots from official XCPCIO Xi’an and ICCPC Changchun",
   "contests": [
     {
@@ -15,106 +15,132 @@
         {
           "id": "icpc-2026-西安:A",
           "index": "A",
-          "name": "2026 ICPC 西安站 · A",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "And Revive The Melody",
+          "aliases": [
+            "qoj:20051"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20051
         },
         {
           "id": "icpc-2026-西安:B",
           "index": "B",
-          "name": "2026 ICPC 西安站 · B",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Break The Speakers",
+          "aliases": [
+            "qoj:20052"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20052
         },
         {
           "id": "icpc-2026-西安:C",
           "index": "C",
-          "name": "2026 ICPC 西安站 · C",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Cryptarithm",
+          "aliases": [
+            "qoj:20053"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20053
         },
         {
           "id": "icpc-2026-西安:D",
           "index": "D",
-          "name": "2026 ICPC 西安站 · D",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Don't Fight The Music",
+          "aliases": [
+            "qoj:20054"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20054
         },
         {
           "id": "icpc-2026-西安:E",
           "index": "E",
-          "name": "2026 ICPC 西安站 · E",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Ether Strike",
+          "aliases": [
+            "qoj:20055"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20055
         },
         {
           "id": "icpc-2026-西安:F",
           "index": "F",
-          "name": "2026 ICPC 西安站 · F",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "False Amber",
+          "aliases": [
+            "qoj:20056"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20056
         },
         {
           "id": "icpc-2026-西安:G",
           "index": "G",
-          "name": "2026 ICPC 西安站 · G",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Gungnir Fracture",
+          "aliases": [
+            "qoj:20057"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20057
         },
         {
           "id": "icpc-2026-西安:H",
           "index": "H",
-          "name": "2026 ICPC 西安站 · H",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Hydra",
+          "aliases": [
+            "qoj:20058"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20058
         },
         {
           "id": "icpc-2026-西安:I",
           "index": "I",
-          "name": "2026 ICPC 西安站 · I",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Incyde",
+          "aliases": [
+            "qoj:20059"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20059
         },
         {
           "id": "icpc-2026-西安:J",
           "index": "J",
-          "name": "2026 ICPC 西安站 · J",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Journey",
+          "aliases": [
+            "qoj:20060"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20060
         },
         {
           "id": "icpc-2026-西安:K",
           "index": "K",
-          "name": "2026 ICPC 西安站 · K",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Kikai No Tsubasa",
+          "aliases": [
+            "qoj:20061"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20061
         },
         {
           "id": "icpc-2026-西安:L",
           "index": "L",
-          "name": "2026 ICPC 西安站 · L",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Lucid Traveler",
+          "aliases": [
+            "qoj:20062"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20062
         },
         {
           "id": "icpc-2026-西安:M",
           "index": "M",
-          "name": "2026 ICPC 西安站 · M",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "name": "Melodiniq",
+          "aliases": [
+            "qoj:20063"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 20063
         }
       ],
       "qoj_contest_id": 4580,
@@ -126,7 +152,7 @@
           "label": "原榜单"
         }
       ],
-      "mapping_note": "QOJ 4580 当前仅受邀账号可见；待账号登录核验题名和单题编号，保留原榜题序与完整评级。",
+      "mapping_note": "已通过 QOJ 登录会话核验正式赛 A–M 题名和单题编号。",
       "rating_evidence": {
         "provider": "final-scoreboard",
         "standings_path": "historical_standings/icpc2026xian.json",
@@ -154,7 +180,9 @@
             }
           }
         }
-      }
+      },
+      "mapping_source": "https://qoj.ac/contest/4580",
+      "problem_access": "login_required"
     },
     {
       "id": "ccpc-2026-长春",
@@ -163,117 +191,151 @@
       "site": "长春",
       "name": "2026 CCPC 长春站",
       "date": "2026-10-18",
-      "source_url": "https://rank.iccpc.cn/r/8a3a28e3-f6b3-4a58-b4ac-fa8039fb2c72",
+      "source_url": "https://qoj.ac/contest/4582",
+      "qoj_contest_id": 4582,
+      "qoj_url": "https://qoj.ac/contest/4582",
       "ranklist_url": "https://rank.iccpc.cn/r/8a3a28e3-f6b3-4a58-b4ac-fa8039fb2c72",
       "problems": [
         {
           "id": "ccpc-2026-长春:A",
           "index": "A",
           "name": "又一道纸笔问题",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22910"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22910
         },
         {
           "id": "ccpc-2026-长春:B",
           "index": "B",
           "name": "别样的选课大战",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22911"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22911
         },
         {
           "id": "ccpc-2026-长春:C",
           "index": "C",
           "name": "无忧旋律",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22912"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22912
         },
         {
           "id": "ccpc-2026-长春:D",
           "index": "D",
           "name": "平均",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22913"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22913
         },
         {
           "id": "ccpc-2026-长春:E",
           "index": "E",
           "name": "遍历",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22914"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22914
         },
         {
           "id": "ccpc-2026-长春:F",
           "index": "F",
           "name": "删除",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22915"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22915
         },
         {
           "id": "ccpc-2026-长春:G",
           "index": "G",
           "name": "异或王国",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22916"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22916
         },
         {
           "id": "ccpc-2026-长春:H",
           "index": "H",
           "name": "数学王国",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22917"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22917
         },
         {
           "id": "ccpc-2026-长春:I",
           "index": "I",
           "name": "事不过三",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22918"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22918
         },
         {
           "id": "ccpc-2026-长春:J",
           "index": "J",
           "name": "送给好友的惊喜",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22919"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22919
         },
         {
           "id": "ccpc-2026-长春:K",
           "index": "K",
           "name": "纸带染色",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22920"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22920
         },
         {
           "id": "ccpc-2026-长春:L",
           "index": "L",
           "name": "故事",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22921"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22921
         },
         {
           "id": "ccpc-2026-长春:M",
           "index": "M",
           "name": "余镜",
-          "aliases": [],
-          "mapping_status": "pending",
-          "unmapped": true
+          "aliases": [
+            "qoj:22922"
+          ],
+          "mapping_status": "verified",
+          "qoj_id": 22922
         }
       ],
-      "source_label": "原榜单（题目入口待公布）",
-      "mapping_source": "https://rank.iccpc.cn/r/8a3a28e3-f6b3-4a58-b4ac-fa8039fb2c72",
-      "mapping_note": "题名与题序取自长春原榜；尚未公布可核验的在线做题链接，平台别名待补。",
+      "source_label": "QOJ",
+      "source_links": [
+        {
+          "url": "https://rank.iccpc.cn/r/8a3a28e3-f6b3-4a58-b4ac-fa8039fb2c72",
+          "label": "原榜单"
+        }
+      ],
+      "mapping_source": "https://qoj.ac/contest/4582",
+      "mapping_note": "已通过 QOJ 登录会话核验正式赛 A–M 题名和单题编号。",
       "rating_evidence": {
         "provider": "final-scoreboard",
         "standings_path": "historical_standings/ccpc2026changchun.json",
@@ -301,7 +363,8 @@
             }
           }
         }
-      }
+      },
+      "problem_access": "login_required"
     },
     {
       "id": "ccpc-2025-Final",
