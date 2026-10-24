@@ -1,3 +1,4 @@
+import json
 import unittest
 from unittest.mock import patch
 
@@ -78,6 +79,41 @@ class PersonalListsTest(WebApplicationTest):
         self.assertEqual(invalid.status, 400)
         self.assertEqual(len(self._get(f"/api/lists/entries?id={list_id}", alice).json()["entries"]), 5)
         self.assertEqual(len(parse_entries("# 提高\nP1001 CF77B")), 2)
+
+    def test_oj_wall_code_and_oral_progress_are_private_and_independent(self):
+        alice = self._register("alice")
+        bob = self._register("bobby")
+        text = "P1001 AT_abc160_f CF1704F SP1043 P1002"
+        alice_list = self._post("/api/lists/create", {"name": "训练", "text": text}, alice).json()["id"]
+        bob_list = self._post("/api/lists/create", {"name": "训练", "text": text}, bob).json()["id"]
+        user = self.app.service.store.get_web_user_by_username("alice")["id"]
+        records = [{"key": key, "kind": kind} for key, kind in [
+            ("luogu:P1001", "personal"), ("atcoder:abc160_f", "personal"),
+            ("codeforces:1704F", "team"), ("spoj:GSS1", "personal")]]
+        with self.app.service.store._connect() as db:
+            db.execute("update personal_list_entries set title=? where list_id=? and problem_id='SP1043'",
+                       ("GSS1 - Can you answer these queries I", alice_list))
+            db.execute("insert into cpc_wall_links values (?,?,?,?,?)",
+                       (user, "private-token", json.dumps({"knowledge": {"records": records}}), 1, "同步失败"))
+        entries = self._get(f"/api/lists/entries?id={alice_list}", alice).json()
+        self.assertEqual([(e["oral"], e["code"]) for e in entries["entries"]],
+                         [(False, True), (False, True), (False, True), (False, True), (False, False)])
+        self.assertTrue(entries["ojWall"]["stale"])
+        self.assertNotIn("private-token", json.dumps(entries))
+        self.assertTrue(all(not e["oral"] and not e["code"] for e in
+                            self._get(f"/api/lists/entries?id={bob_list}", bob).json()["entries"]))
+        last = entries["entries"][-1]["id"]
+        self._post("/api/lists/status", {"entryId": last, "status": "done"}, alice)
+        self.assertFalse(self._post("/api/lists/open", {"entryId": last}, alice).json()["entry"]["oral"])
+        self.assertEqual(self._get("/api/lists", alice).json()["lists"][0]["done"], 4)
+        with self.app.service.store._connect() as db:
+            db.execute("""insert into personal_list_attempts
+                (entry_id,request_id,body,accepted,reason,created_at) values (?,?,?,?,?,?)""",
+                (last, "accepted-test", "解法", 1, "通过", "2026-10-24T00:00:00+00:00"))
+        opened = self._post("/api/lists/open", {"entryId": last}, alice).json()
+        self.assertTrue(opened["entry"]["oral"])
+        self.assertFalse(opened["entry"]["code"])
+        self.assertEqual(self._get("/api/lists", alice).json()["lists"][0]["done"], 5)
 
     def test_luogu_problem_fetch_uses_real_id(self):
         alice = self._register("alice")

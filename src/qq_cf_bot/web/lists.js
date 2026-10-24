@@ -1,6 +1,17 @@
 const $ = (id) => document.getElementById(id);
-const app = { csrf: "", lists: [], listId: 0, entries: [], entry: null, draftVersion: 0, saving: false, savePromise: null, timer: null };
-const statusNames = { new: "未开始", doing: "进行中", done: "已完成", skipped: "暂跳过" };
+const app = { csrf: "", lists: [], listId: 0, entries: [], entry: null, view: "union", draftVersion: 0, saving: false, savePromise: null, timer: null };
+const statusNames = { new: "未开始", doing: "进行中", done: "手动完成", skipped: "暂跳过" };
+function completed(item) { return app.view === "oral" ? item.oral : app.view === "code" ? item.code : item.oral || item.code; }
+function resultName(item) { return [item.oral ? "口胡 AC" : "", item.code ? "代码 AC" : ""].filter(Boolean).join("、") || "尚未通过"; }
+function updateSummary() {
+  const done = app.entries.filter(completed).length;
+  const oral = app.entries.filter((item) => item.oral).length;
+  const code = app.entries.filter((item) => item.code).length;
+  $("listCount").textContent = `${done} / ${app.entries.length} 当前视角通过 · 口胡 ${oral} · 代码 ${code}`;
+}
+function renderPracticeResult(entry) {
+  $("practiceResult").innerHTML = `${entry.oral ? "<span>口胡 AC</span>" : ""}${entry.code ? "<span>代码 AC</span>" : ""}${!entry.oral && !entry.code ? '<span class="pending">尚未通过</span>' : ""}`;
+}
 
 function notice(message = "") { $("notice").textContent = message; }
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]); }
@@ -22,13 +33,22 @@ async function loadLists(preferred) {
   $("listView").hidden = false;
   for (const id of ["renameList", "deleteList", "addEntries", "randomEntry"]) $(id).disabled = !app.listId;
   if (app.listId) await loadEntries();
-  else { app.entries = []; $("listTitle").textContent = "暂无题单"; $("listCount").textContent = ""; renderEntries(); }
+  else { app.entries = []; $("listTitle").textContent = "暂无题单"; $("listCount").textContent = ""; $("ojWallStatus").textContent = ""; renderEntries(); }
 }
 async function loadEntries() {
   const result = await api(`/api/lists/entries?id=${app.listId}`);
   app.entries = result.entries;
   $("listTitle").textContent = result.list.name;
-  $("listCount").textContent = `${app.entries.filter((item) => item.status === "done").length} / ${app.entries.length} 已完成`;
+  updateSummary();
+  const wall = result.ojWall || {};
+  const wallStatus = $("ojWallStatus");
+  wallStatus.replaceChildren();
+  if (wall.connected) {
+    const stamp = wall.lastSync ? new Date(wall.lastSync * 1000).toLocaleString("zh-CN", { hour12: false }) : "未知";
+    wallStatus.append(document.createTextNode(`OJ Wall · ${stamp}${wall.stale ? " · 记录可能未更新" : ""}${wall.error ? " · 同步失败" : ""}  `));
+  } else wallStatus.append(document.createTextNode("OJ Wall 未关联  "));
+  const wallLink = document.createElement("a"); wallLink.href = "/regionals";
+  wallLink.textContent = wall.connected ? "管理同步" : "前往关联"; wallStatus.append(wallLink);
   const selected = $("groupFilter").value;
   const groups = [...new Set(app.entries.map((item) => item.group))];
   $("groupFilter").innerHTML = '<option value="">全部分组</option>' + groups.map((group) => `<option value="${escapeHtml(group)}">${escapeHtml(group)}</option>`).join("");
@@ -39,7 +59,12 @@ function filtered() {
   const query = $("search").value.trim().toLowerCase();
   const group = $("groupFilter").value;
   const status = $("statusFilter").value;
+  const result = $("resultFilter").value;
   return app.entries.filter((item) => (!group || item.group === group) && (status === "all" || item.status === status)
+    && (result === "all" || result === "unfinished" && !completed(item)
+      || result === "oralOnly" && item.oral && !item.code
+      || result === "codeOnly" && item.code && !item.oral
+      || result === "both" && item.oral && item.code)
     && (!query || `${item.problemId} ${item.title}`.toLowerCase().includes(query)));
 }
 function renderEntries() {
@@ -49,9 +74,9 @@ function renderEntries() {
   const groups = [...new Set(entries.map((item) => item.group))];
   $("entryGroups").innerHTML = groups.map((group) => {
     const items = entries.filter((item) => item.group === group);
-    const done = items.filter((item) => item.status === "done").length;
-    return `<section class="lists-group"><h3>${escapeHtml(group)} <small>${done}/${items.length} 完成</small></h3><div class="entry-grid">${items.map((item) =>
-      `<button class="entry" data-entry="${item.id}" data-status="${item.status}" title="${escapeHtml(item.problemId)} · ${statusNames[item.status]}"><span><strong>${escapeHtml(item.problemId)}</strong>${item.title && item.title !== item.problemId ? `<small>${escapeHtml(item.title)}</small>` : ""}${item.hasDraft ? '<small>有草稿</small>' : ""}</span><i class="status-dot" aria-hidden="true"></i></button>`).join("")}</div></section>`;
+    const done = items.filter(completed).length;
+    return `<section class="lists-group"><h3>${escapeHtml(group)} <small>${done}/${items.length} 当前视角通过</small></h3><div class="entry-grid">${items.map((item) =>
+      `<button class="entry" data-entry="${item.id}" data-status="${item.status}" data-passed="${completed(item)}" title="${escapeHtml(item.problemId)} · ${resultName(item)} · ${statusNames[item.status]}"><span><strong>${escapeHtml(item.problemId)}</strong>${item.title && item.title !== item.problemId ? `<small>${escapeHtml(item.title)}</small>` : ""}${item.hasDraft ? '<small>有草稿</small>' : ""}</span><span class="entry-marks" aria-hidden="true">${item.oral ? '<b>口</b>' : ""}${item.code ? '<b>码</b>' : ""}${!item.oral && !item.code ? '<i class="status-dot"></i>' : ""}</span></button>`).join("")}</div></section>`;
   }).join("");
 }
 function setStatement(statement, error) {
@@ -99,6 +124,7 @@ async function openEntry(id) {
   $("practiceGroup").textContent = result.entry.group;
   $("practiceId").textContent = `${result.entry.platform.toUpperCase()} · ${result.entry.problemId}`;
   $("practiceTitle").textContent = result.entry.title || result.entry.problemId;
+  renderPracticeResult(result.entry);
   $("practiceStatus").value = result.entry.status;
   $("sourceLink").href = result.entry.url;
   $("draftText").value = result.draft;
@@ -164,15 +190,25 @@ $("renameList").addEventListener("click", async () => {
 $("deleteList").addEventListener("click", async () => {
   if (confirm("删除这个题单及全部草稿、口胡记录？此操作无法撤销。")) await mutate("delete", { listId: app.listId }, () => loadLists());
 });
-for (const id of ["search", "groupFilter", "statusFilter"]) $(id).addEventListener(id === "search" ? "input" : "change", renderEntries);
+for (const id of ["search", "groupFilter", "statusFilter", "resultFilter"]) $(id).addEventListener(id === "search" ? "input" : "change", renderEntries);
+$("progressView").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-view]");
+  if (!button) return;
+  app.view = button.dataset.view;
+  for (const item of $("progressView").querySelectorAll("button")) {
+    item.classList.toggle("selected", item === button);
+    item.setAttribute("aria-pressed", String(item === button));
+  }
+  updateSummary(); renderEntries();
+});
 $("entryGroups").addEventListener("click", (event) => {
   const button = event.target.closest("[data-entry]"); if (button) openEntry(Number(button.dataset.entry)).catch((error) => notice(error.message));
 });
 $("randomEntry").addEventListener("click", () => {
-  const choices = filtered().filter((item) => item.status === "new" || item.status === "doing");
-  if (!choices.length) return notice("当前筛选下没有未完成的题目。");
+  const choices = filtered().filter((item) => !item.oral && item.status !== "skipped");
+  if (!choices.length) return notice("当前筛选下没有未口胡的题目。");
   const bytes = new Uint32Array(1); crypto.getRandomValues(bytes);
-  openEntry(choices[bytes[0] % choices.length]).catch((error) => notice(error.message));
+  openEntry(choices[bytes[0] % choices.length].id).catch((error) => notice(error.message));
 });
 $("backToList").addEventListener("click", async () => { clearTimeout(app.timer); if (!await saveDraft()) return; app.entry = null; $("practiceView").hidden = true; $("listView").hidden = false; await loadLists(app.listId); });
 $("removeEntry").addEventListener("click", async () => {
@@ -204,7 +240,11 @@ $("submitOral").addEventListener("click", async () => {
     $("oralResult").textContent = `${result.accepted ? "口胡通过" : "需要修改"}：${result.reason}`;
     $("oralResult").className = result.accepted ? "" : "review";
     const refreshed = await api("/api/lists/open", { entryId, prepareStatement: false });
-    if (app.entry?.entry.id === entryId) { app.entry = refreshed; app.draftVersion = refreshed.draftVersion; $("practiceStatus").value = refreshed.entry.status; renderAttempts(refreshed.attempts); }
+    if (app.entry?.entry.id === entryId) {
+      app.entry = refreshed; app.draftVersion = refreshed.draftVersion;
+      $("practiceStatus").value = refreshed.entry.status;
+      renderPracticeResult(refreshed.entry); renderAttempts(refreshed.attempts);
+    }
   } catch (error) { $("oralResult").textContent = error.message; $("oralResult").className = "review"; }
   finally { $("submitOral").disabled = false; }
 });

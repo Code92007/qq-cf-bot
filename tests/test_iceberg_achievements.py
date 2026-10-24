@@ -109,6 +109,9 @@ class AchievementTest(unittest.TestCase):
         self.assertEqual(handler.json()['summary']['solved'], 3)
 
     def test_snapshot_validation_rejects_partial_or_bad_evidence(self):
+        self.assertEqual(validate_knowledge({'version':1,'complete':True,'records':[
+            self.record('regional:ccpc-2019-厦门:J', [], self.first, self.last)
+        ]})['records'][0]['key'], 'regional:ccpc-2019-厦门:J')
         with self.assertRaises(ValueError):
             validate_knowledge({'version':1,'complete':False,'records':[]})
         with self.assertRaises(ValueError):

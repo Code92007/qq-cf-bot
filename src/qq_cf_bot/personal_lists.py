@@ -30,6 +30,24 @@ def _id(value):
     return int(value)
 
 
+def _progress_key(key):
+    platform, problem_id = key.split(":", 1)
+    if platform == "luogu" and problem_id.upper().startswith("AT_"):
+        return "atcoder:" + problem_id[3:].casefold()
+    if platform == "luogu" and re.fullmatch(r"CF[1-9]\d+[A-Z][A-Z0-9]*", problem_id, re.I):
+        return "codeforces:" + problem_id[2:].casefold()
+    return platform.casefold() + ":" + problem_id.casefold()
+
+
+def _entry_keys(entry):
+    keys = {_progress_key(entry["problem_key"])}
+    if entry["platform"] == "luogu" and re.fullmatch(r"SP[1-9]\d*", entry["problem_id"]):
+        match = re.match(r"([A-Z][A-Z0-9_]*)\s+-\s+", entry["title"], re.I)
+        if match:
+            keys.add("spoj:" + match[1].casefold())
+    return keys
+
+
 def parse_entries(raw, default_group="未分组"):
     if not isinstance(raw, str) or len(raw) > 50000:
         raise ValueError("每次最多导入 50000 字符。")
@@ -128,25 +146,64 @@ class PersonalLists:
             raise ChallengeError("problem_not_found", "题目不存在。", 404)
         return row
 
+    def _progress(self, db, user):
+        oral, code = set(), set()
+        linked = db.execute("select body from cpc_wall_links where user_id=?", (user,)).fetchone()
+        if linked:
+            knowledge = json.loads(linked["body"]).get("knowledge", {})
+            for record in knowledge.get("records", []):
+                if record["kind"] in {"personal", "team"}:
+                    code.add(_progress_key(record["key"]))
+        for row in db.execute("""select e.problem_key from personal_list_attempts a
+            join personal_list_entries e on e.id=a.entry_id
+            join personal_lists l on l.id=e.list_id
+            where l.owner_id=? and a.accepted=1""", (user,)):
+            oral.add(_progress_key(row["problem_key"]))
+        for row in db.execute("select cf_id from submissions where group_id='-1' and user_id=? and accepted=1", (str(user),)):
+            oral.add(_progress_key("codeforces:" + row["cf_id"]))
+        for row in db.execute("""select cf_id from code_submissions
+            where group_id='-1' and user_id=? and accepted=1 and upper(verdict) in ('AC','OK','ACCEPTED')""", (str(user),)):
+            code.add(_progress_key("codeforces:" + row["cf_id"]))
+        regional = self.web.regionals.store.problems
+        for row in db.execute("select problem_id,kind,accepted,verdict from regional_attempts where user_id=?", (user,)):
+            solved = row["accepted"] if row["kind"] == "oral" else row["verdict"] == "AC"
+            if solved:
+                target = oral if row["kind"] == "oral" else code
+                target.update(_progress_key(key) for key in regional.get(row["problem_id"], {}).get("aliases", []))
+        for row in db.execute("""select problem_key from regional_evidence
+            where user_id=? and upper(verdict) in ('AC','OK','ACCEPTED')""", (user,)):
+            code.add(_progress_key(row["problem_key"]))
+        return oral, code
+
     def state(self, user):
         with self.connect() as db:
-            lists = [dict(r) for r in db.execute("""select l.id,l.name,l.created_at,l.updated_at,
-                count(e.id) as total, sum(case when e.status='done' then 1 else 0 end) as done
-                from personal_lists l left join personal_list_entries e on e.list_id=l.id
-                where l.owner_id=? group by l.id order by l.updated_at desc,l.id desc""", (user,))]
+            oral, code = self._progress(db, user)
+            solved = oral | code
+            lists = [dict(r) for r in db.execute("""select id,name,updated_at from personal_lists
+                where owner_id=? order by updated_at desc,id desc""", (user,))]
+            for item in lists:
+                rows = db.execute("select problem_key,platform,problem_id,title from personal_list_entries where list_id=?", (item["id"],))
+                item["total"] = item["done"] = 0
+                for row in rows:
+                    item["total"] += 1
+                    item["done"] += bool(_entry_keys(row) & solved)
         return {"lists": [{"id": r["id"], "name": r["name"], "total": r["total"],
-                           "done": r["done"] or 0, "updatedAt": r["updated_at"]} for r in lists]}
+                           "done": r["done"], "updatedAt": r["updated_at"]} for r in lists]}
 
     def listing(self, user, list_id):
         with self.connect() as db:
             item = self._list(db, user, list_id)
-            rows = [dict(r) for r in db.execute("""select id,position,group_name,platform,problem_id,url,title,status,
+            oral, code = self._progress(db, user)
+            rows = [dict(r) for r in db.execute("""select id,position,group_name,problem_key,platform,problem_id,url,title,status,
                 case when length(draft)>0 then 1 else 0 end as has_draft from personal_list_entries
                 where list_id=? order by position,id""", (item["id"],))]
         return {"list": {"id": item["id"], "name": item["name"]},
                 "entries": [{"id": r["id"], "group": r["group_name"], "platform": r["platform"],
                              "problemId": r["problem_id"], "url": r["url"], "title": r["title"],
-                             "status": r["status"], "hasDraft": bool(r["has_draft"])} for r in rows]}
+                             "status": r["status"], "hasDraft": bool(r["has_draft"]),
+                             "oral": bool(_entry_keys(r) & oral),
+                             "code": bool(_entry_keys(r) & code)} for r in rows],
+                "ojWall": self.web.regionals.wall_connection.state(user)}
 
     def create(self, user, name, text=""):
         name = _name(name, "题单名称")
@@ -214,6 +271,7 @@ class PersonalLists:
     def detail(self, user, entry_id, prepare=False):
         with self.connect() as db:
             entry = self._entry(db, user, entry_id)
+            oral, code = self._progress(db, user)
             attempts = [dict(r) for r in db.execute("""select id,body,accepted,reason,created_at
                 from personal_list_attempts where entry_id=? order by id desc limit 20""", (entry_id,))]
         statement = json.loads(entry["statement_json"]) if entry["statement_json"] else None
@@ -229,7 +287,9 @@ class PersonalLists:
                 error = "题面暂时无法加载，可粘贴原题题面后继续口胡。"
         return {"entry": {"id": entry["id"], "group": entry["group_name"], "problemId": entry["problem_id"],
                           "platform": entry["platform"], "url": entry["url"], "status": entry["status"],
-                          "title": entry["title"]}, "draft": entry["draft"], "draftVersion": entry["draft_version"],
+                          "title": entry["title"], "oral": bool(_entry_keys(entry) & oral),
+                          "code": bool(_entry_keys(entry) & code)},
+                "draft": entry["draft"], "draftVersion": entry["draft_version"],
                 "statement": _display_statement(statement), "statementError": error, "attempts": attempts}
 
     def _fetch_statement(self, entry):

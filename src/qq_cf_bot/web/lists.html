@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>个人题单 · CF Bot</title>
   <link rel="stylesheet" href="/styles.css?v=lists-1">
-  <link rel="stylesheet" href="/lists.css?v=2">
-  <script src="/lists.js?v=3" defer></script>
+  <link rel="stylesheet" href="/lists.css?v=3">
+  <script src="/lists.js?v=4" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -20,14 +20,15 @@
     <section id="loginRequired" class="lists-empty" hidden><h2>登录后查看个人题单</h2><a href="/?next=lists" class="primary lists-button">前往登录</a></section>
     <section id="listView" hidden>
       <div class="lists-toolbar"><label>题单<select id="listSelect" aria-label="选择题单"></select></label><div class="lists-actions"><button id="renameList" class="quiet" type="button">重命名</button><button id="deleteList" class="danger-quiet" type="button">删除题单</button><button id="addEntries" class="primary" type="button">添加题目</button></div></div>
-      <div class="lists-summary"><div><h2 id="listTitle"></h2><p id="listCount"></p></div><button id="randomEntry" class="quiet" type="button">随机选未完成题</button></div>
-      <div class="lists-filters"><label>查找题号或标题<input id="search" type="search" placeholder="搜索当前题单"></label><label>分组<select id="groupFilter"><option value="">全部分组</option></select></label><label>进度<select id="statusFilter"><option value="all">全部</option><option value="new">未开始</option><option value="doing">进行中</option><option value="done">已完成</option><option value="skipped">暂跳过</option></select></label></div>
+      <div class="lists-summary"><div><h2 id="listTitle"></h2><p id="listCount"></p></div><button id="randomEntry" class="quiet" type="button">随机选未口胡题</button></div>
+      <div class="lists-filters"><label>查找题号或标题<input id="search" type="search" placeholder="搜索当前题单"></label><label>分组<select id="groupFilter"><option value="">全部分组</option></select></label><label>通过情况<select id="resultFilter"><option value="all">全部</option><option value="unfinished">当前视角未通过</option><option value="oralOnly">仅口胡 AC</option><option value="codeOnly">仅代码 AC</option><option value="both">两种都 AC</option></select></label><label>手动进度<select id="statusFilter"><option value="all">全部</option><option value="new">未开始</option><option value="doing">进行中</option><option value="done">手动完成</option><option value="skipped">暂跳过</option></select></label><div id="progressView" class="lists-views" role="group" aria-label="进度视角"><button type="button" data-view="oral" aria-pressed="false">纯口胡</button><button type="button" data-view="code" aria-pressed="false">提交代码</button><button type="button" data-view="union" aria-pressed="true" class="selected">综合并集</button></div></div>
+      <div class="lists-legend"><span><i class="passed"></i>当前视角已通过</span><span><i class="drafted"></i>有草稿</span><span>口 · 口胡 AC　码 · 代码 AC</span><span id="ojWallStatus"></span></div>
       <div id="entryGroups" class="lists-groups"></div>
       <p id="listEmpty" class="lists-empty" hidden>当前题单还没有题目。</p>
     </section>
     <section id="practiceView" hidden>
       <div class="practice-bar"><button id="backToList" class="quiet" type="button">返回题单</button><span id="practiceGroup"></span><a id="sourceLink" target="_blank" rel="noopener noreferrer">原题 ↗</a><button id="removeEntry" class="danger-quiet" type="button">移出题单</button></div>
-      <div class="practice-head"><div><p id="practiceId" class="eyebrow"></p><h2 id="practiceTitle"></h2></div><label>进度<select id="practiceStatus"><option value="new">未开始</option><option value="doing">进行中</option><option value="done">已完成</option><option value="skipped">暂跳过</option></select></label></div>
+      <div class="practice-head"><div><p id="practiceId" class="eyebrow"></p><h2 id="practiceTitle"></h2><div id="practiceResult" class="practice-result"></div></div><label>手动进度<select id="practiceStatus"><option value="new">未开始</option><option value="doing">进行中</option><option value="done">手动完成</option><option value="skipped">暂跳过</option></select></label></div>
       <div class="practice-layout"><article class="practice-statement"><div class="practice-section-head"><h3>题面</h3><button id="fetchStatement" class="quiet" type="button">重新加载</button></div><p id="statementError" role="status"></p><div id="statementBody"></div><details id="manualStatement"><summary>粘贴题面</summary><textarea id="statementText" rows="8" maxlength="30000" placeholder="原平台题面无法加载时，粘贴题目描述"></textarea><button id="saveStatement" class="quiet" type="button">保存题面</button></details></article>
         <aside class="practice-editor"><h3>口胡工作台</h3><textarea id="draftText" rows="13" maxlength="20000" placeholder="写下思路、正确性与复杂度…" aria-label="口胡做法"></textarea><div class="editor-actions"><span id="saveHint" role="status">草稿未修改</span><button id="saveDraft" class="quiet" type="button">保存草稿</button><button id="submitOral" class="primary" type="button">提交口胡审核</button></div><div id="oralResult" role="status"></div><h4>练习记录</h4><div id="attempts"></div></aside></div>
     </section>

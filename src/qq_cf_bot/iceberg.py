@@ -140,7 +140,7 @@ def validate_knowledge(value):
         raise ValueError('知识点 AC 快照不完整')
     for row in value['records']:
         if (not isinstance(row, dict) or not isinstance(row.get('key'), str)
-                or not re.fullmatch(r'[a-z][a-z0-9]{1,24}:[A-Za-z0-9_:-]{1,100}', row['key'])
+                or not re.fullmatch(r'[a-z][a-z0-9]{1,24}:[\w:-]{1,100}', row['key'])
                 or row.get('kind') not in {'personal', 'team'}
                 or not isinstance(row.get('tags'), list) or any(not isinstance(t, str) or len(t) > 100 for t in row['tags'])
                 or not isinstance(row.get('days'), list)
