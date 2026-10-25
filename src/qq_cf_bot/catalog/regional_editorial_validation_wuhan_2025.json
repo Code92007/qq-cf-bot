@@ -1,0 +1,64 @@
+{
+  "scope": "2025 ICPC Wuhan A B C E F G H K M",
+  "status": "passed",
+  "seed": 2609,
+  "limitations": "Independent small-case checks; no online submissions or maximum-scale timing. H uses a simulated fixed-set oracle; adaptive safety and query bound are proved in the text. E negative cases rely on invariants; C impossible narrow boards rely on proof.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 3000,
+      "method": "2500 modular comparisons plus 500 signed floor-sum cases against direct day enumeration"
+    },
+    "B": {
+      "passed": true,
+      "cases": 600,
+      "method": "600 random rooted-tree fault systems; compressed implication graph versus all station subsets and returned assignment verification"
+    },
+    "C": {
+      "passed": true,
+      "cases": 1928,
+      "method": "all dimensions through 60; actual equal counts, no three equal, and eight-neighbor connectivity; no-solution family relies on proof"
+    },
+    "E": {
+      "passed": true,
+      "cases": 370,
+      "method": "small multisets via explicit bounded-state move graph with expanded [-2,4] search, compared on [0,2] targets"
+    },
+    "F": {
+      "passed": true,
+      "cases": 1094,
+      "method": "all nonempty interval families for array sizes through four; every recursive pivot choice versus stabbing/height formula"
+    },
+    "G": {
+      "passed": true,
+      "cases": 500,
+      "method": "500 box-ball projections versus exhaustive active-face stationary candidates and feasibility"
+    },
+    "H": {
+      "passed": true,
+      "cases": 5083,
+      "method": "all subsets of a 12-value universe plus 1000 random 30-bit sets; exact oracle transcript and query bound"
+    },
+    "K": {
+      "passed": true,
+      "cases": 746,
+      "method": "all row pairs through n=3; multi-source Dijkstra over every cross-row swap for true minimum cost"
+    },
+    "M": {
+      "passed": true,
+      "cases": 3082,
+      "method": "all principal minors of 100 random matrices, modular Gaussian elimination versus required determinant formula"
+    }
+  },
+  "content_sha256": {
+    "icpc-wuhan-A.md": "2d46278d651bdf328824ce823e5c355d6f74b6af779fccbdfdc8d4a11988a075",
+    "icpc-wuhan-B.md": "ea1b950c3b0c2e35004b951206bcc415eae2098107db70ee9eea2c29868a3703",
+    "icpc-wuhan-C.md": "cf357a74e2e4350451342b6e3fa325b868c9f590b201d5dc05d4bd4c70ae56af",
+    "icpc-wuhan-E.md": "659d6ee799d48b74787c72f40555c5f410472fb8fada4acbbc48bb6bdc19a495",
+    "icpc-wuhan-F.md": "3c7b7ed8bddace781ed10b9db4d17cc6279835415b8a8d4f7312a04222cc3c92",
+    "icpc-wuhan-G.md": "9d58ce95787ed227216f97c8b32da1c40977d545b86ec7b316e8251f636663bb",
+    "icpc-wuhan-H.md": "e1493e40ea547b742e619045b1eb113c6a4b5de4a00aad574dc35ef09ba3206f",
+    "icpc-wuhan-K.md": "639c35ea0205c8081daf93a1eb593e692f0b7da2542cbe0c23996c153b2c001b",
+    "icpc-wuhan-M.md": "c22feebb70f07837d0833c70eb386f076ea68be3421c53675b96c582c9795f51"
+  }
+}

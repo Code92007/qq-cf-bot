@@ -1,0 +1,70 @@
+{
+  "scope": "2025 CCPC Jinan A C E F G H I J K L",
+  "status": "passed",
+  "seed": 20251116,
+  "limitations": "Independent exact small-instance checks; no online submissions or maximum-scale timing. Optimized DSU-on-tree, PAM, segment-tree and Fenwick implementations are not benchmarked.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 87885,
+      "method": "all a,b modulo 2^w for w=1..8 against complete power cycles; official and random 64-bit checks"
+    },
+    "C": {
+      "passed": true,
+      "cases": 1600,
+      "method": "greedy chain progress versus exhaustive skip/advance decision DP"
+    },
+    "E": {
+      "passed": true,
+      "cases": 560,
+      "method": "edge-minus-vertex separator formula versus all monochromatic subsets and exact Steiner subtree intersections"
+    },
+    "F": {
+      "passed": true,
+      "cases": 9000,
+      "method": "all assignments of random small intervals versus separating flexible blocks and two-state fixed-run DP"
+    },
+    "G": {
+      "passed": true,
+      "cases": 26470,
+      "method": "all 6986 triangulation-difference coefficient checks, exact interval coverage through 1e9, and complete matrix-chain DP for 26470 small/boundary/random targets"
+    },
+    "H": {
+      "passed": true,
+      "cases": 48,
+      "method": "enumerated exact hash polynomials of unordered binary trees and all size*j<=12 forest sums; official n=15 example"
+    },
+    "I": {
+      "passed": true,
+      "cases": 602,
+      "method": "exact palindrome suffix/fixed-context increments versus all literal CCPC substrings; both official operation examples; excludes optimized PAM implementation"
+    },
+    "J": {
+      "passed": true,
+      "cases": 2083,
+      "method": "all permutations for random trees through n=7, compressed ancestor edges and laminar unlocking versus lexicographically first valid permutation; includes invalid targets"
+    },
+    "K": {
+      "passed": true,
+      "cases": 495653,
+      "method": "every legal Alice sequence through n=7, verify all cards and literal game score; exhaustive Bob permutations through n=4"
+    },
+    "L": {
+      "passed": true,
+      "cases": 1290,
+      "method": "dependency-tree path updates after swaps versus literal queue simulation and interval sums"
+    }
+  },
+  "content_sha256": {
+    "ccpc-jinan-A.md": "bf8514d607a3a4ecb839bcfa45dc2b16cb35bd6f617334ce57762cf617ae263d",
+    "ccpc-jinan-C.md": "91bc1645e1944c910e2b08a9eda35f50fb13f28e0cd1c2966340a733478a2531",
+    "ccpc-jinan-E.md": "486137d50ae036bf4baa2a004bccee83c750582abcff35c8a9a060947bb4d6b4",
+    "ccpc-jinan-F.md": "dde50d506a2c7ad96a9b5332844e2f1ff3f4f098e434b53d60cae8bb5770365d",
+    "ccpc-jinan-G.md": "3c03f85ccb6d4e06652c098a5c0ee95360190c56f5093f7e234fbf2e26612eef",
+    "ccpc-jinan-H.md": "256f61fb51733548fb898cc8e956a7d3358a93e478984eaf04918c0be8f099c3",
+    "ccpc-jinan-I.md": "c496dbe26f8bef86950f44205ed664a8eb7ec26fb012760f841642583d2f3d6e",
+    "ccpc-jinan-J.md": "b91b3fb8c1a278adf275b7cc7fb530bf632abf68f9049148a82e546a117121c3",
+    "ccpc-jinan-K.md": "6f9bb4a6913f2f07b21e08d6a9c6cd032be9a39e0c5a5bc164e74eaa111e0780",
+    "ccpc-jinan-L.md": "7a62f868a6bac27a40713bd710917b85c76e5d0ab382b4fa0567354808c9b486"
+  }
+}

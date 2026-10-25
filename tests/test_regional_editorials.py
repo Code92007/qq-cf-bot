@@ -118,12 +118,22 @@ class EditorialAPITest(unittest.TestCase):
     def test_partial_contest_download_marks_missing_problems_and_preserves_code(self):
         h = test_webapp._Handler()
         h.path = '/api/regionals/editorials.md?contest='+quote('icpc-2025-南京')
-        self.app.handle_get(h,'/api/regionals/editorials.md')
+        # Keep partial coverage testable after the real collection becomes complete.
+        from copy import deepcopy
+        partial = RegionalEditorials()
+        partial.release = deepcopy(partial.release)
+        partial.entries = partial.release['problems']
+        for letter in ('D', 'L'):
+            partial.entries.pop('icpc-2025-南京:'+letter, None)
+        partial.release.setdefault('pending_problems', {})['icpc-2025-南京:D'] = {
+            'reason': '测试中的待补题解，保留全场原题号。'}
+        with patch.object(self.app.regionals.store, 'editorials', partial):
+            self.app.handle_get(h,'/api/regionals/editorials.md')
         self.assertEqual(h.status,200)
         text = h.wfile.getvalue().decode('utf-8')
         self.assertIn('11/13',text)
         self.assertEqual(text.count('<a id="problem-'),13)
-        self.assertIn('随机过程与最优策略的详细推导尚未完成校验',text)
+        self.assertIn('测试中的待补题解，保留全场原题号。',text)
         self.assertIn('sua.ac/wiki/2025-icpc-nanjing/tutorial-sketch-zh.pdf',text)
         self.assertIn('```text\n',text)
 

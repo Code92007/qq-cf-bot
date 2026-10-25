@@ -1,0 +1,15 @@
+{
+  "scope": "2025 ICPC 南京 L 固定整数构造完整校验",
+  "status": "passed",
+  "limitations": "对固定100+100+100个图形精确检查，所有合法输入取该集合前缀；未提交在线评测。cases是几何断言组合数量，不是独立OJ测试数量。",
+  "checks": {
+    "L": {
+      "passed": true,
+      "cases": 7756500,
+      "method": "整数叉积与齐次有理数坐标检查逐对最大交点数、全部四类三重共点、相切及端点退化；完整集合合法蕴含所有前缀合法。"
+    }
+  },
+  "content_sha256": {
+    "icpc-nanjing-L.md": "a7388db3ea22b4ed0ecc4059a1f1711d1351798cbfdf21eb620f24286a290b6d"
+  }
+}

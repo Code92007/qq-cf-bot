@@ -1,0 +1,52 @@
+{
+  "scope": "2025 ICPC Hong Kong A F H I J K L",
+  "status": "passed",
+  "seed": 3169,
+  "limitations": "Independent small-case checks; no online submissions or maximum-scale timing. L verifies operations and topological invariants, relying on the official classification-theorem argument for sufficiency.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 876,
+      "method": "all 2x3 and 3x3 bipartite graphs plus 300 random graphs; every interval compared to independent augmenting matching"
+    },
+    "F": {
+      "passed": true,
+      "cases": 800,
+      "method": "800 cycle-with-chords and outside-vertex graphs, random relabeling and edge order, exact directed-cycle recovery"
+    },
+    "H": {
+      "passed": true,
+      "cases": 508,
+      "method": "all binary strings of lengths 2..8 versus all deletion pairs and literal LCP"
+    },
+    "I": {
+      "passed": true,
+      "cases": 360,
+      "method": "360 DFS-order sets through six vertices versus enumeration of parent trees and all sibling orders"
+    },
+    "J": {
+      "passed": true,
+      "cases": 350,
+      "method": "350 job sets versus every permutation and exact deadlines/penalty"
+    },
+    "K": {
+      "passed": true,
+      "cases": 9840,
+      "method": "all ternary arrays of lengths 1..8 versus all rotations and literal prefix maxima"
+    },
+    "L": {
+      "passed": true,
+      "cases": 8243,
+      "method": "random explicit allowed cut/reversal/insertion/rotation operations preserve DSU invariants; sphere/projective-plane/torus examples; classification theorem itself is not a computational proof"
+    }
+  },
+  "content_sha256": {
+    "icpc-hongkong-A.md": "40f8ae011f203bb7d2fb7cc22b7119da30bba8a26103f0a995cf0e777a2490e2",
+    "icpc-hongkong-F.md": "70499d781d909706340658d393b89bc81a89edf8639fb49f516d644e3cf71915",
+    "icpc-hongkong-H.md": "6cea8214dd548de30b077e53fc78166f3476cd6cbf6811e86a6f6972768f8fb6",
+    "icpc-hongkong-I.md": "ab47890fa39ceead14463a239fa0d575f2bb68fca152b702be8ab119ada6e1a0",
+    "icpc-hongkong-J.md": "fe8d42e6edb46f2a490074fd909efbcbe81697bcb8a112267cfb1d0976a2a354",
+    "icpc-hongkong-K.md": "a76c448d00fd184deb7897dcace2f32018cc9583d075a571efcd8410ff272ce9",
+    "icpc-hongkong-L.md": "cbed6f98e1169cb37c41aa5a353d1822f54969bb3fa671341a0bcb4967a04105"
+  }
+}

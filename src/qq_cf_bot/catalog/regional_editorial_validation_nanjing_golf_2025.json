@@ -1,0 +1,16 @@
+{
+  "scope": "2025 ICPC 南京 D 最优策略与树上消元",
+  "status": "passed",
+  "seed": 20261025,
+  "limitations": "完整联合状态Bellman策略迭代仅覆盖小树；另核对100/200/300节点单链数值稳定性。未在线评测，未测试C++极限运行时间。",
+  "checks": {
+    "D": {
+      "passed": true,
+      "cases": 1033,
+      "method": "500组1至3棵随机小树与所有n<=4递增父编号树/起点的有序两树组合，与联合状态Bellman策略迭代比较；另含样例和3组长链闭式期望。"
+    }
+  },
+  "content_sha256": {
+    "icpc-nanjing-D.md": "dfa3a9560a8e4102505dfc5bb6c5b8e31f20d9a7359c58c6ce4da8600080ead3"
+  }
+}

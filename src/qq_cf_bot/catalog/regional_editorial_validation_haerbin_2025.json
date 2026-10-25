@@ -1,0 +1,52 @@
+{
+  "scope": "2025 CCPC Harbin A B G I J L M",
+  "seed": 20251109,
+  "status": "passed",
+  "limitations": "Small-case mathematical/algorithm checks; no online judge submission or extreme-scale performance validation.",
+  "checks": {
+    "A": {
+      "cases": 4680,
+      "method": "all arrays of length<=4 over 1..5; enumerate distinct repeated-choice sums for k<=6",
+      "passed": true
+    },
+    "B": {
+      "cases": 1000,
+      "method": "floating event simulation/static folding versus exact rational collision simulation",
+      "passed": true
+    },
+    "G": {
+      "cases": 1755,
+      "method": "row suffix-minimum greedy versus independent maximum-flow supply/deficit matching, exhaustive 2x2 and random grids",
+      "passed": true
+    },
+    "I": {
+      "cases": 512,
+      "method": "all 512 patterns in a 3x3 axial window; GF(2) span of actual six-neighbor flips versus three coordinate parities",
+      "passed": true
+    },
+    "L": {
+      "cases": 803,
+      "method": "all masks of random obstacle layouts; grid BFS versus independent per-column interval DP",
+      "passed": true
+    },
+    "J": {
+      "cases": 29523,
+      "method": "every ovw string through length9: full Manacher and constant-time boundary adjustment versus all original substrings",
+      "passed": true
+    },
+    "M": {
+      "cases": 1084,
+      "method": "all direction assignments through n3 against explicit vertex triples and directed cycles, plus random n<=24 triple enumeration versus suffix sums and actual NTT",
+      "passed": true
+    }
+  },
+  "content_sha256": {
+    "ccpc-haerbin-A.md": "225af98ee2ccc649181b0177db28be3370ad81c800c192a06b1a3b4024e7c462",
+    "ccpc-haerbin-B.md": "b6a97f89ad3cefac65ce9ff9fca64580d53cb6e82544405a77b50bab5f691b83",
+    "ccpc-haerbin-G.md": "edbfe7598b816a161cd6d183e02a912796e6d854cb0c754783800d8f654cf9c3",
+    "ccpc-haerbin-I.md": "8af38994cd2ab465cdcb435f82a9e5f293175fe497c698f7765175a44ee2d2eb",
+    "ccpc-haerbin-L.md": "64a13e89ccf672658d823aff5b39b25ccd9d51eb5713d3a13a031b0ba295f2a3",
+    "ccpc-haerbin-J.md": "889a062b2ec4e14185fc15aff29d9e98c71d7f5b0500190188519c31db6ce5e1",
+    "ccpc-haerbin-M.md": "d5fdb95f0a5542bf80a582025c5bdba9b159028775e2158f9f01ab8df707d785"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "scope": "2025 ICPC ECFinal A B H I J K L",
+  "status": "passed",
+  "seed": 3295,
+  "limitations": "Small-case independent checks, no online submissions or maximum-scale performance testing. A checks geometry formula implementation against official boundary characterization. H uses a corrected probability ratio.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 1705,
+      "method": "exact rational-coordinate formula versus explicit translated-segment membership on 1705 points; not a tiling-structure proof"
+    },
+    "B": {
+      "passed": true,
+      "cases": 6743,
+      "method": "all complete three-letter strings of length 4/8 versus exhaustive parsing, plus 101 wildcard-count checks"
+    },
+    "H": {
+      "passed": true,
+      "cases": 150,
+      "method": "150 exact-rational comparisons against complete adaptive reroll decision trees"
+    },
+    "I": {
+      "passed": true,
+      "cases": 1764,
+      "method": "1764 partial arrays against all completions, checking optimal span and constructed assignments"
+    },
+    "J": {
+      "passed": true,
+      "cases": 1441,
+      "method": "all 1441 labeled trees through 6 vertices; activated-set BFS optimum and reconstructed path legality"
+    },
+    "K": {
+      "passed": true,
+      "cases": 1441,
+      "method": "all 1441 labeled trees through 6 vertices; exhaustive maximum matching and encoded shuffled-edge reconstruction"
+    },
+    "L": {
+      "passed": true,
+      "cases": 5913,
+      "method": "all 5913 increasing trees through 8 vertices; parent directions, leaf complement, and exact inverse"
+    }
+  },
+  "content_sha256": {
+    "icpc-ecfinal-A.md": "6c49a4f050b987fc6e0aa676652270c6a733a669b992681753e8e6ff1ca59b00",
+    "icpc-ecfinal-B.md": "cbbf40de81d6787e59ac09c9b98c2e21d2cbd2a432ec87c267dc2a6200c9b695",
+    "icpc-ecfinal-H.md": "57bf28585b1e859a4f8d7bc696d257e6207abd80393f9227546a7d2aab415816",
+    "icpc-ecfinal-I.md": "70157e0df9d4f56e67b29570f865a15f2c49172cc10b2ca6305d29127d377a4d",
+    "icpc-ecfinal-J.md": "88063579d9e7bea5a4dca4e8ea76fba7006e8da2478312c4c13534b03d3e5aec",
+    "icpc-ecfinal-K.md": "c2bc9b037145a82f5b76a6ac564bdecce3453102f7e07d33d3b2d5682d78f654",
+    "icpc-ecfinal-L.md": "f87f91cb4880797c5074bb1eddf8d49f68566465378e4aa0fb43694e675a0dbd"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "scope": "2025 ICPC Shenyang A B C D F G I K L M",
+  "status": "passed",
+  "seed": 2641,
+  "limitations": "Independent small-case checks; no online submissions or maximum-scale timing. G verifies the overlap identity analytically and rectangle/triangle geometry numerically; F validates universal avoidance with exhaustive product-state reachability.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 5040,
+      "method": "all kth pairwise differences for n<=15 and nine (a,b) settings, exact fractions"
+    },
+    "B": {
+      "passed": true,
+      "cases": 1024,
+      "method": "1024 frequency/cost settings versus every ordered subset of solid-color layers and independent per-pixel choice"
+    },
+    "C": {
+      "passed": true,
+      "cases": 8104,
+      "method": "all nonconstant binary color partitions, messages, and m=2..9; exact three copies and modular decoding"
+    },
+    "D": {
+      "passed": true,
+      "cases": 80,
+      "method": "80 one/two-digit displays versus every repair subset up to budget and every displayable integer"
+    },
+    "F": {
+      "passed": true,
+      "cases": 7521,
+      "method": "all connected labeled graphs through five vertices and every starting pair; complete product-state reachability checks of constructed orientations"
+    },
+    "G": {
+      "passed": true,
+      "cases": 626,
+      "method": "625 rectangle pairs with independently integrated overlap formula plus official triangle sample"
+    },
+    "I": {
+      "passed": true,
+      "cases": 20000,
+      "method": "20000 chronological records checked against full prior unique-solve history"
+    },
+    "K": {
+      "passed": true,
+      "cases": 1000,
+      "method": "1000 random legal jump sequences and exact endpoint invariant"
+    },
+    "L": {
+      "passed": true,
+      "cases": 59382,
+      "method": "every legal four-state input through n=8, gate evaluation and <=6n node bound"
+    },
+    "M": {
+      "passed": true,
+      "cases": 51,
+      "method": "50 random seed/strength settings versus all 128 tournament outcome trees with exact rational probabilities, plus symmetric case"
+    }
+  },
+  "content_sha256": {
+    "icpc-shenyang-A.md": "727fab4f8a4bd9b05e94043de0d83c350b3e01ddbced6f34a9f0b0b4feaaac8d",
+    "icpc-shenyang-B.md": "28930180118cf597d2a77d0fb6f08e4890d87a86168746f40b563a44c5197ae4",
+    "icpc-shenyang-C.md": "7ac143b3cd00184852ba11ba07bb64ebee01e586aec7bb416daecd4ecee41882",
+    "icpc-shenyang-D.md": "49760b110a0f371de854f8144f2c43db5572468bea3e14e8e9d360e6b4598797",
+    "icpc-shenyang-F.md": "c1689218a2c40de75862ef11fc6d781d8b073076ceb4f4626ef02a5bbd0fcc29",
+    "icpc-shenyang-G.md": "da7bc8a2fb0b7bdf4a47a412a4114420ce216df6d34256a55ca45aabe74dade3",
+    "icpc-shenyang-I.md": "9bf1483497b611f39e85ef0c95f03505823e42638ad4eb23d52c5fabcca4eeaa",
+    "icpc-shenyang-K.md": "8d7304d4de734663387b1cb4c76c30c0f3d5855b31a4c7d5a2ccef64f86ce0a5",
+    "icpc-shenyang-L.md": "88509daf1593ab2fcf0c574de3de08ba050f5c94dbd7c66150c90e126858513b",
+    "icpc-shenyang-M.md": "efd07807fcb91d0b0b8299c0f1b2427a208620021e1ababcec43805a8057e89b"
+  }
+}

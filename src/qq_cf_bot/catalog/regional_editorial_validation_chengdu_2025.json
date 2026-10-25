@@ -1,0 +1,64 @@
+{
+  "scope": "2025 ICPC Chengdu A B C D E G J K L",
+  "seed": 20251025,
+  "status": "passed",
+  "limitations": "Small-case algorithm checks only; no online submissions or extreme-scale timing. K deque and L DSU-on-tree optimization are explained but not performance-tested.",
+  "checks": {
+    "A": {
+      "cases": 3862,
+      "method": "integer construction checked against independent exact rounding intervals and exact fraction rounding",
+      "passed": true
+    },
+    "B": {
+      "cases": 150,
+      "method": "max-plus power versus recursive enumeration of all feasible skill subsets for each round",
+      "passed": true
+    },
+    "C": {
+      "cases": 1000,
+      "method": "two reverse schedules versus exact DP over every interleaving of sorted bank arrivals",
+      "passed": true
+    },
+    "D": {
+      "cases": 234604,
+      "method": "full reachable-state BFS, shortest path length limit, terminal-turn rejection and independent ball-list replay of 500 paths",
+      "passed": true
+    },
+    "E": {
+      "cases": 18912,
+      "method": "five-query signed-area reconstruction for every N4..200, radii1/3/100, center/vertex/far/random points, both full precision and 10 significant digit replies",
+      "passed": true
+    },
+    "G": {
+      "cases": 1114,
+      "method": "all replacement arrays for n<=4, all target gcds and budgets; exact disjoint subset packing",
+      "passed": true
+    },
+    "J": {
+      "cases": 500,
+      "method": "all rebuttal subsets on random score tables including zero scores and negative thresholds",
+      "passed": true
+    },
+    "K": {
+      "cases": 1000,
+      "method": "all moved segments and all relevant new positions versus disjoint/left-overlap/right-overlap prefix identities; deque optimization not timed",
+      "passed": true
+    },
+    "L": {
+      "cases": 500,
+      "method": "every subtree of random trees versus exact wildcard bipartite matching; DSU traversal optimization not benchmarked",
+      "passed": true
+    }
+  },
+  "content_sha256": {
+    "icpc-chengdu-A.md": "4579bf9212004ef9dc6f0217b3d25146e85f8222b3bb627b83024f291f589340",
+    "icpc-chengdu-B.md": "27b655077d53be6173c77955b0d34b840bebb092f75f6b8890f52365eb622dc0",
+    "icpc-chengdu-C.md": "3c3f4b5c06d1d09072c1ed5dddcde462c92ebb51377f6feb0363dbc9749813f2",
+    "icpc-chengdu-D.md": "e644dfdc5db48c2cd2ea6b614df29bcb6e64ed2b48e2982bcbbf182ab30c9b5a",
+    "icpc-chengdu-E.md": "5280b53d3d3ef59914d04630526f9e41329dbe7acbe53cdd458c460d5501b897",
+    "icpc-chengdu-G.md": "a2c6affd287667ea2d40d92a5078c1a681d8c1f198381d46ebef9dbe2795c408",
+    "icpc-chengdu-J.md": "9cc1721abcb37f7833b44d1cdc4ecb18780ab73d65f04de20598fbf6071af890",
+    "icpc-chengdu-K.md": "7089860532a06d0ef87fcfb52337d3fb31f40e099f67f99ece8d8994c82b1ca7",
+    "icpc-chengdu-L.md": "c294800ed1de8dd47990efe1cc7333626dc7437f12634bdae14621e73e61106d"
+  }
+}

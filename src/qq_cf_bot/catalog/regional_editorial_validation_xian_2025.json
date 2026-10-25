@@ -1,0 +1,52 @@
+{
+  "scope": "2025 ICPC Xian B F G I J K L",
+  "seed": 20251019,
+  "status": "passed",
+  "limitations": "Small-case verification only; no online judge submissions or maximum-size runtime tests. K verifies the matching criterion and operation closure, not a production Dinic implementation.",
+  "checks": {
+    "B": {
+      "cases": 3820,
+      "method": "all 3-color count vectors through length9 with 16 boundary choices versus recursive arrangements; random full interval monotonicity",
+      "passed": true
+    },
+    "F": {
+      "cases": 1000,
+      "method": "priority events versus simultaneous integer-time simulation with all contacts processed together",
+      "passed": true
+    },
+    "G": {
+      "cases": 180,
+      "method": "all distinct voter permutations for random n<=6 arrays",
+      "passed": true
+    },
+    "I": {
+      "cases": 500,
+      "method": "path-XOR matrices from random trees, recovered ancestor depths and all original parent edges",
+      "passed": true
+    },
+    "J": {
+      "cases": 1628,
+      "method": "all source/target pairs on small branching trees versus Dijkstra over owned-node subsets with buy/merge operations",
+      "passed": true
+    },
+    "K": {
+      "cases": 66282,
+      "method": "all arrays a,b for n<=4 and full closure under every permutation-AND operation versus matching criterion",
+      "passed": true
+    },
+    "L": {
+      "cases": 1000,
+      "method": "descending-size monotone pointer versus all stick subsets, including no-solution larger k followed by feasible smaller k",
+      "passed": true
+    }
+  },
+  "content_sha256": {
+    "icpc-xian-B.md": "4bff08faf499ffa5cb4c7f15023cd57d8aba8ff135101a73b7db2071914200db",
+    "icpc-xian-F.md": "341602493c2a36a0f306077da500a4182e96609e7fe6dfb347df027452b83da8",
+    "icpc-xian-G.md": "ec335706ec4789f57cd101908afe5b7087924fabf6eefdf046836738edd58046",
+    "icpc-xian-I.md": "74e9a927a893efc6d7db4f544c889a409b6ec0359eb0be567c0acd6f89aba1c9",
+    "icpc-xian-J.md": "78236377667c0a109e032cab3745bf0c75b0637c0e92c7a66f6b91b6561fc83d",
+    "icpc-xian-K.md": "38d42d71be60cda17a0f8c7122f2958165b64c7dd578646424098455c962c855",
+    "icpc-xian-L.md": "90f6ff30d83afe92497d31c3d54b7279da1abb83126987af1b77831979217764"
+  }
+}

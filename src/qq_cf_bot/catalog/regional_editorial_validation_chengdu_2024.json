@@ -1,0 +1,46 @@
+{
+  "scope": "2024 ICPC Chengdu A B G I J L",
+  "seed": 20241027,
+  "status": "passed",
+  "limitations": "Small-case checks only; no online submissions or maximum-size runtime tests.",
+  "checks": {
+    "A": {
+      "cases": 8160,
+      "method": "full painting-state reachability through n8 and actual construction replay for every binary target through n12",
+      "passed": true
+    },
+    "B": {
+      "cases": 4187,
+      "method": "rolling count/last DP and actual three-axis prefix sums versus every question-mark filling and every capacity triple on random strings",
+      "passed": true
+    },
+    "G": {
+      "cases": 1024,
+      "method": "replay all adjacent insertions producing the eight candidates and compare with unrestricted algebra closure for endpoints0..31",
+      "passed": true
+    },
+    "I": {
+      "cases": 6000,
+      "method": "actual gcd segment-tree point updates versus explicitly checking every block size after each random modification",
+      "passed": true
+    },
+    "J": {
+      "cases": 1000,
+      "method": "timestamp stream processing versus independent per-level log extraction, first valid event selection, and finish ranking",
+      "passed": true
+    },
+    "L": {
+      "cases": 1000,
+      "method": "generated datasets independently counted at all three threshold values and checked against output bounds",
+      "passed": true
+    }
+  },
+  "content_sha256": {
+    "icpc-chengdu-A.md": "d19ba47b947f040b085f83b5e3ba137cd8a6a8287b686d71bc060aed20a72a67",
+    "icpc-chengdu-B.md": "375ef2ed5805f39503e5e8e0b576e49d51d2f7e909fdddbfbfa1731492adb1ee",
+    "icpc-chengdu-G.md": "acd8f9a506c2f2b4027d0122a261ea7e38b60f6f4b75b4620ffa2c50e25a30c3",
+    "icpc-chengdu-I.md": "745ebcb6d6f66ce48d9907f1766bbdaa6716c276bb6c91e51d528c865fec6d44",
+    "icpc-chengdu-J.md": "6bea18a87c7a96fdfed8dc9e1a391527b5e1ea2ddfcdde2bd75e433db1e69426",
+    "icpc-chengdu-L.md": "c97bc326ea22b6016d45fc1644b93e09e5459c5417dd59d1a796d28a9578deeb"
+  }
+}

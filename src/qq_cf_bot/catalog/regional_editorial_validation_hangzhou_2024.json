@@ -1,0 +1,58 @@
+{
+  "scope": "2024 ICPC 杭州 A/B/E/F/H/J/K/M",
+  "status": "passed",
+  "seed": 20241110,
+  "limitations": "小规模穷举、随机操作与独立暴力对照。尚未在线评测，未验证最大输入运行时间及内存。",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 956,
+      "method": "穷举三字母短串与全部二色映射；另含不同长度随机串。"
+    },
+    "B": {
+      "passed": true,
+      "cases": 5980,
+      "method": "实际懒标记线段树混合AND、赋值、删除查询，与数组逐项模拟和枚举删除比较，覆盖全部63位。"
+    },
+    "E": {
+      "passed": true,
+      "cases": 250,
+      "method": "对随机小区间枚举所有乘客顺序，比较构造顺序的真实电量。"
+    },
+    "F": {
+      "passed": true,
+      "cases": 11978,
+      "method": "穷举n<=4的两份排列，完整有向图传递闭包与所有榜单子区间的SCC分块计数比较。"
+    },
+    "H": {
+      "passed": true,
+      "cases": 507,
+      "method": "所有总长度<=14的链长分拆检查构造的真实重儿子条件；总长度<=5另穷举所有标号树、根与重儿子选择核验无解判定。"
+    },
+    "J": {
+      "passed": true,
+      "cases": 300,
+      "method": "枚举两色全部小多重集，逐条判断异色约束，与独立集+SOS插板计数比较（含自环和重复边）。"
+    },
+    "K": {
+      "passed": true,
+      "cases": 140,
+      "method": "对小排列BFS枚举至k次任意交换，逐个计算真实首次整行完成时刻。"
+    },
+    "M": {
+      "passed": true,
+      "cases": 1364,
+      "method": "穷举长度<=5、值1..4的全部数组和x=1..8，直接检查所有子数组的最小值整除条件。"
+    }
+  },
+  "content_sha256": {
+    "icpc-hangzhou-A.md": "2d70badb6dda2f704524d7f21bbe8f3e08fc867b684583e8574baf2a88137c0e",
+    "icpc-hangzhou-B.md": "bc9c054c56281d75737d211791e8848528082f176bb00dfac8cded4d1eb24202",
+    "icpc-hangzhou-E.md": "fe2d9c1a5553082c25e9e9a59a931b65ecc8625106ba445b73f5d80c95f15c8a",
+    "icpc-hangzhou-F.md": "7d7a16ad24b2b9bf543c295492b88da9bfc8f3510e83a2a059432d2f70cbf412",
+    "icpc-hangzhou-H.md": "afcf7c60d76fdf2d43e1edbcbc4467282ae34c5e4f03509767e31e1dcff6f146",
+    "icpc-hangzhou-J.md": "d18e01100372b6a3b4a43da8af7b3a51d91c0137f817f207a52512b953904e78",
+    "icpc-hangzhou-K.md": "9f44f7395d552ecde1914d7c6ed2d0294b75d134a0ce6619904dcb6a306cb1aa",
+    "icpc-hangzhou-M.md": "ef004442aea8e75366ff73b25d074a171ba947c7ae85344995509f1d95c15505"
+  }
+}

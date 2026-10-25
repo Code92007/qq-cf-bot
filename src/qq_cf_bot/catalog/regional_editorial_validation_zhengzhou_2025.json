@@ -1,0 +1,40 @@
+{
+  "scope": "2025 CCPC Zhengzhou B G I J M",
+  "seed": 20251123,
+  "status": "passed",
+  "limitations": "Independent small-case checks only; no online judge submissions or maximum-size runtime tests.",
+  "checks": {
+    "B": {
+      "cases": 1500,
+      "method": "all integral cutting-plane choices for random small boxes versus forced sorted ranks and joint 3D buckets",
+      "passed": true
+    },
+    "G": {
+      "cases": 134160,
+      "method": "original integer-operation BFS, bounded by the monotone high binary block, versus nonnegative block Dijkstra",
+      "passed": true
+    },
+    "I": {
+      "cases": 394,
+      "method": "all permutations n<=7 to recover record-value set frequencies, followed by direct per-set sampling probabilities for k<=20",
+      "passed": true
+    },
+    "J": {
+      "cases": 66537,
+      "method": "all four corner-generating values in [0,15], random arrays, and highest-bit carry boundary versus explicit XOR matrix",
+      "passed": true
+    },
+    "M": {
+      "cases": 65628,
+      "method": "every binary string of length3..15 and random long strings versus every legal operator position using exact integers",
+      "passed": true
+    }
+  },
+  "content_sha256": {
+    "ccpc-zhengzhou-B.md": "fb2e452afa4b8cff9463ae40d24296117d212a6f15bbd261bf6c6e71ed72bef9",
+    "ccpc-zhengzhou-G.md": "e31abff73b511df70bc2bb810fb5f89f0184020ba8dcd960e31d57e6ce844d19",
+    "ccpc-zhengzhou-I.md": "b30f346c8eb44752ad41d712ba35606ea7aa5e5e0f9824183f9c27a5305d1a3d",
+    "ccpc-zhengzhou-J.md": "79add804ee90d6a74372511f0c35159d0cf98cbea1d53b3859ee146eabda879a",
+    "ccpc-zhengzhou-M.md": "4b83ad026226ec9cb21ea63e07f048310ca783e1c71590d5e134dd29e6df399b"
+  }
+}

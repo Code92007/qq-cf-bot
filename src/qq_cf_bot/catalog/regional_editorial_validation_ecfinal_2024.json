@@ -1,0 +1,34 @@
+{
+  "scope": "2024 ICPC ECFinal A G I K",
+  "status": "passed",
+  "seed": 1894,
+  "limitations": "Small-case independent checks; no online submissions or maximum-scale timing.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 2000,
+      "method": "2000 random interval families of 3/6/9/12 items versus exhaustive triple partitions and returned grouping checks"
+    },
+    "G": {
+      "passed": true,
+      "cases": 34626,
+      "method": "all coprime A,B through 17 and starts below 200 versus exact cycle simulation"
+    },
+    "I": {
+      "passed": true,
+      "cases": 1513,
+      "method": "all labeled trees with 2/4/6 vertices plus 200 random even trees, all simple paths and color balance"
+    },
+    "K": {
+      "passed": true,
+      "cases": 3750,
+      "method": "3750 connected-graph boundary requests against every connected exploration order, then actual Dijkstra for constructed weights"
+    }
+  },
+  "content_sha256": {
+    "icpc-ecfinal-A.md": "174e914aacdd87d4af92f6615984d2e003b0ceebcdbd2dea77a0c6278ecd434a",
+    "icpc-ecfinal-G.md": "b908eea1085461de1985bc5ae813a1c0ddf7531879963a2542863a077c30d6a2",
+    "icpc-ecfinal-I.md": "0056a2c0629343d7bcbac2dfbf08b2d464eb320df3071f7ecefba11348d1a256",
+    "icpc-ecfinal-K.md": "6058f88f30e26c5dca2edf7d731ac4d12615c908685e68884b386e87785ec410"
+  }
+}

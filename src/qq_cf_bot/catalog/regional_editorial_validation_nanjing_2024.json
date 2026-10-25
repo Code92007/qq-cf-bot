@@ -1,0 +1,58 @@
+{
+  "scope": "2024 ICPC 南京 A/B/E/G/I/J/K/M",
+  "status": "passed",
+  "seed": 20241103,
+  "limitations": "小规模穷举、交互模拟、几何独立判定和数值样例。未在线评测，未进行极限性能测试；I仅验证卷积系数和公式，未测试NTT实现。",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 5592,
+      "method": "穷举2x3所有非空地图及长度<=3的全部操作串；另含随机5x5地图，与同步状态+相位的完整循环检测比较全部阈值。"
+    },
+    "B": {
+      "passed": true,
+      "cases": 9840,
+      "method": "穷举长度<=8全部012串及每个2的所有赋值，按原题相同相邻消去规则用栈计算。"
+    },
+    "E": {
+      "passed": true,
+      "cases": 700,
+      "method": "在包含大量完整及破碎目标串的随机字符串上，与所有允许的不同旋转逐一计数比较。"
+    },
+    "G": {
+      "passed": true,
+      "cases": 6404,
+      "method": "随机二叉树全部隐藏点的真实距离比较模拟；逐轮检查候选规模至少减半和严格询问预算。"
+    },
+    "I": {
+      "passed": true,
+      "cases": 180,
+      "method": "枚举小网格全部带下标排列的真实bingo值；独立展开反转卷积系数，与最大值组合数公式逐c核对。未测试NTT实现。"
+    },
+    "J": {
+      "passed": true,
+      "cases": 1200,
+      "method": "枚举至多两个新增好友集合，逐条判断所有评论；包括重复评论、反向评论、自评论及无非好友。"
+    },
+    "K": {
+      "passed": true,
+      "cases": 19786,
+      "method": "穷举长度<=7的红黑白分布和全部纸条长度；与逐格枚举不相交放置的DP比较，核验最少张数及实际覆盖。"
+    },
+    "M": {
+      "passed": true,
+      "cases": 51603,
+      "method": "随机凸包的257个方向以射线到每条线段的距离独立判定；另测周期恒等式和全部官方样例数值。"
+    }
+  },
+  "content_sha256": {
+    "icpc-nanjing-A.md": "214f3b404251ac5ffdc4da66453ec264e80e792ea3e1359f9cfac243a0c2ec6f",
+    "icpc-nanjing-B.md": "385470f99266664595d76bec41088451a9dc164aa9d27b9e0e1c66910dfa2c35",
+    "icpc-nanjing-E.md": "4ecd8a39cd0151b19f6922e879f87b1077249e7d885c22f809d7d190495f99f5",
+    "icpc-nanjing-G.md": "20d3b0793d7eba22889e1e6c6ac71af4def1a47b8ae7dcc981dde8574c40aee2",
+    "icpc-nanjing-I.md": "f602f7dd62a8e0ace1c5d2ea21b359f58b1eede4a4456d669bac369853792a7f",
+    "icpc-nanjing-J.md": "a5eaeb5c6901d4941b3726acc049a514611bd1c700f346ed580f6852616182d8",
+    "icpc-nanjing-K.md": "d17fdc0b9e335dc10785e9d4eeda9e64557956d77b75fbcc54b523cc0ad08fd9",
+    "icpc-nanjing-M.md": "0cbfa8d949f325e76bd1c23ef50d3d812dfbbd35722ab24b56fe2da518881f7e"
+  }
+}

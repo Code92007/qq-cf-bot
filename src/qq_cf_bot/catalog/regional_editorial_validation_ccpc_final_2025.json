@@ -1,0 +1,46 @@
+{
+  "scope": "2025 CCPC Final C G J K L M",
+  "status": "passed",
+  "seed": 20251025,
+  "limitations": "Independent small-instance algorithm checks; no online submissions, maximum-scale performance or probabilistic hash validation.",
+  "checks": {
+    "G": {
+      "passed": true,
+      "cases": 2350,
+      "method": "restricted five-length constructive DP versus all-length DP; verify restored segments and clues"
+    },
+    "J": {
+      "passed": true,
+      "cases": 804,
+      "method": "enumerate every binary accelerant policy through length 8 plus all four official examples"
+    },
+    "K": {
+      "passed": true,
+      "cases": 950,
+      "method": "BFS over literal mex operation state graph, plus one-operation repair potential bound"
+    },
+    "L": {
+      "passed": true,
+      "cases": 960,
+      "method": "all interval subset-xor sets versus timestamp basis and exact canonical tuples; checks every suffix invariant"
+    },
+    "C": {
+      "passed": true,
+      "cases": 501,
+      "method": "24-order product-bound enumeration versus Dijkstra shortest paths on every residue; first official example"
+    },
+    "M": {
+      "passed": true,
+      "cases": 7710,
+      "method": "all deletion states on 2x2,2x3,3x3,3x4 grids and random online deletions versus brute four-connected component counts; official encrypted sample"
+    }
+  },
+  "content_sha256": {
+    "ccpc-final-G.md": "b6f53ef8c5cddd782d30774ed147187d3103a14afe5d649422fc8fa706efb0e5",
+    "ccpc-final-J.md": "53dad1e574eafcbf11ac294d3ccb9398ca3438da71a141e8930e9536277970f6",
+    "ccpc-final-K.md": "51f37b2f00cc3f08e352fedaa576e8d4917fdaababe186244952386589b2410e",
+    "ccpc-final-L.md": "5a35a5c1b5bdf7e59648e008eb213fec8f0f077af32b45a0634f9bf5260301b9",
+    "ccpc-final-C.md": "67cd6bc06455839fe497e429f600484c723c1464c86ce448ed22505cb137c86c",
+    "ccpc-final-M.md": "1549e3c562666fb8a0cc4293820f5e64d46cd1e88ea1def78929f5b2b14b032d"
+  }
+}
