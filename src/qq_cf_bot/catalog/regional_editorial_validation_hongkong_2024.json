@@ -1,0 +1,82 @@
+{
+  "scope": "2024 ICPC Hong Kong A B C D E F G H I J K L",
+  "status": "passed",
+  "seed": 1885,
+  "limitations": "Independent small-case and construction checks; no online submissions. Optimized complexity requires the data structures described in each text; reference validators favor clarity over maximum-scale performance.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 1500,
+      "method": "1500 random arrays and randomized checkpoint block widths versus direct center expansion"
+    },
+    "B": {
+      "passed": true,
+      "cases": 300,
+      "method": "300 random enemy systems versus memoized actual shield/health attack games, checking cost and count"
+    },
+    "C": {
+      "passed": true,
+      "cases": 9840,
+      "method": "all ternary arrays through length eight versus all legal reverse deletion branches"
+    },
+    "F": {
+      "passed": true,
+      "cases": 1120,
+      "method": "120 small exhaustive one-use donation games plus 1000 random circles versus every split"
+    },
+    "G": {
+      "passed": true,
+      "cases": 716,
+      "method": "random string multisets versus exhaustive disjoint team partitions for every team size"
+    },
+    "H": {
+      "passed": true,
+      "cases": 150,
+      "method": "150 random arrays versus recursive exact Pong/Chow decomposition for every interval"
+    },
+    "K": {
+      "passed": true,
+      "cases": 57002,
+      "method": "every LR source through length nine; full reachable deletion graph versus corrected formal-statement conditions"
+    },
+    "L": {
+      "passed": true,
+      "cases": 1180,
+      "method": "all grids through 3x3 against complete XOR span of paths plus 500 random boards through 200x200 with full construction replay"
+    },
+    "D": {
+      "passed": true,
+      "cases": 1116,
+      "method": "offline dynamic segment-tree unions/deletions versus actual path histories and exhaustive nonadjacent half-damage choices"
+    },
+    "I": {
+      "passed": true,
+      "cases": 5035,
+      "method": "35 explicit original grouping/coloring games and 5000 smooth-order discrete-log/constant-time power checks against built-in modular exponentiation"
+    },
+    "J": {
+      "passed": true,
+      "cases": 600,
+      "method": "600 random tree pairs against direct recursive deletion-component reconstruction for every root"
+    },
+    "E": {
+      "passed": true,
+      "cases": 530,
+      "method": "530 general-position point sets, including dense interior points; enumerate all vertex subsets and simple polygon orders versus polar-sector prefix/suffix Graham area formula"
+    }
+  },
+  "content_sha256": {
+    "icpc-hongkong-A.md": "8058c8819b624ffebbc0d5c5c40163416018c12002ed9cce7a0ec49806d2f34a",
+    "icpc-hongkong-B.md": "8a019a4b22a4fd9a4f05bb8cf5406fc6166f1ccfda9c8cb036c47b5f5ac9f0c0",
+    "icpc-hongkong-C.md": "fdff792fc1c435acfaed074ebdf943449b7d0eec9f90e368f7e25826b0e0e12e",
+    "icpc-hongkong-D.md": "09189de1ddc41c95f25e4b0e286b08799aecb07d735efb9d91ebb3dba3c7e889",
+    "icpc-hongkong-E.md": "d3eac83e635566ef5fd5cb7e5feea4d2141e84232b71ef16ff3894677820f938",
+    "icpc-hongkong-F.md": "5d8c2596eff8f453a8087e55e6ee7810b125dc94972e4765e612a29d18304519",
+    "icpc-hongkong-G.md": "8a5f5616dc72bbb9548c998e2da4ed377a68a8bbf9a72c7a3a868687b7f39ad6",
+    "icpc-hongkong-H.md": "aece68791b382643b823670acbf6d9a24f5c7de4c0d656460617b8452154b122",
+    "icpc-hongkong-I.md": "75cfb6432d77e9a20a6d27da44f09e577df02c4a6531dc46403c086e87e678a6",
+    "icpc-hongkong-J.md": "06d9b7d66fb39b8a3490f7bbf509381d0c985c89198e231a6913cd43ee171056",
+    "icpc-hongkong-K.md": "48a139d6b80aa3f1763cc3ff51b02ea773e234ad556096c80de953ec929a1f5a",
+    "icpc-hongkong-L.md": "0a5493c61951966f7d96711cad21fdf6b47e515f5aa06e2417e0960746e266cb"
+  }
+}

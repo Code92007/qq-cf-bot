@@ -1,0 +1,88 @@
+{
+  "scope": "2024 CCPC Chongqing A B C D E H I J K M F G L",
+  "status": "passed",
+  "seed": 20241110,
+  "limitations": "Independent exact small-instance checks; no online submissions or maximum-scale timing.",
+  "checks": {
+    "A": {
+      "passed": true,
+      "cases": 316,
+      "method": "all subsets of random small arrays; exact integer totient versus grouped small-prime DP, including repeated large primes and ones"
+    },
+    "B": {
+      "passed": true,
+      "cases": 1002,
+      "method": "high-precision Decimal ROUND_HALF_UP oracle and both official samples"
+    },
+    "C": {
+      "passed": true,
+      "cases": 21342,
+      "method": "all nonempty first/last rows for widths 2..7; BFS eight-connectivity and exact bounding rectangles of every four-component"
+    },
+    "D": {
+      "passed": true,
+      "cases": 604,
+      "method": "all reduced fractions through denominator 44 with bounded denominator 90; enumerate every denominator and numerator and inspect reduced decimal denominator"
+    },
+    "E": {
+      "passed": true,
+      "cases": 117,
+      "method": "exhaustive legal contraction search on random connected odd graphs through 7 vertices, including cycles and equal maxima"
+    },
+    "H": {
+      "passed": true,
+      "cases": 222,
+      "method": "literal formal transformation versus all three aggregated residue states; quotes, backslashes, punctuation, p=1, official second example"
+    },
+    "I": {
+      "passed": true,
+      "cases": 601,
+      "method": "all multisets over 1..4 through size 8 and random 1..9 multisets; exact full expression-partition DP with both operators"
+    },
+    "J": {
+      "passed": true,
+      "cases": 195,
+      "method": "all 24 orientations and eight three-roll macros; full orientation/position BFS on three small grids"
+    },
+    "K": {
+      "passed": true,
+      "cases": 7380,
+      "method": "explicit recursive matrices through n=4, all coordinates versus ternary digit condition"
+    },
+    "M": {
+      "passed": true,
+      "cases": 345,
+      "method": "literal median-operation BFS, exhaustive bounded assignments, and large-range median symmetry oracle for interpolation"
+    },
+    "F": {
+      "passed": true,
+      "cases": 91,
+      "method": "all firing permutations for all directions through n=5 and random n=6,7; interval-chain DP; all three official samples"
+    },
+    "G": {
+      "passed": true,
+      "cases": 308,
+      "method": "literal all-target shooting for all small permutations, plus independent naive polynomial multiplication/long division for the prefix-product tree; excludes NTT implementation"
+    },
+    "L": {
+      "passed": true,
+      "cases": 1305,
+      "method": "sorted-event recurrence and top-down firing counts versus literal legal queue stabilization; random trees, paths/stars at maximum stable mass, both official samples; excludes optimized persistent/rollback treap"
+    }
+  },
+  "content_sha256": {
+    "ccpc-chongqing-A.md": "a56856e258ce24a07ce4779fe6666cc3b4a32f39cca106d3a9fdcb3d84d08bb9",
+    "ccpc-chongqing-B.md": "e83793a6e9e9cbf69fe6eebaf90a44c23ae4de09c8c16ff2e224629298858dae",
+    "ccpc-chongqing-C.md": "5a6e5d4bfd566bc416ec6740ae2764aa6cf7afb46665befa4bd85e2240a3de7e",
+    "ccpc-chongqing-D.md": "27bca43cdb71a0fb0dc8d8f5a6eb9cb07f5e676f3a3390fea43a1d05a57f8185",
+    "ccpc-chongqing-E.md": "19505c90e204e3aa1384c02f93b3b16456700341459c2dffca615c9f94721f7e",
+    "ccpc-chongqing-H.md": "aab4735200e79d8b15544918ef64e09c16352dfe6eb6589364ce852a8261543d",
+    "ccpc-chongqing-I.md": "daad0d4e7663ab55d5ac19a0c3476c632b71e7c67e7bbfb67ea19a46c9bf2cbc",
+    "ccpc-chongqing-J.md": "44fcf9056dc2570777ab61fce21452fac9792b6575f2d78102e9989e615c6d4c",
+    "ccpc-chongqing-K.md": "1f0f1074e7945ae03ebf5349e3235afa53b05e4c2e606af52f41ec84c4c92d9b",
+    "ccpc-chongqing-M.md": "18907a5cef5d48aa9532ccee04eb8e5c85f66c47b9ef4435f5691fa383f47e51",
+    "ccpc-chongqing-F.md": "8087a777a88c2b468c687f65f87157368a7f19ed9348c0296a57e8944c1e925b",
+    "ccpc-chongqing-G.md": "7ffab4f0496b237fe1fe5afce86d94b5dc6cb66db853e062e7e2f1a44b0c8fe6",
+    "ccpc-chongqing-L.md": "933d8078b3cbb7217f38a195cff858ff05dfc5b8c5661adad2888ca403377390"
+  }
+}

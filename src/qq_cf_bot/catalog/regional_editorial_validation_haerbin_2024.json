@@ -1,0 +1,76 @@
+{
+  "scope": "2024 CCPC Harbin A B C D E G I J K L M",
+  "seed": 20241020,
+  "status": "passed",
+  "limitations": "Independent small-case checks only; no online judge submissions or maximum-size runtime tests.",
+  "checks": {
+    "A": {
+      "cases": 3080,
+      "method": "all accepted DAG paths for every interval in1..64, plus topological/source/sink/node/count checks on1000 full-range random intervals",
+      "passed": true
+    },
+    "B": {
+      "cases": 580,
+      "method": "all simple concave polygons over every vertex subset for random n<=7, plus rotating calipers versus all edge/interior-point pairs",
+      "passed": true
+    },
+    "C": {
+      "cases": 1000,
+      "method": "relative-command simulator versus independent absolute displacement on random valid routes",
+      "passed": true
+    },
+    "D": {
+      "cases": 5460,
+      "method": "all binary 2xn grids through n6: anchor/LCP-LCS interval criterion versus every right/down path and every square substring",
+      "passed": true
+    },
+    "E": {
+      "cases": 500,
+      "method": "actual truncated remove/multiply generating-function sweep versus exact rational median times for every starting-position assignment, including simultaneous events",
+      "passed": true
+    },
+    "G": {
+      "cases": 25268,
+      "method": "all no-isolated graphs through n5 and all busy subsets versus exhaustive meeting-membership transitions, then replay every emitted invitation",
+      "passed": true
+    },
+    "I": {
+      "cases": 4500,
+      "method": "small-factor grouped DP, sorted large-factor DFS and actual segment-tree joining queries at three thresholds versus all integer partitions of the target sum and multiset edit distance",
+      "passed": true
+    },
+    "J": {
+      "cases": 1000,
+      "method": "next-recharge priority heap versus exhaustive per-kilometer choices of battery, retaining all reachable charge vectors",
+      "passed": true
+    },
+    "K": {
+      "cases": 1000,
+      "method": "sorted prefix-capacity optimization versus every integral time allocation allowing at most one crop outside its bounds",
+      "passed": true
+    },
+    "L": {
+      "cases": 1000,
+      "method": "all ordered pairs of actual path edge masks on random trees versus linear subtree-square aggregation",
+      "passed": true
+    },
+    "M": {
+      "cases": 2000,
+      "method": "literal execution of the statement pseudocode for every b and n<=2000 versus divisor interval grouping",
+      "passed": true
+    }
+  },
+  "content_sha256": {
+    "ccpc-haerbin-A.md": "e91dd2af3e5c2ef86a5192f5ed220141c213ebbba850fa374129ec2986abe498",
+    "ccpc-haerbin-B.md": "46c6abae872e557768ed2ace52185b1b81f3a9a3abc1640c5f2569eaa88ad6a1",
+    "ccpc-haerbin-C.md": "e0385f214ac3df0a4ac45657e44480e40abf7153e079b1eb562aadf924a65688",
+    "ccpc-haerbin-D.md": "d1a8ab225e6b68ac7d541b484e6bd0a6347f7ca072649a60ba0bdfac067f737c",
+    "ccpc-haerbin-E.md": "7f2ad30be960f743719b48f08003d75b795fff4812002ae974c5f2ff274ede98",
+    "ccpc-haerbin-G.md": "dfcf1a8066eddb73d68cfa6c7c84573856f1ede0fb9634def6a534ad51675465",
+    "ccpc-haerbin-I.md": "fe646852fa52677f5e60128aafe16fbc00d3bcfaf61667dbeb2ffe04c8f692f1",
+    "ccpc-haerbin-J.md": "355aab9c9a15dc5e13c39c65b0e6c9bb0114e6b5bea4f039a5f231fc69b3d817",
+    "ccpc-haerbin-K.md": "526c5ec15c2642592e87030a862ccc10f06ae62267677088e48ba25eafcdac9e",
+    "ccpc-haerbin-L.md": "e9d2ce3903f239873d2be41dc17131877fd67bfee5461cf3e7ac79976e71a8aa",
+    "ccpc-haerbin-M.md": "a3d25ba5ecea1749064a9db7a5e8f822e3bb02216c244904be1184742f704297"
+  }
+}

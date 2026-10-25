@@ -178,6 +178,36 @@
       "sha256": "8d5a636bf80824f6c07491e727b86482ffef6d2401e48a7ff306838a07202399",
       "verified_at": "2026-10-25",
       "note": "核对QOJ同源Universal Cup官方43页讲义与26页英文题面，页码为PDF实际页码。"
+    },
+    "ccpc-2024-chongqing-official": {
+      "title": "2024年第十届中国大学生程序设计竞赛（重庆）官方题解",
+      "author": "清华大学命题组",
+      "url": "https://contest.ucup.ac/download.php?type=attachments&id=1840&r=1",
+      "contest_url": "https://qoj.ac/contest/1840",
+      "statement_url": "https://contest.ucup.ac/download.php?type=attachments&id=1840&r=0",
+      "sha256": "ddcd58f5b0da2b4dc64c0acd1b4f702a749bcc0b2187983435c84146d6b21dca",
+      "verified_at": "2026-10-25",
+      "note": "2024年11月10日官方讲义，共22页。PDF中文字体提取不完整，已逐页OCR并对照正式中文题面；H按题面使用逗号ASCII44及右端修正49，纠正讲义第17页将右侧简写为空格的问题。页码为PDF实际页码。"
+    },
+    "ccpc-2024-haerbin-official": {
+      "title": "2024 CCPC 哈尔滨站官方题解",
+      "author": "电子科技大学出题组",
+      "url": "https://qoj.ac/download.php?type=attachments&id=1817&r=2",
+      "contest_url": "https://qoj.ac/contest/1817",
+      "statement_url": "https://qoj.ac/download.php?type=attachments&id=1817&r=0",
+      "sha256": "0fb7c8e4715b48da3d3c274f8eb1e6661883b8357e5d6a06f096790debe5b730",
+      "verified_at": "2026-10-25",
+      "note": "逐题对照正式题面与官方讲义，独立扩写；页码为PDF实际页码。"
+    },
+    "icpc-2024-hongkong-official": {
+      "title": "2024 ICPC 香港站官方题解",
+      "author": "浙江大学命题组",
+      "url": "https://contest.ucup.ac/download.php?type=attachments&id=1885&r=1",
+      "contest_url": "https://qoj.ac/contest/1885",
+      "statement_url": "https://contest.ucup.ac/download.php?type=attachments&id=1885&r=0",
+      "sha256": "d270d6eff993efc92c433b69d281d44960527d057de93f094c59d4b4112e567b",
+      "verified_at": "2026-10-25",
+      "note": "依据QOJ同源Universal Cup的58页英文讲义与18页正式题面扩写。K首尾条件方向、G输出乘数均按正式题面纠正讲义摘要。页码为PDF实际页码。"
     }
   },
   "pending_contests": {
@@ -2711,6 +2741,703 @@
       "learning": "先学Dijkstra的已确定/候选/未发现三种状态，以及图上泛洪。还需理解势能构造：给访问顺序编号，用编号差作边权，再证明最短路恰好等于编号。",
       "validation": "已核对官方题面与讲义，独立小规模验证通过；尚未在线提交。",
       "validation_report": "regional_editorial_validation_ecfinal_2024.json"
+    },
+    "ccpc-2024-重庆:A": {
+      "file": "editorials/2024/ccpc-chongqing-A.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        12,
+        13
+      ],
+      "hints": [
+        "欧拉函数等于乘积乘以每个出现质数的修正因子，重复的质数只修正一次。",
+        "小于等于53的16个质数用状态压缩；每个数至多有一个更大的质因数。",
+        "按大质数分组，用本组未选/已经选过两个阶段，组末对非空选择乘(p-1)/p。"
+      ],
+      "learning": "欧拉函数 → 模逆元 → 状态压缩背包 → 分组DP。先弄清φ(ab)在a、b不互质时为何不能直接相乘。",
+      "validation": "已核对官方题面和讲义，并通过 316 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:B": {
+      "file": "editorials/2024/ccpc-chongqing-B.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        5
+      ],
+      "hints": [
+        "把准确率先乘10000后四舍五入为整数，再按两位小数输出。",
+        "pp可以化成max(0,S-256N)*ppmax/(64N)。",
+        "正分数P/Q的四舍五入是(2P+Q)/(2Q)的整数除法，全程使用64位。"
+      ],
+      "learning": "分数通分 → 整数除法 → 四舍五入。先处理恰好x.5的边界，避免浮点误差。",
+      "validation": "已核对官方题面和讲义，并通过 1002 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:C": {
+      "file": "editorials/2024/ccpc-chongqing-C.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        10
+      ],
+      "hints": [
+        "若恰好一条边界行全是#，矩形条件与八连通无法同时满足。",
+        "第二、六行分别取第一、七行的补集，使水平矩形通过对角接触连接。",
+        "在首尾行字符变化处各选一个#，第三、五行放单点，第四行按横向距离0、1、至少2连接。"
+      ],
+      "learning": "四连通与八连通 → 对角接触 → 构造不变量。先画两个只在角上接触的矩形。",
+      "validation": "已核对官方题面和讲义，并通过 21342 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:D": {
+      "file": "editorials/2024/ccpc-chongqing-D.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        11
+      ],
+      "hints": [
+        "有限小数的最简分母只能含2、5；先把b中的2、5去掉得到w。",
+        "最优c/d可视为最简，因此d去掉2、5之后必须恰好为w。",
+        "枚举d=w*2^x*5^y，固定D=2^x*5^y后解c=−aD*inverse(b/w) mod w。"
+      ],
+      "learning": "最简分数 → 质因数次数 → 同余方程 → 扩展欧几里得。模数w不保证为质数，不能使用费马逆元。",
+      "validation": "已核对官方题面和讲义，并通过 604 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:E": {
+      "file": "editorials/2024/ccpc-chongqing-E.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        8,
+        9
+      ],
+      "hints": [
+        "合并值不会超过原最大值；唯一最大点若是叶子，第一次合并时必然丢失最大值。",
+        "任意非叶子点都能选作生成树根，通过始终让它当合并中心保住它的权值。",
+        "最大与次大都为叶子时，保留二者之间的路径，清掉挂枝后缩到三个点，保证至少得到次大值。"
+      ],
+      "learning": "生成树 → 缩点 → 奇偶性 → 上界与构造。实现只需度数，但证明要区分叶子和非叶子。",
+      "validation": "已核对官方题面和讲义，并通过 117 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:H": {
+      "file": "editorials/2024/ccpc-chongqing-H.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        16,
+        17
+      ],
+      "hints": [
+        "旧下标j产生5j到5j+4，按j mod p合并即可。",
+        "每个余数保存字符数、ASCII和、单引号个数；原单引号会被双引号包裹。",
+        "先统一生成空格和逗号，最后把首位改为左括号、末位改为右括号；长度单独模p维护。"
+      ],
+      "learning": "字符串替换 → 同余类 → 充分状态设计。先写题面形式化规则的朴素展开，不要调用Python实际转义行为。",
+      "validation": "已核对官方题面和讲义，并通过 222 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:I": {
+      "file": "editorials/2024/ccpc-chongqing-I.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        6,
+        7
+      ],
+      "hints": [
+        "存在最优方案是每组求和、各组相乘。非1的数通常应单独相乘。",
+        "先持续把1与2合成3，然后把三个1合成3，剩两个1合成2。",
+        "若最后剩一个1，加到当前最小的非1数上；当前数包括新生成的2和3。"
+      ],
+      "learning": "交换论证 → 整数拆分 → 乘法增益。先比较(x+1)/x随x变化的趋势。",
+      "validation": "已核对官方题面和讲义，并通过 601 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:J": {
+      "file": "editorials/2024/ccpc-chongqing-J.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        3
+      ],
+      "hints": [
+        "每个格子最多写6，所以6nm是上界。",
+        "在2×2格中走右、下、左三步，最终向下移一格且底面不变。",
+        "旋转或镜像三步动作后，任意相邻格都能保持底面6地移动，因此遍历并写满6。"
+      ],
+      "learning": "立方体滚动 → 构造达到上界。只需追踪原底面，不必记录每次所有面的数。",
+      "validation": "已核对官方题面和讲义，并通过 195 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:K": {
+      "file": "editorials/2024/ccpc-chongqing-K.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        4
+      ],
+      "hints": [
+        "三进制最高位决定落在哪个三分之一块。",
+        "只有行或列的当前位为1，才处于保留的十字形。",
+        "删掉最高位递归，因此每一对对应位都至少有一个1。"
+      ],
+      "learning": "三进制位权 → 递归分块。保留前导0，不要把长串转成整数。",
+      "validation": "已核对官方题面和讲义，并通过 7380 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:M": {
+      "file": "editorials/2024/ccpc-chongqing-M.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        14,
+        15
+      ],
+      "hints": [
+        "固定阈值x后变为多数决；能变成全1恰好是有两个1下标差至多2。",
+        "三状态记录末尾00、01、10，计算不存在近距离双1的赋值数，再用总数减去。",
+        "答案是所有阈值计数的和；按区间端点分段后计数为n次多项式，前缀和用n+2个点插值。"
+      ],
+      "learning": "阈值二值化 → 线性DP → 尾和公式 → 拉格朗日插值。先完成小值域逐阈值版本，再学习连续点插值。",
+      "validation": "已核对官方题面和讲义，并通过 345 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-哈尔滨:A": {
+      "file": "editorials/2024/ccpc-haerbin-A.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "hints": [
+        "用一个共享后缀状态F[k]生成任意k位，0/1两条边都连向F[k-1]。",
+        "一个前缀对应连续二进制区间，完全位于[L,R]内时直接接共享后缀，只递归拆分跨边界区间。",
+        "源点按总位数分别连一条首位1的边，最多约3logR个节点；只保留可达节点保证源汇唯一。"
+      ],
+      "learning": "学习二进制前缀树、DAG和区间分解。本题不是给每个数单独造一条链，而是把任意后缀共享成一段小图；只在区间左右边界附近保留特殊分支。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过3080项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:B": {
+      "file": "editorials/2024/ccpc-haerbin-B.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        9,
+        10,
+        11,
+        12
+      ],
+      "hints": [
+        "最优凹多边形可由外层凸包插入一个内部点形成一个三角形缺口。",
+        "答案为凸包二倍面积减去最小cross(边向量,内部点向量)。",
+        "内部点只需看它们的凸包，再用旋转卡壳依次找每条外边的最小投影点。"
+      ],
+      "learning": "先学单调链凸包、叉积与鞋带公式，再学习旋转卡壳。把本题理解成“在最大凸包上挖一个尽量小的三角形缺口”，比直接枚举凹多边形顶点顺序容易得多。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过580项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:C": {
+      "file": "editorials/2024/ccpc-haerbin-C.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        3
+      ],
+      "hints": [
+        "初始朝向直接取第一条绝对指令的方向，并保留原路线。",
+        "按N/E/S/W顺时针编号，相邻方向模4差1为右转、差3为左转。",
+        "每段之间插一个转向，再输出直走距离，共2n-1条，满足全部格式限制。"
+      ],
+      "learning": "学习模4表示方向、简单模拟。最稳妥的构造是保留原路线，只把绝对朝向的改变翻译成左转或右转，不必另找最短路线。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过1000项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:D": {
+      "file": "editorials/2024/ccpc-haerbin-D.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        32,
+        33,
+        34,
+        35
+      ],
+      "hints": [
+        "在上串末尾与下串开头各补不同哨兵，修正向下时会读入同列两字符的坐标偏移。",
+        "固定半长d，比较关系只有上/上A、上/下B、下/下C，合法半段是A接B或B接C。",
+        "每隔d放锚点，四种最大匹配段延伸用LCP/LCS常数次查询，总O(n log n)；正文完整推导替代原讲义排版歧义。"
+      ],
+      "learning": "先掌握最长公共前缀LCP、最长公共后缀LCS的查询，再学习后缀数组、height数组与RMQ。若暂时不会后缀数组，可以先用逐字符比较实现下面的判定，在小数据上与暴力路径枚举比较，理解算法后再替换查询模块。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过5460项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:E": {
+      "file": "editorials/2024/ccpc-haerbin-E.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        26,
+        27,
+        28
+      ],
+      "hints": [
+        "坐标中位数到0的时刻，就是各球过0时间的中位数；按全部nm个过0事件扫描。",
+        "维护prod((n-c)+c*z)，事件只让一颗球的可行起点数c加1，先除旧一次因子再乘新因子。",
+        "该事件的CDF增量计数是其他球恰有(m-1)/2颗通过的系数，乘时间累加并最后除n^m。"
+      ],
+      "learning": "学习离散随机变量的期望、独立伯努利事件的生成函数，以及多项式乘一个一次因子和除一个一次因子。这里的多项式不需要FFT，每次只改一颗球的状态，用O(m)递推即可。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过500项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:G": {
+      "file": "editorials/2024/ccpc-haerbin-G.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        4,
+        5,
+        6
+      ],
+      "hints": [
+        "忙碌者不能作为邀请链中转，原图连通本身不够。",
+        "从一个空闲者BFS，发现邻居即邀请，但只让空闲邻居继续进入队列。",
+        "保存每个空闲者的非空邀请名单，最后全员加入才输出；全忙碌或不可达都无解。"
+      ],
+      "learning": "学习BFS与生成树的关系。忙碌者只能被邀请，不能创建或继续邀请，所以他们不能成为连接其他人的中转点；这比普通的“原图连通”更强。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过25268项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:J": {
+      "file": "editorials/2024/ccpc-haerbin-J.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        21,
+        22
+      ],
+      "hints": [
+        "优先消耗下一次能充电更早的电池，交换消耗顺序可证明不劣。",
+        "预处理每站的同类下一站，堆按下一次补给排序并批量消耗电量。",
+        "到站充满并更新版本使旧堆记录失效，耗空和部分消耗次数总共O(n+m)。"
+      ],
+      "learning": "学习贪心交换论证、优先队列和事件式模拟。这里每单位电量能走同样远，区别只在于哪块电池更早能够再次充满，因此优先消耗“下一次补给更早”的电池。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过1000项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:K": {
+      "file": "editorials/2024/ccpc-haerbin-K.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        13,
+        14,
+        15
+      ],
+      "hints": [
+        "固定解除限制的作物i，其余先分配最低工作量，i先分配0。",
+        "剩余时间先按收益给比i更高的作物填容量，再全部交给i。",
+        "排序后的额外容量及收益前缀和配合二分，O(log n)算出每个解除对象的最优值。"
+      ],
+      "learning": "学习按单位收益排序的资源分配、前缀和与二分。先固定“给哪一种作物解除限制”，此时该作物可以接收任意剩余时间，所有收益不高于它的作物都只需保留最低工作量。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过1000项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:L": {
+      "file": "editorials/2024/ccpc-haerbin-L.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        23,
+        24,
+        25
+      ],
+      "hints": [
+        "把公共边数平方展开成单边指示量与两条不同边的交叉项。",
+        "一条路径覆盖指定边集合的端点方案数为c，两人独立所以贡献c²。",
+        "子树大小平方和汇总祖孙边与不同孩子分支边，后序一次合并，最后除路径数平方。"
+      ],
+      "learning": "学习期望线性性、指示变量平方展开、子树大小和树形合并。不要枚举两条完整路径；先问一条边、两条边同时出现在随机路径中有多少种端点选择。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过1000项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:M": {
+      "file": "editorials/2024/ccpc-haerbin-M.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        7,
+        8
+      ],
+      "hints": [
+        "题面程序返回n除以不超过b的最大约数，而非普通上取整。",
+        "相邻约数d[i]到d[i+1]-1范围内函数值恒为n/d[i]。",
+        "枚举排序约数，累加间隙长度乘恒定值，最后b=n单独加1。"
+      ],
+      "learning": "学习枚举约数和把相同答案的连续自变量分组。题面程序虽然叫上取整，却不是数学上的ceil，必须按循环实际行为分析。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过2000项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "ccpc-2024-哈尔滨:H": {
+      "file": "editorials/2024/ccpc-haerbin-H.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        38,
+        39,
+        40
+      ],
+      "learning": "先写普通子序列计数DP，再学习行向量矩阵转移、矩阵快速幂、辗转相除与维护有序乘积的线段树。先自检：为什么统计11时必须倒序更新？非交换矩阵在线段树中为什么必须左乘右？正式模数998244353，最多2000段，以正式题面为准。",
+      "hints": [
+        "先求d=k的模逆元，洗牌后的扫描顺序就是原下标0,d,2d,...模L。",
+        "若步长太大，固定第0项、反转其余项；否则按d列折叠，每列由上到下相乘，新长度变d、步长变d-L%d。",
+        "一段矩阵对每列贡献的指数只有两种，仅在段端点模d时改变；扫描这些事件，用线段树维护各段矩阵幂的有序乘积。"
+      ],
+      "validation_report": "regional_editorial_validation_haerbin_h_2024.json",
+      "validation": "已核对正式题面与官方讲义，实际实现欧几里得归约、矩阵列折叠和线段树，3322项独立检查通过。未在线评测或验证2000段极限性能；报告列出范围。"
+    },
+    "ccpc-2024-重庆:F": {
+      "file": "editorials/2024/ccpc-chongqing-F.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        18
+      ],
+      "hints": [
+        "把每次击中连成边，最终每条攻击链包含一个连续区间。",
+        "单链方向只能为R*L*；混合段W=(m-1)C(m,a)，全同向段要区分是否朝整场外侧。",
+        "区间DP拼接时乘C(r,m)，交错两段的相对顺序；内部单人段不一定合法。"
+      ],
+      "learning": "排列相对顺序 → 组合数交错 → 区间划分DP。先枚举小排列，特别检查被击中者仍占排列中的位置。",
+      "validation": "已核对官方题面和讲义，并通过 91 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:G": {
+      "file": "editorials/2024/ccpc-chongqing-G.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        19,
+        20
+      ],
+      "hints": [
+        "最终只能剩边界向内的一人，或相邻的一对LR。",
+        "左侧存活概率为所有左侧R位置j的(i-j)/(i-j+1)之积，右侧对称。",
+        "乘积树向左传H mod Q，向右传(H*左半R因子积) mod Q；分别在i和i+1求值得到比值。"
+      ],
+      "learning": "排列概率 → 模逆元 → 多项式乘法与取模 → 乘积树。先写O(n²)概率版，再学习NTT和反转求逆实现多项式除法。",
+      "validation": "已核对官方题面和讲义，并通过 308 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-重庆:L": {
+      "file": "editorials/2024/ccpc-chongqing-L.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-chongqing-official",
+      "pages": [
+        21,
+        22
+      ],
+      "hints": [
+        "总沙数超过n-2就不能稳定；对子树记录父亲第t次输入时根不操作的时刻集合。",
+        "孩子事件多重集合并为S，非根操作q次后的沙数为C-q-rank(S,q)，二分初始q。",
+        "删除≤q事件后，将剩余第i个e_i变成e_i-q+i+k0，再补1..k0；根改用第k小，前序恢复真实次数。"
+      ],
+      "learning": "树上DP → 排名与第k小 → Treap合并 → 按排名懒标记 → 持久化或撤销。先用有序数组实现事件公式，与队列模拟对拍。",
+      "validation": "已核对官方题面和讲义，并通过 1305 组独立小规模验证；尚未提交在线评测。",
+      "validation_report": "regional_editorial_validation_ccpc_chongqing_2024.json"
+    },
+    "ccpc-2024-哈尔滨:I": {
+      "file": "editorials/2024/ccpc-haerbin-I.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        29,
+        30,
+        31
+      ],
+      "hints": [
+        "把最终多重集合的编辑代价写成n加各值的take-2*min(原次数,take)。",
+        "非1因子确定后，用S减因子和得到1的数量；小于500的因子做乘积/和分组DP，大因子递增DFS至多3个。",
+        "拼接时把1的费用按需要数量是否超过原有1分两段，预处理dp-s前缀最小值及dp+s区间最小值。"
+      ],
+      "learning": "先学习整数因数分解、乘积分拆、分组背包与区间最小值查询。题目的高维几何只是包装：删除一个维度就是删一个数，扩展一个维度就是添加一个正整数，目标是让多重集合的和为S、积为M。",
+      "validation_report": "regional_editorial_validation_haerbin_2024.json",
+      "validation": "已核对正式题面和官方讲义，通过4500项独立算法校验；尚未在线评测或验证极限性能。"
+    },
+    "icpc-2024-香港:A": {
+      "file": "editorials/2024/icpc-hongkong-A.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        34,
+        35,
+        36,
+        37
+      ],
+      "hints": [
+        "F(l,r)=F(l+1,r-1)且|a[l]-a[r]|≤k。",
+        "固定右端点r，把所有左端点答案打成位集，上一轮右移一位再与合法值掩码按位与。",
+        "只保存每隔B个右端点的快照。每个中心二分快照找到最长可行位置，再直接扩展不足B对；取B约64控制内存。"
+      ],
+      "learning": "先学普通回文的中心扩展，再学用64位整数批量表示布尔状态的位集。这里“差≤k”不具备相等关系的传递性，不能直接把Manacher的字符相等换掉。",
+      "validation": "核对官方题面与讲义，独立验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:B": {
+      "file": "editorials/2024/icpc-hongkong-B.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        23,
+        24,
+        25
+      ],
+      "hints": [
+        "固定总攻击伤害S，护甲b、生命a的敌人要求某个前缀伤害落入[b,S-a]。",
+        "一次前缀从p跳到q，会首次击破所有护甲在(p,q]内的敌人，必须满足q+这些敌人的最大生命≤S。",
+        "只需枚举S在L=max(a+b)到L+2k-2；每个S做O(mk)最短费用和方案数DP。"
+      ],
+      "learning": "先学完全背包的有序方案计数和最短路DP。这里攻击顺序有区别，护甲被打穿时溢出的伤害完全浪费，不能把生命与护甲简单相加后做普通背包。",
+      "validation": "核对官方题面与讲义，独立验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:C": {
+      "file": "editorials/2024/icpc-hongkong-C.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        4,
+        5,
+        6
+      ],
+      "hints": [
+        "新加入的数不大于另一端，因此永远不会产生比初始数更大的数。",
+        "初始位置必须是全局最大值；反过来，尝试始终保留任意指定的最大值。",
+        "逆向删除两端较小的那个；相等时，删除不是指定初始点的端点即可。"
+      ],
+      "learning": "先学正向构造与逆向删除的对应关系。遇到“从一个点向两边扩张”的问题，可以先反过来问：最后一个加入的端点能否删除。",
+      "validation": "核对官方题面与讲义，独立验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:F": {
+      "file": "editorials/2024/icpc-hongkong-F.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        26,
+        27,
+        28,
+        29
+      ],
+      "hints": [
+        "对目标i，最优方案可看成在环上切一条边，两侧的人都从远到近向i传钱。",
+        "设L_i(y)是顺时针最近y人贡献的钱，则L_i(y)=floor((a[i+1]+L_{i+1}(y-1))/2)。",
+        "L_i(y)关于y单调，只有O(log max(a))个不同值。保存每个值第一次出现的距离，左右断点双指针合并。"
+      ],
+      "learning": "先学树形依赖中的“从远到近传递”，再学单调阶梯函数的断点压缩。必须保留取整：远方的一小笔钱有可能使前面的一连串奇数触发进位。",
+      "validation": "核对官方题面与讲义，独立验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:G": {
+      "file": "editorials/2024/icpc-hongkong-G.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        15,
+        16,
+        17,
+        18
+      ],
+      "hints": [
+        "固定队伍人数k，每个Trie节点子树里最多产生floor(size/k)支完全位于该前缀内的队伍。",
+        "从深到浅尽量分组，可以同时达到所有节点的这个上界，因此f(k)=Σ非根节点floor(size/k)。",
+        "新增字符串沿路节点size从t-1变t，仅k|t的f(k)增加1；预处理约数，维护XOR(f(k)*k)。"
+      ],
+      "learning": "先学Trie、子树计数、整除取整和约数筛。把一个队伍的LCP长度拆成“它经过了多少个非根前缀节点”，才能看见各个前缀的贡献。",
+      "validation": "核对官方题面与讲义，独立验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:H": {
+      "file": "editorials/2024/icpc-hongkong-H.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        19,
+        20,
+        21,
+        22
+      ],
+      "hints": [
+        "三组相同顺子(x,x+1,x+2)可以换成三个刻子，因此每种顺子只需0/1/2组。",
+        "六种顺子共有3^6=729种模板。区间计数e必须逐项≥模板d，且e≡d mod3。",
+        "模板的模3向量互不相同。对每个模板，双指针维护满足逐项下界的左端点，用前缀计数模3桶统计。"
+      ],
+      "learning": "先学多重集合、前缀计数和双指针。难点不是普通麻将规则，而是将“存在一种拆法”变成唯一的模3顺子模板，防止一个区间被多种拆法重复计数。",
+      "validation": "核对官方题面与讲义，独立验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:K": {
+      "file": "editorials/2024/icpc-hongkong-K.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        7,
+        8,
+        9
+      ],
+      "hints": [
+        "目标必须是原串子序列。",
+        "若原串开头是L，结果开头也一定是L；若原串结尾是R，结果结尾也一定是R。",
+        "这三个条件也充分。用next数组O(|t|)判子序列；注意官方讲义第9页把首尾方向写反了。"
+      ],
+      "learning": "先学子序列判定与删除过程的不变量。方向要按照正式题面理解：L删除自己左侧的相邻字符，R删除自己右侧的相邻字符。",
+      "validation": "核对官方题面与讲义，独立验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:L": {
+      "file": "editorials/2024/icpc-hongkong-L.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "hints": [
+        "每条路径在每条反对角线i+j=d上恰经过一格，所以各反对角线错误格数的奇偶必须一致。",
+        "把最上行与最右列留到最后。其余格(i,j)可通过DR或RD决定是否翻转它，另一条走法经过(i-1,j+1)。",
+        "按i-j从大到小处理，每条主对角线只用一条路径；此前处理的内部格不受影响，最后剩余边界由奇偶不变量统一清零。"
+      ],
+      "learning": "先学异或与奇偶不变量，再学两条局部路径RD、DR的区别。下面给出具体坐标构造，不需要把官方图示的“处理对角线”当成黑盒。",
+      "validation": "核对官方题面与讲义，独立验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:D": {
+      "file": "editorials/2024/icpc-hongkong-D.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        38,
+        39,
+        40,
+        41
+      ],
+      "hints": [
+        "一段伤害序列的最小损血只需记上一击是否减半，转移可写成2×2 min-plus矩阵。",
+        "把攻击编号放在路径两端的集合中，向上做集合并，在LCA父亲处删除该编号；每点最终集合就是击中过它的攻击。",
+        "以时间为下标维护矩阵乘积和攻击数，查询时只看当前时间以前，从右向左寻找损血严格小于h的最长后缀。"
+      ],
+      "learning": "先学两状态动态规划、min-plus矩阵乘法、树上LCA与动态线段树合并。建议依次做“单个点的攻击历史”“树上暴力路径历史”“离线集合合并”三个版本，最后再组合。",
+      "validation": "已核对官方材料，独立小规模验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:I": {
+      "file": "editorials/2024/icpc-hongkong-I.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        45,
+        46,
+        47,
+        48,
+        49
+      ],
+      "hints": [
+        "大小n的一组选择步长x，会分成gcd(n,x)个轨道；若互质就直接用颜色x整体染色。",
+        "把“先按某个质因子分组”的结果取并集，容斥后f(n,m)=Σμ(d)floor(m/d)-Σ_{d>1}μ(d)f(n/d,floor(m/d))^d。",
+        "所有状态都是原n的约数。只枚举平方自由d；模数阶998244352=2^23×119，可先求每个DP值的离散对数，再用查表将每次幂计算压成常数操作。"
+      ],
+      "learning": "先学循环群中的步长轨道、莫比乌斯容斥和约数DP。实现全范围还需64位整数分解（Miller–Rabin/Pollard–Rho）以及光滑群阶下的离散对数；可以先用试除与普通快速幂验证小规模递推，再优化。",
+      "validation": "已核对官方材料，独立小规模验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:J": {
+      "file": "editorials/2024/icpc-hongkong-J.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        42,
+        43,
+        44
+      ],
+      "hints": [
+        "根确定后，T的每个孩子子树必须恰好对应T1删除父亲后的一块连通分量。",
+        "对T中每条边u-v，T1的u-v路径内部点必须全部位于切边后的某一侧，且根必须位于另一侧。",
+        "任意根化T，把一侧写成DFS区间；在T1建立根到点的持久化计数树，查询内部路径有多少点落在这个区间，再对合法根做区间约束。"
+      ],
+      "learning": "先学树的点分治结构，但本题删除点可以任意选择，不必是真正重心。然后学DFS序、树上路径计数与主席树：一棵树的子树区间，是另一棵树路径上的值域计数问题。",
+      "validation": "已核对官方材料，独立小规模验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:E": {
+      "file": "editorials/2024/icpc-hongkong-E.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        30,
+        31,
+        32,
+        33
+      ],
+      "hints": [
+        "唯一凹顶点p一定不是全局凸包顶点；除包含p的那一段外，多边形必须沿全局凸包走。",
+        "以p为中心极角排序，p的两个邻点必须是相邻极角点。一个相邻对位于两个相邻全局凸包顶点之间的扇区。",
+        "对每个扇区做前缀Graham凸链和后缀反向凸链，维护叉积和。每个切分的面积=全凸包面积-被替换凸包边叉积+左右凸链叉积和。"
+      ],
+      "learning": "先学凸包、叉积方向判断、鞋带面积公式和Graham单调栈。核心是固定唯一凹顶点后，把所有候选凹多边形分成若干极角扇区，再用前缀/后缀凸链在线性时间批量求面积。",
+      "validation": "已核对官方材料，530组全部多边形独立枚举验证通过；尚未在线提交。",
+      "validation_report": "regional_editorial_validation_hongkong_2024.json"
+    },
+    "icpc-2024-香港:M": {
+      "file": "editorials/2024/icpc-hongkong-M.md",
+      "revision": "2026-10-25.1",
+      "source": "icpc-2024-hongkong-official",
+      "pages": [
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57
+      ],
+      "hints": [
+        "把每行每列建成点，格子是边，合法攻击集等价于每个连通分量恰好一个环。",
+        "先贪心求最大权基B；交错路径配对与模4零和子集可证明每个余数的最优解至多替换3条基边。",
+        "删t条边后恰有t个树分量，每类能量只留前一或前二条边；用DFS序区间和二维RMQ查询，小核用11类公式合并。"
+      ],
+      "learning": "二分图匹配 → 伪森林与拟阵贪心 → 交错路径交换 → 模零和 → DFS序 → 二维稀疏表。先写小图穷举替换版，再学批量查询。",
+      "validation": "7181 组独立验证通过：逐格三种攻击选择、全部定长边子集及模4最优值、小核公式、DFS区间恢复和官方两组样例；未做最大规模二维RMQ计时，未提交在线评测。",
+      "validation_report": "regional_editorial_validation_hongkong_m_2024.json"
+    },
+    "ccpc-2024-哈尔滨:F": {
+      "file": "editorials/2024/ccpc-haerbin-F.md",
+      "revision": "2026-10-25.1",
+      "source": "ccpc-2024-haerbin-official",
+      "pages": [
+        36,
+        37
+      ],
+      "hints": [
+        "重合后永久合并；顺序不变时速度为sign(W-2L-w)，可直接跳到相邻状态的下一次接触。",
+        "穿越后可能周期交换、一起平移或下一秒重合；仅将两种排列都向内运动的相邻对压成奇偶周期团。",
+        "用堆、双向链表和并查集维护局部事件，同刻先按旧轨迹收齐相交范围；负权平移对的粘连边只能由真正重合打破，故事件总数O(n)。"
+      ],
+      "learning": "先学习并查集、双向链表、优先队列和离线查询，再学习事件驱动模拟。建议先写逐秒同时更新的暴力程序，理解负权下穿越后一起平移的反例，再学习周期压缩与粘连边摊还分析。",
+      "validation_report": "regional_editorial_validation_haerbin_galaxy_2024.json",
+      "validation": "完整事件算法通过11139组独立验证，共4326200个查询；覆盖负权平移、同刻双侧接触、乱序重复查询和10^9时间。未在线提交，未测试n=10^5极限性能。"
     }
   },
   "pending_problems": {

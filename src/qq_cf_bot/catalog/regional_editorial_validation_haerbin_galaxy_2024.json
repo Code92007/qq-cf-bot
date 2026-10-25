@@ -1,0 +1,27 @@
+{
+  "scope": "2024 CCPC Harbin F",
+  "seed": 20241020,
+  "status": "passed",
+  "limitations": "Complete event algorithm checked against literal small-instance simulation and exact two-planet formulas. No online judge submission and no n=100000 performance test.",
+  "checks": {
+    "F": {
+      "cases": 11139,
+      "passed": true,
+      "method": "Full priority-queue/linked-list/DSU event simulation versus all-pairs simultaneous updates; negative-weight drifting pairs, rigid triples, simultaneous two-sided oscillator contacts, repeated initial coordinates, shuffled and repeated queries; analytic two-planet checks at coordinates/weights/times up to 1e9.",
+      "categories": {
+        "original_focused": 3,
+        "exhaustive_weights": 3905,
+        "random_literal": 5000,
+        "boundary_contact": 30,
+        "coincident_large_time": 200,
+        "two_planet_analytic": 2000,
+        "official_sample": 1
+      },
+      "queries_checked": 4326200,
+      "maximum_events_observed": 15
+    }
+  },
+  "content_sha256": {
+    "ccpc-haerbin-F.md": "c483d95df305b96ed0894002f8814d58d78afc43aa0183d45a345f443f9d738f"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "scope": "2024 ICPC Hong Kong M",
+  "status": "passed",
+  "seed": 20241229,
+  "limitations": "Exact small-instance validation of attack/pseudoforest equivalence, at-most-three exchange, tiny-kernel formulas, and DFS interval reconstruction. No maximum-scale timing, optimized two-dimensional sparse table, or online submission.",
+  "checks": {
+    "M": {
+      "passed": true,
+      "cases": 7181,
+      "full_instances": 99,
+      "kernel_checks": 3541,
+      "interval_checks": 3541,
+      "method": "all ternary attack choices on small grids; all size-(n+m) edge subsets through 4x4; every at-most-three deletion kernel versus all replacement edge subsets; DFS atoms versus direct DSU components; both official samples"
+    }
+  },
+  "content_sha256": {
+    "icpc-hongkong-M.md": "8c3530bb11853379dcf59dd5e040b44292471b414a8de9f2132f6cd575a5f585"
+  }
+}
