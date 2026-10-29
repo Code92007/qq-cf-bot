@@ -137,9 +137,9 @@ class StandingsRatingTest(unittest.TestCase):
         self.assertFalse(set(rated).intersection(unrated))
         self.assertEqual(set(rated) | set(unrated), {c['id'] for c in catalog['contests']})
         self.assertEqual(set(release['problems']), {p['id'] for c in catalog['contests'] if c['id'] in rated for p in c['problems']})
-        self.assertEqual(len(rated), 96)
+        self.assertEqual(len(rated), 97)
         self.assertEqual(len(unrated), 7)
-        self.assertEqual(len(release['problems']), 1218)
+        self.assertEqual(len(release['problems']), 1231)
         self.assertTrue(all(unrated.values()))
         for result in release['problems'].values():
             self.assertLessEqual(result['range'][0], result['rating'])
@@ -154,6 +154,26 @@ class StandingsRatingTest(unittest.TestCase):
 
 
 class ArchivedFinalScoreboardTest(unittest.TestCase):
+    def test_2026_chengdu_rebuilds_published_ratings_from_pinned_final_rows(self):
+        directory = Path(__file__).resolve().parents[1] / 'src/qq_cf_bot/catalog'
+        catalog = json.loads((directory / 'regionals.json').read_text())
+        contest = next(c for c in catalog['contests'] if c['id'] == 'icpc-2026-成都')
+        release = json.loads((directory / 'regional_ratings.json').read_text())
+        rebuilt = build_release({'contests': [contest]}, directory, release['source_revision'], {},
+                                lambda c: c['rating_evidence']['standings_path'])
+        self.assertEqual(contest['source_url'], 'https://qoj.ac/contest/4600')
+        self.assertEqual(contest['qoj_url'], contest['source_url'])
+        self.assertEqual(contest['qoj_contest_id'], 4600)
+        self.assertEqual([p['index'] for p in contest['problems']], list('ABCDEFGHIJKLM'))
+        self.assertEqual([p['qoj_id'] for p in contest['problems']], list(range(23592, 23605)))
+        self.assertEqual(rebuilt['contests'][contest['id']], release['contests'][contest['id']])
+        self.assertEqual(rebuilt['contests'][contest['id']]['official_teams'], 319)
+        self.assertEqual(rebuilt['contests'][contest['id']]['excluded_teams'], 9)
+        self.assertEqual([rebuilt['problems'][p['id']]['accepted_teams'] for p in contest['problems']],
+                         [11, 1, 129, 312, 31, 0, 9, 26, 131, 0, 219, 0, 283])
+        for pid, rating in rebuilt['problems'].items():
+            self.assertEqual(rating, release['problems'][pid])
+
     def fixture(self):
         return {'schema': 'regional-final-scoreboard-v1', 'contest_id': 'old', 'labels': ['A', 'B'],
                 'source_name': 'Archived contest', 'duration_seconds': 18000,
@@ -208,7 +228,7 @@ class ArchivedFinalScoreboardTest(unittest.TestCase):
         catalog = json.loads((directory / 'regionals.json').read_text())
         published = json.loads((directory / 'regional_ratings.json').read_text())
         contests = [c for c in catalog['contests'] if c.get('rating_evidence', {}).get('provider') == 'final-scoreboard']
-        self.assertEqual(len(contests), 19)
+        self.assertEqual(len(contests), 20)
         release = build_release({'contests': contests}, directory, published['source_revision'], {},
                                 lambda c: c['rating_evidence']['standings_path'])
         for pid, result in release['problems'].items():

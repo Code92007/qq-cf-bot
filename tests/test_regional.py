@@ -51,8 +51,8 @@ class RegionalStoreTest(unittest.TestCase):
                 finals=[c for c in self.store.contests if c['year']==year and c['series']==name and c.get('stage')=='final']
                 self.assertEqual(len(finals),1)
                 self.assertTrue(all(p['aliases'] for p in finals[0]['problems']))
-        self.assertEqual(len(self.store.contests),103)
-        self.assertEqual(len(self.store.problems),1290)
+        self.assertEqual(len(self.store.contests),104)
+        self.assertEqual(len(self.store.problems),1303)
         for p in self.store.problems.values():
             if p.get('qoj_id'):
                 self.assertIn('qoj:'+str(p['qoj_id']),p['aliases'])
@@ -307,11 +307,11 @@ class RegionalDifficultyTest(unittest.TestCase):
         self.app.handle_get(public, '/api/regional-catalog')
         self.assertEqual(public.status, 200)
         payload = public.json()
-        self.assertEqual(len(payload['difficulty']), 1218)
+        self.assertEqual(len(payload['difficulty']), 1231)
         self.assertEqual(payload['difficulty'][pid]['rating'], 900)
         self.assertEqual(payload['difficulty'][pid]['accepted_teams'], 320)
         self.assertEqual(payload['years'], list(range(2026, 2017, -1)))
-        self.assertEqual(len(payload['contests']), 103)
+        self.assertEqual(len(payload['contests']), 104)
         self.assertNotIn('icpc-2019-上海', payload['ratingRelease']['unrated_contests'])
         self.assertIn('icpc-2019-上海:A', payload['difficulty'])
         self.assertIn('ccpc-2019-厦门', payload['ratingRelease']['unrated_contests'])
