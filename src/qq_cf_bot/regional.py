@@ -121,6 +121,8 @@ class RegionalStore:
               primary key(user_id,problem_id));
             ''')
             db.execute("update regional_bindings set status='failed',message='服务重启，请重新同步' where status in ('queued','running')")
+            from .regional_statements import seed_cached_statements
+            seed_cached_statements(db, self.problems)
 
     def connect(self):
         db = sqlite3.connect(self.path, timeout=30)
@@ -136,6 +138,11 @@ class RegionalStore:
     def difficulties(self):
         # Published offline data is authoritative; ignore legacy model-only DB rows.
         return {pid: value for pid, value in self.rating_release['problems'].items() if pid in self.problems}
+
+    def cached_statement(self, pid, *, require_chinese=True):
+        from .regional_statements import get_cached_statement
+        with self.connect() as db:
+            return get_cached_statement(db, pid, self.problem(pid), require_chinese=require_chinese)
 
     def rating_metadata(self):
         return {key: self.rating_release.get(key, {}) for key in ('method', 'source_revision', 'scale', 'contests', 'unrated_contests')}
@@ -399,9 +406,7 @@ class RegionalApplication:
         if action == 'open':
             detail = self.store.detail(user,pid)
             if payload.get('prepareStatement') is False:
-                with self.store.connect() as db:
-                    cached = db.execute('select body from regional_statements where problem_id=?',(pid,)).fetchone()
-                statement = _statement_from_json(cached[0]) if cached else None
+                statement = self.store.cached_statement(pid)
                 detail['statement'] = self.statement_json(statement) if statement else None
                 if statement:
                     detail['title'] = statement.title
@@ -413,7 +418,7 @@ class RegionalApplication:
                 detail['statement'] = self.statement_json(statement)
                 detail['title'] = statement.title
             except Exception as exc:
-                LOGGER.warning('regional statement unavailable %s: %s',pid,type(exc).__name__)
+                LOGGER.warning('regional statement unavailable user=%s problem=%s error=%s http_status=%s',user,pid,type(exc).__name__,getattr(exc,'code',None))
                 detail['statement'] = None
                 detail['statementError'] = '中文题面尚未就绪：来源访问受限或翻译未完成。可以重试，已有草稿会保留。'
             return detail
@@ -466,14 +471,19 @@ class RegionalApplication:
         item=self.store.problem(pid)
         cf_id=item.get('cf_contest_id')
         p=CFProblem(int(cf_id or 0),item['index'] if cf_id else 'QOJ'+str(item.get('qoj_id') or ''),item['name'],0,(),bool(cf_id))
-        with self.store.connect() as db:
-            cached=db.execute('select body from regional_statements where problem_id=?',(pid,)).fetchone()
+        cached=self.store.cached_statement(pid)
         if cached:
-            return p,_statement_from_json(cached[0])
+            return p,cached
         if not self.prepare_lock.acquire(blocking=False):
             raise ChallengeError('statement_busy','另一道中文题面正在准备，请稍后重试。',409)
         try:
-            if item.get('qoj_id'):
+            cached=self.store.cached_statement(pid)
+            if cached:
+                return p,cached
+            raw_cached=self.store.cached_statement(pid,require_chinese=False)
+            if raw_cached:
+                statement=self.service._translate_and_cache_if_needed(p,raw_cached,source='cached_regional')
+            elif item.get('qoj_id'):
                 try:
                     statement=self.qoj_statement(item['qoj_id'])
                 except Exception:

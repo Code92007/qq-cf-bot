@@ -150,6 +150,9 @@ class WebApplication:
                 "/regional-qoj-sync.user.js": ("regional-qoj-sync.user.js", "text/javascript; charset=utf-8"),
                 "/regionals.js": ("regionals.js", "text/javascript; charset=utf-8"),
                 "/regionals.css": ("regionals.css", "text/css; charset=utf-8"),
+                "/statement-chengdu-2026-b.png": ("statement-chengdu-2026-b.png", "image/png"),
+                "/statement-chengdu-2026-e-polygons.png": ("statement-chengdu-2026-e-polygons.png", "image/png"),
+                "/statement-chengdu-2026-e-sample.png": ("statement-chengdu-2026-e-sample.png", "image/png"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
                 "/styles.css": ("styles.css", "text/css; charset=utf-8"),
             }

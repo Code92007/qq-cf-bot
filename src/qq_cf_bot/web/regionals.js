@@ -61,7 +61,7 @@ function regionalSourceLinks(problem,contest){
   const links=(problem.aliases||[]).flatMap(key=>{
     const [oj,id]=key.split(':');
     if(oj==="codeforces"&&problem.cf_contest_id)return [{url:`https://codeforces.com/gym/${problem.cf_contest_id}/problem/${problem.index}`,label:"Codeforces 原题"}];
-    if(oj==="qoj")return [{url:`https://qoj.ac/problem/${id}`,label:"QOJ 原题"}];
+    if(oj==="qoj")return [{url:contest?.problem_access==="login_required"&&contest.qoj_contest_id?`https://qoj.ac/contest/${contest.qoj_contest_id}/problem/${id}`:`https://qoj.ac/problem/${id}`,label:"QOJ 原题"}];
     return [];
   });
   if(contest?.source_url)links.push({url:contest.source_url,label:contest.source_label||"比赛题单"});

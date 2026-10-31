@@ -14,6 +14,13 @@ from qq_cf_bot.renderer import (
 
 
 class StatementRendererTest(unittest.TestCase):
+    def test_chengdu_ordering_ellipsis_does_not_turn_into_multiplication(self):
+        rendered, fragments = _stash_math(r"$$a_{p_1}\le a_{p_2}\le\cdots\le a_{p_n}$$")
+        for token, fragment in fragments.items():
+            rendered = rendered.replace(token, fragment)
+        self.assertIn('≤…≤', rendered)
+        self.assertNotIn('·s', rendered)
+
     def test_codeforces_html_keeps_tags_and_renders_math_per_text_node(self):
         source = (
             '<div><p><span class="tex-font-style-bf">Hard version.</span></p>'

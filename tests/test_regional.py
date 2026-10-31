@@ -226,7 +226,7 @@ class RegionalWebTest(unittest.TestCase):
             opened=self.call('open',{'problemId':pid},cookie,csrf)
         self.assertIsNone(opened.json()['statement'])
         self.assertEqual(opened.json()['draft']['body'],'先记下观察')
-        self.assertEqual(self.app.regionals.store.wall(1)['ready'],[])
+        self.assertNotIn(pid,self.app.regionals.store.wall(1)['ready'])
 
     def test_explicit_problem_oral_retry_and_unranked_progress(self):
         cookie,csrf=self.register_user();pid='icpc-2024-杭州:A'

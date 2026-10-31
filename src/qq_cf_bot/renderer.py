@@ -438,6 +438,7 @@ def _latex_to_html(value: str, display: bool = False) -> str:
         r"\leftarrow": "←",
         r"\Rightarrow": "⇒",
         r"\Leftarrow": "⇐",
+        r"\cdots": "…",
         r"\cdot": "·",
         r"\times": "×",
         r"\ldots": "…",
@@ -618,6 +619,7 @@ def _normalize_plain_latex_commands(value: str) -> str:
     replacements = {
         "ldots": "…",
         "dots": "…",
+        "cdots": "…",
         "cdot": "·",
         "times": "×",
         "rightarrow": "→",
@@ -744,6 +746,7 @@ def _latex_command_text(command: str) -> str:
         r"\leftarrow": "←",
         r"\Rightarrow": "⇒",
         r"\Leftarrow": "⇐",
+        r"\cdots": "…",
         r"\cdot": "·",
         r"\times": "×",
         r"\ldots": "…",
