@@ -39,11 +39,11 @@ class RegionalStatementCacheTest(unittest.TestCase):
 
     def test_chengdu_complete_and_other_contests_remain_on_demand(self):
         ready = self.store.wall(1)['ready']
-        self.assertEqual(set(ready), {'icpc-2026-成都:' + letter for letter in 'ABCDEFGHIJKLM'})
+        self.assertEqual(set(ready), {f'icpc-2026-{site}:{letter}' for site in ['成都','武汉'] for letter in 'ABCDEFGHIJKLM'})
         for pid in ready:
             _, statement = self.app.prepare(pid)
             self.assertTrue(statement.description)
-            self.assertIn('/contest/4600/problem/', statement.source_url)
+            self.assertIn('/contest/' + ('4600' if '成都' in pid else '4616') + '/problem/', statement.source_url)
         h = self.app.prepare('icpc-2026-成都:H')[1]
         self.assertIn('2n-3', h.description)
         self.assertIn('自适应', h.description)

@@ -153,6 +153,9 @@ class WebApplication:
                 "/statement-chengdu-2026-b.png": ("statement-chengdu-2026-b.png", "image/png"),
                 "/statement-chengdu-2026-e-polygons.png": ("statement-chengdu-2026-e-polygons.png", "image/png"),
                 "/statement-chengdu-2026-e-sample.png": ("statement-chengdu-2026-e-sample.png", "image/png"),
+                "/statement-wuhan-2026-a.png": ("statement-wuhan-2026-a.png", "image/png"),
+                "/statement-wuhan-2026-e-interaction.png": ("statement-wuhan-2026-e-interaction.png", "image/png"),
+                "/statement-wuhan-2026-l-interaction.png": ("statement-wuhan-2026-l-interaction.png", "image/png"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
                 "/styles.css": ("styles.css", "text/css; charset=utf-8"),
             }
