@@ -137,9 +137,9 @@ class StandingsRatingTest(unittest.TestCase):
         self.assertFalse(set(rated).intersection(unrated))
         self.assertEqual(set(rated) | set(unrated), {c['id'] for c in catalog['contests']})
         self.assertEqual(set(release['problems']), {p['id'] for c in catalog['contests'] if c['id'] in rated for p in c['problems']})
-        self.assertEqual(len(rated), 98)
+        self.assertEqual(len(rated), 100)
         self.assertEqual(len(unrated), 7)
-        self.assertEqual(len(release['problems']), 1244)
+        self.assertEqual(len(release['problems']), 1270)
         self.assertTrue(all(unrated.values()))
         for result in release['problems'].values():
             self.assertLessEqual(result['range'][0], result['rating'])
@@ -161,9 +161,9 @@ class ArchivedFinalScoreboardTest(unittest.TestCase):
         release = json.loads((directory / 'regional_ratings.json').read_text())
         rebuilt = build_release({'contests': [contest]}, directory, release['source_revision'], {},
                                 lambda c: c['rating_evidence']['standings_path'])
-        self.assertEqual(contest['source_url'], 'https://qoj.ac/contest/4600')
+        self.assertEqual(contest['source_url'], 'https://qoj.ac/contest/4607')
         self.assertEqual(contest['qoj_url'], contest['source_url'])
-        self.assertEqual(contest['qoj_contest_id'], 4600)
+        self.assertEqual(contest['qoj_contest_id'], 4607)
         self.assertEqual([p['index'] for p in contest['problems']], list('ABCDEFGHIJKLM'))
         self.assertEqual([p['qoj_id'] for p in contest['problems']], list(range(23592, 23605)))
         self.assertEqual(rebuilt['contests'][contest['id']], release['contests'][contest['id']])
@@ -228,7 +228,7 @@ class ArchivedFinalScoreboardTest(unittest.TestCase):
         catalog = json.loads((directory / 'regionals.json').read_text())
         published = json.loads((directory / 'regional_ratings.json').read_text())
         contests = [c for c in catalog['contests'] if c.get('rating_evidence', {}).get('provider') == 'final-scoreboard']
-        self.assertEqual(len(contests), 21)
+        self.assertEqual(len(contests), 23)
         release = build_release({'contests': contests}, directory, published['source_revision'], {},
                                 lambda c: c['rating_evidence']['standings_path'])
         for pid, result in release['problems'].items():
