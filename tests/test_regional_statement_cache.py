@@ -37,13 +37,15 @@ class RegionalStatementCacheTest(unittest.TestCase):
         problem = CFProblem(0, 'QOJ' + str(p['qoj_id']), '', 0) if qoj else CFProblem(p['cf_contest_id'], p['index'], '', 0)
         self.base.cache_statement(problem, statement, source='test', translated=translated)
 
-    def test_chengdu_complete_and_other_contests_remain_on_demand(self):
+    def test_curated_contests_are_complete_and_other_contests_remain_on_demand(self):
         ready = self.store.wall(1)['ready']
-        self.assertEqual(set(ready), {f'icpc-2026-{site}:{letter}' for site in ['成都','武汉'] for letter in 'ABCDEFGHIJKLM'})
+        existing = {f'icpc-2026-{site}:{letter}' for site in ['成都','武汉'] for letter in 'ABCDEFGHIJKLM'}
+        self.assertEqual(set(ready), existing | {'ccpc-2026-乐山:' + x for x in 'ABCDEFGHIJKLM'})
         for pid in ready:
             _, statement = self.app.prepare(pid)
             self.assertTrue(statement.description)
-            self.assertIn('/contest/' + ('4600' if '成都' in pid else '4616') + '/problem/', statement.source_url)
+            if pid in existing:
+                self.assertIn('/contest/' + ('4600' if '成都' in pid else '4616') + '/problem/', statement.source_url)
         h = self.app.prepare('icpc-2026-成都:H')[1]
         self.assertIn('2n-3', h.description)
         self.assertIn('自适应', h.description)

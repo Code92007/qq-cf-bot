@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-10-25",
+  "updated_at": "2026-11-09",
   "order": "year_desc",
   "sources": {
     "ccpc-2026-changchun-official": {
@@ -208,6 +208,15 @@
       "sha256": "d270d6eff993efc92c433b69d281d44960527d057de93f094c59d4b4112e567b",
       "verified_at": "2026-10-25",
       "note": "依据QOJ同源Universal Cup的58页英文讲义与18页正式题面扩写。K首尾条件方向、G输出乘数均按正式题面纠正讲义摘要。页码为PDF实际页码。"
+    },
+    "ccpc-2026-leshan-independent": {
+      "title": "2026 CCPC 乐山站题面截图与独立推导",
+      "author": "本站整理",
+      "url": "https://qoj.ac/contest/4685",
+      "contest_url": "https://qoj.ac/contest/4685",
+      "kind": "independent",
+      "verified_at": "2026-11-09",
+      "note": "根据用户提供的英文题面截图独立推导，不是官方题解。截图证据及其哈希见 regional_statements.json；算法检查范围见逐题验证记录。"
     }
   },
   "pending_contests": {
@@ -218,9 +227,6 @@
     },
     "icpc-2026-武汉": {
       "reason": "2026-11-04 已核验 QOJ 4616 补题题单与官方中文题面，当前补题场未提供官方题解附件，题解待取得可核验材料后补充。"
-    },
-    "ccpc-2026-乐山": {
-      "reason": "补题场需要 QOJ 组权限；官方题解尚待获取缓存。"
     },
     "icpc-2026-南京": {
       "reason": "补题链接、题面和官方题解尚未公布。"
@@ -3447,6 +3453,188 @@
       "learning": "先学习并查集、双向链表、优先队列和离线查询，再学习事件驱动模拟。建议先写逐秒同时更新的暴力程序，理解负权下穿越后一起平移的反例，再学习周期压缩与粘连边摊还分析。",
       "validation_report": "regional_editorial_validation_haerbin_galaxy_2024.json",
       "validation": "完整事件算法通过11139组独立验证，共4326200个查询；覆盖负权平移、同刻双侧接触、乱序重复查询和10^9时间。未在线提交，未测试n=10^5极限性能。"
+    },
+    "ccpc-2026-乐山:D": {
+      "file": "editorials/2026/ccpc-leshan-D.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "最后一轮的轮次等于食材数量的最大值。",
+        "最后一轮只会访问仍然非空的最大值篮子。",
+        "最大值为奇数取最右最大值位置，为偶数取最左位置。"
+      ],
+      "learning": "学习数组扫描、最大值和奇偶性即可。先手动模拟两三轮，再观察每个篮子在一轮中被访问的次数。不要按食材总数模拟：单个篮子的食材数可达十亿。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 5460 组：穷举 n≤6、食材数1..4，与逐轮模拟比较。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:F": {
+      "file": "editorials/2026/ccpc-leshan-F.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "将六个槽位分成两组，各自枚举三个槽位并删除被二维支配的属性和。",
+        "两个前沿按暴击率升序后，暴击伤害严格下降，合并目标具有 Monge 性质。",
+        "封顶函数仍保持所需四边形不等式；反转一个前沿，用决策单调的分治求所有行最大值。"
+      ],
+      "learning": "先学习折半枚举和二维支配关系，再学习 Monge 矩阵的最优决策单调性、分治求行最值。不要直接假设前沿上的乘积单峰；本题需要证明的是不同查询之间的最优下标单调。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 6000 组：三槽折半与任意前沿随机数据，对比笛卡尔积穷举；含封顶、零属性、重复点。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:G": {
+      "file": "editorials/2026/ccpc-leshan-G.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "只需检查相邻两根倒下木棍是否重叠。",
+        "将左右两个方向作为状态，相邻兼容关系写成2×2矩阵。",
+        "线段树维护有序矩阵乘积；长度修改只改变两处相邻兼容矩阵。"
+      ],
+      "learning": "先学习路径上的两状态计数 DP，再学习矩阵乘法与线段树维护有序乘积。矩阵乘法不可交换，线段树合并必须始终为左子树乘右子树。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 8000 组：随机初值与点修改，与全部2^n朝向的任意两区间检测比较。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:I": {
+      "file": "editorials/2026/ccpc-leshan-I.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "先计算每一条候选下一站边的合法发车时刻数量，将其作为边权。",
+        "按最早时刻与最晚时刻加一划分时间块，用组合数DP统计严格递增发车序列。",
+        "普通车站构成指向终点的有根森林；将约化拉普拉斯矩阵对应x的一列替换为到y的边权列，行列式就是指定终点计数。"
+      ],
+      "learning": "需要有向矩阵树定理、模意义高斯消元和组合计数 DP。先把“选下一站”和“选发车时刻”拆开，再用三四个车站枚举所有出边，理解为什么普通车站之间不能形成有向环。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 5500 组：4000组边权DP对比严格递增时刻穷举；1500组换列行列式对比所有下一站选择及逐点根检测。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:J": {
+      "file": "editorials/2026/ccpc-leshan-J.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "有毒药物可以编码为喝到它的老鼠子集，大小受瓶数限制，所有编码必须不同。",
+        "瓶数升序后，前i种药可用的大小受限子集数量必须至少为i；嵌套集合族保证这也充分。",
+        "至少两个零瓶药物无解，否则二分老鼠数；组合数累计达到药物种类数即可停止。"
+      ],
+      "learning": "学习二进制编码、组合数和二分答案。关键不是瓶数总和，而是每种药能让多少只不同老鼠喝到它。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 209 组：小规模所有非降瓶数，与死活位掩码二分图最大匹配比较。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:K": {
+      "file": "editorials/2026/ccpc-leshan-K.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "包含原点等价于不存在严格超过π的循环相邻极角空隙，还须排除零面积。",
+        "合并同射线后，至少三个方向且没有坏空隙，恰好是合法判据。",
+        "插入删除只影响前驱后继空隙；有序集合配合双指针求最短合法窗口。"
+      ],
+      "learning": "学习叉积、极角排序、滑动窗口，以及有序集合中前驱后继的维护。可以先用单调链凸包写暴力，逐个检查区间，再与下面的角度判据比较。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 91933 组：极角判据对比单调链凸包及逐边原点检测；含同射线、反向、共线、原点在边界。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:L": {
+      "file": "editorials/2026/ccpc-leshan-L.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "合法交换等价于把原串划分成不交换的单字符块和内部交换的双字符块。",
+        "已有输出只需记录最后一个字符，它取决于末块是单字符还是双字符。",
+        "两状态DP分别追加一字符或交换后的两字符，只计算新增的块间和块内相邻贡献。"
+      ],
+      "learning": "学习线性 DP 和状态压缩。先把所有操作看成对字符串的分块：一个不交换的单字符块，或者一个交换内部两字符的双字符块。因为每个位置最多参与一次交换，这些块必须无重叠地覆盖整串。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 2522 组：全部二元短串及三元随机串，对比所有不相交相邻交换集合。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:M": {
+      "file": "editorials/2026/ccpc-leshan-M.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "维护所有与历史回答一致的输入三元组，不假设目标从头到尾固定。",
+        "第一坐标将候选对半；在左半组按第二坐标对半，在右半组按第三坐标对半。",
+        "一次查询同时给出这三个比较；每个回复分支候选数至多向上取整的四分之一，十次足够。"
+      ],
+      "learning": "学习二分定位、候选集合过滤和交互输出刷新。这里的三个查询坐标可以自由组合，不要求查询三元组出现在输入中。利用这一点，一次查询可以同时执行一棵深度为二的二分决策树。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 1500 组：遍历每个可能回复分支验证最坏剩余候选数与查询深度；自适应交互器同样适用。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:A": {
+      "file": "editorials/2026/ccpc-leshan-A.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "每次全局传送后，两人都回到顶点；先求单人一次传送代价 c(a,i)。",
+        "二元状态转移代价是 max(c(a,i),c(b,j))；按决定最大值的一方拆成排序前缀。",
+        "候选按到达时刻全局排序，每个前缀只展开新增部分；每个状态用两个迭代器避免一次存入三次方条边。"
+      ],
+      "learning": "先掌握 Floyd、Dijkstra 和隐式图最短路，再理解“按距离全局有序处理后，一个前缀只展开一次”的优化。代码使用整数键的单调 Radix Heap。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 500 组：C++17 与显式 n² 状态、n⁴ 转移最短路对拍。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:B": {
+      "file": "editorials/2026/ccpc-leshan-B.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "阻挡资格与强者自己是否正在等待无关，维护每只鹿的有效阻挡者数量。",
+        "实际相遇删除阻挡；将东向坐标加 K 后的相遇增加阻挡，用两份有序链表预约相邻轨迹事件。",
+        "同一时刻先整体处理同坐标组、离开与阻挡变化，再统一改速度；固定平局顺序排除同向无换序追及。"
+      ],
+      "learning": "先学习事件驱动模拟、双向链表和带版本号的优先队列失效处理。这里维护两份随时间变化的排序；相邻元素的相遇就是排序证书失效事件。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 15108 组：C++17 与全体异向配对事件扫描模拟对拍，含同坐标、阈值重合及连锁等待。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:C": {
+      "file": "editorials/2026/ccpc-leshan-C.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "k=1 时过程固定，答案是 Thue–Morse 序列第 n−1 项。",
+        "k≥2 时把石子数按 k+1 分块，把连续四回合 a、反a、反a、a 一起逆推。",
+        "四步转移在块序列前加 a、反a；得到胜者为 Thue–Morse 第 floor(n/(k+1)) 项。"
+      ],
+      "learning": "先理解 Thue–Morse 序列：从零计数，第 $t$ 项为 $t$ 的二进制中 $1$ 的个数的奇偶性。再把轮到猫的决策看成区间“或”，轮到狗的决策看成区间“与”。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 50000 组：C++17 与逐回合、逐石子数极小极大 DP 对拍。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:E": {
+      "file": "editorials/2026/ccpc-leshan-E.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "两条只差一个拐角的路径说明 B−A 在反对角线上相同，首行迫使前 n 条反对角线差为零。",
+        "剩余反对角线用三组 (1,−2,1) 或四组 (1,−1,−1,1)，使每条路径的差值和为零。",
+        "用数值三元环和相邻数对交换填充；n=4、6 单独构造，所有允许改变的位置都能改变。"
+      ],
+      "learning": "先学习用两条只差一个拐角的格路径推导局部约束，再学习用置换环给矩阵分配数值。这里的关键是同时满足路径和相等及两矩阵各为排列。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 2383 组：C++17 穷举 n=4 的 1820 种首行数值集合，并验证随机及 n=1000 构造的排列、反对角线差值和最优修改数。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
+    },
+    "ccpc-2026-乐山:H": {
+      "file": "editorials/2026/ccpc-leshan-H.md",
+      "revision": "2026-11-09.2",
+      "source": "ccpc-2026-leshan-independent",
+      "pages": [],
+      "hints": [
+        "固定最长的 n 个目标区间，将每个区间匹配到一个不同起始位置。",
+        "从 n 个单点开始按目标长度降序逐个扩展，每次增加一个格子，始终保持区间互异。",
+        "正权值使规范链上的 s(m) 严格递增；用阶段前缀和计算 s，第二次运行二分解码 m。"
+      ],
+      "learning": "先学习正权值下的严格单调编码、区间匹配的贪心和 Hall 定理。把所有可行 $m$ 连成一条每步只增加一个格子的规范构造链，就可以二分解码。",
+      "validation_report": "regional_editorial_validation_leshan_2026.json",
+      "validation": "独立离线校验通过 18314 组：C++17 双次运行往返验证，n≤40 覆盖全部可行 m，检查区间互异、长度和及解码。附完整 C++17 代码，已编译并单独校验。尚无 QOJ 在线评测结果；极限性能覆盖范围见验证记录。"
     }
   },
   "pending_problems": {

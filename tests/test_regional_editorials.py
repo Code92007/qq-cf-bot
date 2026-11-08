@@ -22,7 +22,9 @@ class EditorialReleaseTest(unittest.TestCase):
         self.assertTrue({'icpc-2025-上海:'+x for x in 'ABCDEFGHIJKLM'} <= set(bank.ready()))
         for pid, entry in bank.entries.items():
             report = json.loads((bank.root / entry.get('validation_report', 'regional_editorial_validation.json')).read_text())
-            self.assertTrue(problems[pid]['qoj_id'])
+            self.assertIn(pid, problems)
+            if bank.release['sources'][entry['source']].get('kind') != 'independent':
+                self.assertTrue(problems[pid]['qoj_id'])
             content = bank.content(pid)
             self.assertIn('## 先学什么', content)
             self.assertGreater(len(content), 300)

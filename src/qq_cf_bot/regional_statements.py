@@ -62,7 +62,10 @@ def seed_cached_statements(db, problems, release_path=None):
         for pid, entry in release['problems'].items():
             if pid not in problems:
                 continue
-            if entry['problem_key'] not in problems[pid].get('aliases', []):
+            # A screenshot can identify the contest and letter before an external
+            # platform ID is available. Keep that local identity out of AC aliases.
+            if (entry['problem_key'] != 'regional:' + pid
+                    and entry['problem_key'] not in problems[pid].get('aliases', [])):
                 raise ValueError('Statement release does not match catalog: ' + pid)
             raw = json.dumps(entry['statement'], ensure_ascii=False)
             if not statement_ready(_statement_from_json(raw)):

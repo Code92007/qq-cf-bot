@@ -28,7 +28,7 @@ class RegionalEditorials:
             raise ChallengeError('editorial_unavailable', '这场比赛尚无预置题解可下载。', 404)
         lines = [f"# {contest['name']} · 题解合集", '',
                  f"已收录 {ready}/{len(problems)} 题。按原题号排列；本文件包含完整题解。", '',
-                 '依据出题方材料独立扩写，补充学习路径、推导和实现说明。', '',
+                 '各题附学习路径、推导与实现说明；来源和校验范围见各题末尾。', '',
                  f"比赛：[原比赛题单]({contest['source_url']})", '', '## 目录', '']
         for p in problems:
             status = '' if p['id'] in self.entries else '（待补）'
@@ -53,8 +53,10 @@ class RegionalEditorials:
                     line = '#' + line
                 lines.append(line)
             source = self.release['sources'][entry['source']]
+            location = ('对应 PDF 页码：' + ', '.join(map(str, entry['pages']))
+                        if entry['pages'] else '按题面独立推导')
             lines += ['', f"来源：[{source['title']}]({source['url']}) · {source['author']}", '',
-                      f"对应 PDF 页码：{', '.join(map(str, entry['pages']))}；版本：{entry['revision']}。", '',
+                      f"{location}；版本：{entry['revision']}。", '',
                       entry['validation']]
             if source.get('repository_url'):
                 lines += ['', f"[出题方公开数据、标程与题解]({source['repository_url']})"]
@@ -95,19 +97,5 @@ class RegionalEditorials:
 
 
 def render_editorial(body):
-    import markdown
-    from .webapp import _HTMLSanitizer
-
-    class EditorialSanitizer(_HTMLSanitizer):
-        allowed_tags = _HTMLSanitizer.allowed_tags | {'h1', 'h2', 'h3', 'h4', 'hr'}
-        void_tags = _HTMLSanitizer.void_tags | {'hr'}
-
-    parser = EditorialSanitizer()
-    # These files are always Markdown. Statement HTML auto-detection mistakes
-    # inequalities such as "x<a" for markup and can discard whole paragraphs.
-    renderer = markdown.Markdown(extensions=['extra', 'sane_lists', 'nl2br'], output_format='html5')
-    renderer.preprocessors.deregister('html_block')
-    renderer.inlinePatterns.deregister('html')
-    parser.feed(renderer.convert(body))
-    parser.close()
-    return parser.result
+    from .rich_text import render_markdown
+    return render_markdown(body, allow_html=False, line_breaks=True)

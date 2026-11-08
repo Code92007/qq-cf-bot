@@ -1,0 +1,211 @@
+{
+  "seed": 4685,
+  "checks": {
+    "D": {
+      "passed": true,
+      "cases": 5460,
+      "detail": "穷举 n≤6、食材数1..4，与逐轮模拟比较"
+    },
+    "F": {
+      "passed": true,
+      "cases": 6000,
+      "detail": "三槽折半与任意前沿随机数据，对比笛卡尔积穷举；含封顶、零属性、重复点"
+    },
+    "G": {
+      "passed": true,
+      "cases": 8000,
+      "detail": "随机初值与点修改，与全部2^n朝向的任意两区间检测比较"
+    },
+    "I": {
+      "passed": true,
+      "cases": 5500,
+      "detail": "4000组边权DP对比严格递增时刻穷举；1500组换列行列式对比所有下一站选择及逐点根检测"
+    },
+    "J": {
+      "passed": true,
+      "cases": 209,
+      "detail": "小规模所有非降瓶数，与死活位掩码二分图最大匹配比较"
+    },
+    "K": {
+      "passed": true,
+      "cases": 91933,
+      "detail": "极角判据对比单调链凸包及逐边原点检测；含同射线、反向、共线、原点在边界"
+    },
+    "L": {
+      "passed": true,
+      "cases": 2522,
+      "detail": "全部二元短串及三元随机串，对比所有不相交相邻交换集合"
+    },
+    "M": {
+      "passed": true,
+      "cases": 1500,
+      "detail": "遍历每个可能回复分支验证最坏剩余候选数与查询深度；自适应交互器同样适用"
+    },
+    "B": {
+      "passed": true,
+      "cases": 15108,
+      "detail": "C++17 与全体异向配对事件扫描模拟对拍，含同坐标、阈值重合及连锁等待"
+    },
+    "A": {
+      "passed": true,
+      "cases": 500,
+      "detail": "C++17 与显式 n² 状态、n⁴ 转移最短路对拍"
+    },
+    "E": {
+      "passed": true,
+      "cases": 2383,
+      "detail": "C++17 穷举 n=4 的 1820 种首行数值集合，并验证随机及 n=1000 构造的排列、反对角线差值和最优修改数"
+    },
+    "H": {
+      "passed": true,
+      "cases": 18314,
+      "detail": "C++17 双次运行往返验证，n≤40 覆盖全部可行 m，检查区间互异、长度和及解码"
+    },
+    "C": {
+      "passed": true,
+      "cases": 50000,
+      "detail": "C++17 与逐回合、逐石子数极小极大 DP 对拍"
+    }
+  },
+  "compiled_checks": {
+    "D": {
+      "passed": true,
+      "cases": 5460,
+      "detail": "实际 C++17 穷举与逐轮模拟一致"
+    },
+    "F": {
+      "passed": true,
+      "cases": 300,
+      "detail": "实际 C++17 与六槽位完整组合穷举一致，包含暴击封顶"
+    },
+    "G": {
+      "passed": true,
+      "cases": 2700,
+      "detail": "实际 C++17 初值及点修改对比全部方向穷举"
+    },
+    "I": {
+      "passed": true,
+      "cases": 250,
+      "detail": "实际 C++17 与发车时间及下一站双重穷举一致"
+    },
+    "J": {
+      "passed": true,
+      "cases": 209,
+      "detail": "实际 C++17 与位掩码匹配一致"
+    },
+    "K": {
+      "passed": true,
+      "cases": 2500,
+      "detail": "实际 C++17 最短窗口与逐区间凸包判定一致"
+    },
+    "L": {
+      "passed": true,
+      "cases": 2022,
+      "detail": "实际 C++17 与不相交相邻交换穷举一致"
+    },
+    "M": {
+      "passed": true,
+      "cases": 100,
+      "detail": "实际 C++17 自适应交互器每次选择最大候选分支，含 n=1000000，查询不超过10次"
+    },
+    "B": {
+      "passed": true,
+      "cases": 15108,
+      "detail": "C++17 与全体异向配对事件扫描模拟对拍，含同坐标、阈值重合及连锁等待"
+    },
+    "A": {
+      "passed": true,
+      "cases": 500,
+      "detail": "C++17 与显式 n² 状态、n⁴ 转移最短路对拍"
+    },
+    "E": {
+      "passed": true,
+      "cases": 2383,
+      "detail": "C++17 穷举 n=4 的 1820 种首行数值集合，并验证随机及 n=1000 构造的排列、反对角线差值和最优修改数"
+    },
+    "H": {
+      "passed": true,
+      "cases": 18314,
+      "detail": "C++17 双次运行往返验证，n≤40 覆盖全部可行 m，检查区间互异、长度和及解码"
+    },
+    "C": {
+      "passed": true,
+      "cases": 50000,
+      "detail": "C++17 与逐回合、逐石子数极小极大 DP 对拍"
+    }
+  },
+  "benchmarks": [
+    {
+      "problem": "A",
+      "case": "400-node path",
+      "seconds": 2.581,
+      "platform": "macOS arm64 clang++ -O2"
+    },
+    {
+      "problem": "A",
+      "case": "400-node dense",
+      "seconds": 0.61,
+      "platform": "macOS arm64 clang++ -O2"
+    },
+    {
+      "problem": "B",
+      "case": "full threshold",
+      "seconds": 0.288,
+      "platform": "macOS arm64 clang++ -O2"
+    },
+    {
+      "problem": "B",
+      "case": "small threshold",
+      "seconds": 0.323,
+      "platform": "macOS arm64 clang++ -O2"
+    },
+    {
+      "problem": "B",
+      "case": "unit threshold",
+      "seconds": 0.479,
+      "platform": "macOS arm64 clang++ -O2"
+    },
+    {
+      "problem": "B",
+      "case": "coincident opposing groups",
+      "seconds": 0.027,
+      "platform": "macOS arm64 clang++ -O2"
+    },
+    {
+      "problem": "F",
+      "case": "100 candidates each slot",
+      "seconds": 0.096,
+      "platform": "macOS arm64 clang++ -O2"
+    },
+    {
+      "problem": "I",
+      "case": "150 stations 15 services",
+      "seconds": 0.094,
+      "platform": "macOS arm64 clang++ -O2"
+    },
+    {
+      "problem": "H",
+      "case": "200000-length encoding maximum m",
+      "seconds": 0.274,
+      "platform": "macOS arm64 clang++ -O2"
+    }
+  ],
+  "verified_at": "2026-11-09",
+  "kind": "independent-offline-checks",
+  "scope": "全部 13 份 C++17 代码已编译并离线对拍或构造验证；含题面普通样例、双次运行及自适应交互模拟。QOJ 浏览器接口故障，尚无在线评测结果；性能记录为本机抽样，不代表覆盖全部极限数据。",
+  "content_sha256": {
+    "ccpc-leshan-A.md": "c63a7d1016febe4d7f2aab6304123ebc8b4a47f1b1be09eac3cdeb87b0b9b010",
+    "ccpc-leshan-B.md": "0b08a2da39b2feba7fdf8b4da349f8018a1d080a7e129757395df23b93c5f735",
+    "ccpc-leshan-C.md": "dffc47045cda0b8ca9e35881f3eb8355489cc9ded948357bcee5794b7fab1f3f",
+    "ccpc-leshan-E.md": "bedb163741f41b77fcec36c0a0400d80c350cf726557aa6cd32a2e6bbdd6ccc4",
+    "ccpc-leshan-H.md": "d36eb4e5fbbc785552d3e2d5e2ad696ce9ccb7c59cacf6c32434d4269210094b",
+    "ccpc-leshan-D.md": "85dce75cc310e958285d85ac578c78835d40f585348263e189cd9e6f1b702fcc",
+    "ccpc-leshan-F.md": "84eb586bb5418cf6240f3443027e95bc7e91295d3d68b878cc9f00dc47dcce10",
+    "ccpc-leshan-G.md": "820818b8c56910725ebeffa5c9ed271f8bdbe04d2f6531e3122a132bbb01f77c",
+    "ccpc-leshan-I.md": "ff231aa835352ca1f914abdca00f0794359deaceb0efffe60e95a5edec24d2ae",
+    "ccpc-leshan-J.md": "9925d561e6a926bd1cd129dd9e6ed4cf619ae6cc64196479514c5d522f31b07b",
+    "ccpc-leshan-K.md": "880b65a7d2a6f9a975d6d7b7a5cc40fc69acabcd9dbd93ac4c5eb7c87612f6e8",
+    "ccpc-leshan-L.md": "3c6f412090e60eab80b66d0346d17250f34f6a5d4d9df6a560710bebf18f7658",
+    "ccpc-leshan-M.md": "488fad1d2a933e2dea7f864cd7a357c84945536cda9c123d913fcaeff33416bb"
+  }
+}

@@ -2,6 +2,9 @@
 const $ = id => document.getElementById(id);
 const model = {data:null, csrf:"", user:0, detail:null, view:"union", savePromise:null, saveTimer:null, dirty:false, busy:false, preview:null, scroll:0, scrollX:0, initialized:false, pending:{}};
 const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function renderMath(element){
+  if(window.renderMathInElement)renderMathInElement(element,{delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false},{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false}],throwOnError:false,trust:false});
+}
 function difficultyClass(r){return !r?"difficulty-unknown":r<1200?"difficulty-brown":r<1600?"difficulty-green":r<1900?"difficulty-cyan":r<2100?"difficulty-blue":r<2400?"difficulty-purple":r<2700?"difficulty-orange":"difficulty-red";}
 function difficultyText(d){
   if(!d)return "难度未评级";
@@ -162,6 +165,7 @@ async function openProblem(pid,prepareStatement=false){
   $("problemNav").innerHTML=contest.problems.map(p=>`<button data-problem="${esc(p.id)}" class="${p.id===pid?"selected":""}">${esc(p.index)}</button>`).join("");
   const s=d.statement;
   $("statementBody").innerHTML=s?`${s.description}${s.input?`<h3>输入格式</h3>${s.input}`:""}${s.output?`<h3>输出格式</h3>${s.output}`:""}${s.samples.map((sample,i)=>`<h3>样例 ${i+1}</h3><pre>${esc(sample.input)}</pre><pre>${esc(sample.output)}</pre>`).join("")}${s.hint?`<h3>样例说明</h3>${s.hint}`:""}`:`<p>${esc(d.statementError)}</p>`;
+  renderMath($("statementBody"));
   $("sourceLinks").innerHTML=regionalSourceLinks(d.problem,contest);
   if(diff?.standings_url)$("sourceLinks").innerHTML+=` <a href="${esc(diff.standings_url)}" target="_blank" rel="noopener noreferrer">赛时榜单 ↗</a>`;
   $("attempts").innerHTML=d.attempts.map(a=>`<div class="attempt"><strong>${esc(a.verdict)}</strong> <small class="muted">${esc(new Date(a.created_at).toLocaleString())}</small><p>${esc(a.reason)}</p><details><summary>查看当时的${a.kind==="oral"?"做法":"代码"}</summary><pre>${esc(a.body)}</pre></details></div>`).join("")+d.evidence.map(e=>`<div class="attempt"><strong>${esc(e.verdict)}</strong> · ${esc(e.platform)} · ${esc(e.handle)}<br><small class="muted">${e.submitted_at?esc(new Date(e.submitted_at*1000).toLocaleString()):"时间未知"} · ${e.origin.startsWith("import:")?"导入记录":"账号同步"}</small></div>`).join("");
@@ -190,7 +194,9 @@ async function revealEditorial(view){
   if(view==="hint")e.hintLevel=level;
   $("editorialTitle").textContent=`${model.detail.problem.index} · ${{learning:"先学什么",hint:"渐进提示",full:"详细题解"}[view]}`;
   $("editorialBody").innerHTML=view==="hint"?d.hints.map((h,i)=>`<section><h3>提示 ${i+1}</h3><p>${esc(h)}</p></section>`).join(""):d.html;
-  $("editorialSource").innerHTML=`依据 <a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">${esc(d.source.title)}</a> · ${esc(d.source.author)} · PDF 第 ${esc(d.pages.join("、"))} 页<br>${esc(d.validation)}`;
+  renderMath($("editorialBody"));
+  const location=d.pages.length ? ` · PDF 第 ${esc(d.pages.join("、"))} 页` : " · 按题面独立推导";
+  $("editorialSource").innerHTML=`依据 <a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">${esc(d.source.title)}</a> · ${esc(d.source.author)}${location}<br>${esc(d.validation)}`;
   $("editorialPanel").hidden=false;updateEditorialAvailability();
   $("editorialPanel").scrollIntoView({behavior:"smooth",block:"start"});
 }

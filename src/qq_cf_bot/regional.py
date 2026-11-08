@@ -470,7 +470,8 @@ class RegionalApplication:
     def prepare(self,pid):
         item=self.store.problem(pid)
         cf_id=item.get('cf_contest_id')
-        p=CFProblem(int(cf_id or 0),item['index'] if cf_id else 'QOJ'+str(item.get('qoj_id') or ''),item['name'],0,(),bool(cf_id))
+        index = item['index'] if cf_id else ('QOJ' + str(item['qoj_id']) if item.get('qoj_id') else 'REGIONAL:' + pid)
+        p=CFProblem(int(cf_id or 0),index,item['name'],0,(),bool(cf_id))
         cached=self.store.cached_statement(pid)
         if cached:
             return p,cached
@@ -569,7 +570,9 @@ class RegionalApplication:
 
     @staticmethod
     def statement_json(s):
-        from .webapp import _safe_statement_html
-        return {'title':s.title,'description':_safe_statement_html(s.background+'\n'+s.description,s.source_url),
-                'input':_safe_statement_html(s.input_format,s.source_url),'output':_safe_statement_html(s.output_format,s.source_url),
-                'hint':_safe_statement_html(s.hint,s.source_url),'samples':[{'input':a,'output':b} for a,b in s.samples], 'sourceUrl':s.source_url}
+        from .rich_text import render_markdown
+        def render(value):
+            return render_markdown(value, source_url=s.source_url, allow_images=True)
+        return {'title':s.title,'description':render(s.background+'\n\n'+s.description),
+                'input':render(s.input_format),'output':render(s.output_format),
+                'hint':render(s.hint),'samples':[{'input':a,'output':b} for a,b in s.samples], 'sourceUrl':s.source_url}

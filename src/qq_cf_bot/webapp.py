@@ -66,6 +66,15 @@ class WebApplication:
         if not self.config.web_enabled:
             return False
         try:
+            if path.startswith("/vendor/katex/"):
+                relative = Path(path.removeprefix("/"))
+                target = (self.static_dir / relative).resolve()
+                vendor = (self.static_dir / "vendor" / "katex").resolve()
+                types = {".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".woff2": "font/woff2"}
+                if vendor in target.parents and target.is_file() and target.suffix in types:
+                    self._static(handler, str(relative), types[target.suffix])
+                    return True
+                return False
             if path in {"/lists", "/lists/"}:
                 self._static(handler, "lists.html", "text/html; charset=utf-8", no_cache=True)
                 return True
@@ -156,6 +165,8 @@ class WebApplication:
                 "/statement-wuhan-2026-a.png": ("statement-wuhan-2026-a.png", "image/png"),
                 "/statement-wuhan-2026-e-interaction.png": ("statement-wuhan-2026-e-interaction.png", "image/png"),
                 "/statement-wuhan-2026-l-interaction.png": ("statement-wuhan-2026-l-interaction.png", "image/png"),
+                "/statement-leshan-2026-e-path.png": ("statement-leshan-2026-e-path.png", "image/png"),
+                "/statement-leshan-2026-k-hull.png": ("statement-leshan-2026-k-hull.png", "image/png"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
                 "/styles.css": ("styles.css", "text/css; charset=utf-8"),
             }
@@ -923,6 +934,9 @@ class WebApplication:
         handler.send_header("X-Content-Type-Options", "nosniff")
         handler.send_header("X-Frame-Options", "DENY")
         handler.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        if urlsplit(getattr(handler, "path", "")).path.rstrip("/") == "/regionals":
+            handler.send_header("Content-Security-Policy", "default-src 'self'; img-src 'self' https: http:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+            return
         handler.send_header(
             "Content-Security-Policy",
             "default-src 'self'; img-src 'self' https: http:; style-src 'self'; "
