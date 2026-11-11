@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>续题池 · CF Bot</title>
+  <link rel="stylesheet" href="/styles.css?v=unfinished-1">
+  <link rel="stylesheet" href="/unfinished.css?v=1">
+  <script src="/unfinished.js?v=1" defer></script>
+</head>
+<body class="unfinished-page">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark small">CF</span><strong>CF Bot</strong></a>
+    <nav class="unfinished-nav" aria-label="网站导航"><a href="/">单题 / VP</a><a href="/regionals">区域赛墙</a><a href="/pool">口胡池</a><a href="/unfinished" aria-current="page">续题池</a><a href="/lists">个人题单</a><a href="/iceberg">算法冰山</a></nav>
+    <span id="userName" class="unfinished-user"></span>
+  </header>
+  <main class="unfinished-main">
+    <section class="unfinished-hero">
+      <div><p class="eyebrow">留个断点，下次继续</p><h1>续题池<span>想一半，也算向前。</span></h1><p class="unfinished-lead">把没想完的 idea、没写完的代码先放下。<br>下次有空，从上次停下的地方接着来。</p><span class="private-note">◌ 仅自己可见 · 没有截止日期</span></div>
+      <div class="progress-card" aria-label="续题完成进度"><span class="progress-label">一点点，清空脑内待办</span><div class="progress-numbers"><strong id="doneCount">0</strong><span>/ <span id="allCount">0</span> 题已划掉</span><span class="progress-check" aria-hidden="true">✓</span></div><progress id="completionProgress" max="1" value="0" aria-label="已完成比例"></progress><p id="progressHint">先存下一道，下次就有了起点。</p></div>
+    </section>
+    <p id="notice" class="unfinished-notice" role="status" aria-live="polite"></p>
+    <section id="loginRequired" class="unfinished-empty" hidden><h2>登录后，给思路留个位置。</h2><p>题目、草稿和完成记录会跟着你的账号保存。</p><a class="primary unfinished-link-button" href="/?next=unfinished">前往登录 ↗</a></section>
+    <p id="loading" class="unfinished-empty">正在找回你的断点…</p>
+    <button id="retryLoad" class="quiet" type="button" hidden>重新加载</button>
+    <section id="workspace" class="unfinished-workspace" hidden aria-label="续题工作台">
+      <aside class="unfinished-sidebar">
+        <div class="sidebar-heading"><h2>我的待续</h2><button id="newEntry" class="primary" type="button">＋ 存一道</button></div>
+        <div id="statusTabs" class="unfinished-tabs" role="group" aria-label="完成状态"><button data-status="open" aria-pressed="true">待继续 <span id="openCount">0</span></button><button data-status="done" aria-pressed="false">已划掉 <span id="tabDoneCount">0</span></button><button data-status="all" aria-pressed="false">全部</button></div>
+        <label class="sr-only" for="search">搜索题目、思路或代码</label><input id="search" class="unfinished-search" type="search" maxlength="100" placeholder="搜题目、思路，或一段代码…">
+        <div id="entryList" class="unfinished-list"></div>
+        <p id="listEmpty" class="sidebar-empty" hidden></p>
+        <div id="pagination" class="unfinished-pagination" hidden><button id="previous" class="quiet" type="button" aria-label="上一页">←</button><span id="pageHint"></span><button id="next" class="quiet" type="button" aria-label="下一页">→</button></div>
+      </aside>
+      <section class="unfinished-editor" aria-label="题目草稿">
+        <div class="editor-heading"><div><p class="eyebrow" id="editorEyebrow">存下这个断点</p><h2 id="editorHeading">留给下次的自己</h2></div><button id="completeEntry" class="quiet" type="button" disabled>✓ 划掉这道题</button></div>
+        <div id="conflict" class="draft-conflict" role="alert" hidden><p>另一处已更新这道题。你的当前内容已保留，选择怎么继续：</p><div><button id="saveCopy" class="quiet" type="button">当前草稿另存一份</button><button id="reloadEntry" class="quiet" type="button">加载服务器最新版本</button></div></div>
+        <form id="draftForm">
+          <fieldset id="draftFields">
+            <div class="entry-meta"><label>题目 / 备忘标题<input id="title" name="title" maxlength="120" placeholder="例如：CF 1704F · 还差一个博弈结论"></label><label><span class="field-label">题号或链接 <small>可选</small></span><input id="problemRef" name="problemRef" maxlength="500" placeholder="1704F / 任意 OJ 题目链接"></label></div>
+            <div class="note-heading"><label for="idea">想到了哪里</label><span>不必完整，先倒出来</span></div>
+            <textarea id="idea" name="idea" rows="7" maxlength="20000" placeholder="已经确定的结论、试过的方向、卡住的地方…"></textarea>
+            <div class="next-step"><label for="nextStep">↳ 下次先做这一件事</label><textarea id="nextStep" name="nextStep" rows="2" maxlength="2000" placeholder="例如：先验证 n 是奇数时的结论，再补转移。"></textarea></div>
+            <div class="note-heading code-heading"><label for="code">写到了哪里</label><label class="language-label"><span class="sr-only">代码语言</span><select id="language" name="language"><option value="cpp">C++</option><option value="py">Python</option><option value="java">Java</option><option value="c">C</option><option value="rust">Rust</option><option value="other">其他 / 伪代码</option></select></label></div>
+            <textarea id="code" name="code" class="unfinished-code" rows="12" maxlength="128000" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="写一半也没关系。把代码贴在这里，下次接着写。"></textarea>
+          </fieldset>
+          <div class="editor-footer"><div><span id="saveHint" role="status" aria-live="polite">写下一点内容，会自动保存</span><span id="entryTime"></span></div><div class="editor-footer-actions"><a id="sourceLink" class="unfinished-source" target="_blank" rel="noopener noreferrer" hidden>打开原题 ↗</a><button id="saveDraft" class="primary" type="submit">保存断点</button></div></div>
+        </form>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

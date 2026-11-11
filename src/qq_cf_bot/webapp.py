@@ -57,6 +57,8 @@ class WebApplication:
         self.regionals = RegionalApplication(self)
         from .problem_pool import ProblemPool
         self.pool = ProblemPool(self)
+        from .unfinished import UnfinishedPool
+        self.unfinished = UnfinishedPool(self)
         from .iceberg import IcebergAchievements
         self.iceberg = IcebergAchievements(self)
         from .personal_lists import PersonalLists
@@ -66,6 +68,16 @@ class WebApplication:
         if not self.config.web_enabled:
             return False
         try:
+            if path in {"/unfinished", "/unfinished/"}:
+                self._static(handler, "unfinished.html", "text/html; charset=utf-8", no_cache=True)
+                return True
+            if path in {"/api/unfinished", "/api/unfinished/entry"}:
+                session = self._require_session(handler)
+                query = {key: values[0] for key, values in parse_qs(urlsplit(getattr(handler, "path", "")).query).items()}
+                result = (self.unfinished.listing(session, query) if path == "/api/unfinished"
+                          else self.unfinished.entry(int(session["user_id"]), query.get("id", "")))
+                self._json(handler, result)
+                return True
             if path.startswith("/vendor/katex/"):
                 relative = Path(path.removeprefix("/"))
                 target = (self.static_dir / relative).resolve()
@@ -149,6 +161,8 @@ class WebApplication:
                 self._static(handler, "index.html", "text/html; charset=utf-8", no_cache=True)
                 return True
             static_files = {
+                "/unfinished.js": ("unfinished.js", "text/javascript; charset=utf-8"),
+                "/unfinished.css": ("unfinished.css", "text/css; charset=utf-8"),
                 "/lists.js": ("lists.js", "text/javascript; charset=utf-8"),
                 "/lists.css": ("lists.css", "text/css; charset=utf-8"),
                 "/iceberg.js": ("iceberg.js", "text/javascript; charset=utf-8"),
@@ -183,7 +197,7 @@ class WebApplication:
         if not self.config.web_enabled or not path.startswith("/api/"):
             return False
         try:
-            payload = self._read_json(handler)
+            payload = self._read_json(handler, max_bytes=1_000_000 if path == "/api/unfinished/save" else None)
             if path == "/api/regional-qoj/import":
                 self._json(handler, self.regionals.qoj.upload(handler.headers.get("Authorization", ""), payload))
                 return True
@@ -208,6 +222,8 @@ class WebApplication:
                     self._json(handler, self.iceberg.link(session, payload))
                 elif path.startswith("/api/lists/"):
                     self._json(handler, self.personal_lists.post(int(session["user_id"]), path.rsplit("/", 1)[-1], payload))
+                elif path.startswith("/api/unfinished/"):
+                    self._json(handler, self.unfinished.post(session, path.rsplit("/", 1)[-1], payload))
                 elif path.startswith("/api/pool/"):
                     self._json(handler, self.pool.post(session, path.rsplit("/", 1)[-1], payload))
                 elif path.startswith("/api/regionals/"):
@@ -870,13 +886,13 @@ class WebApplication:
         morsel = cookie.get(_SESSION_COOKIE)
         return morsel.value if morsel else ""
 
-    def _read_json(self, handler) -> dict:
+    def _read_json(self, handler, max_bytes: Optional[int] = None) -> dict:
         raw_length = handler.headers.get("Content-Length") or "0"
         try:
             length = int(raw_length)
         except ValueError as exc:
             raise ValueError("无效的请求长度。") from exc
-        if length < 0 or length > self.config.web_max_body_bytes:
+        if length < 0 or length > (max_bytes or self.config.web_max_body_bytes):
             raise ChallengeError("request_too_large", "请求内容过大。", 413)
         if length == 0:
             return {}
